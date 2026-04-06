@@ -1,9 +1,9 @@
 {
-  "name": "TODO",
+  "name": "Hover Previews",
   "component": true,
-  "authors": "Discourse",
-  "about_url": "TODO: Put your theme's public repo or Meta topic URL here",
-  "license_url": "TODO: Put your theme's LICENSE URL here",
+  "authors": "@denvergeeks",
+  "about_url": "https://github.com/denvergeeks/discourse-hover-previews/blob/main/README.md",
+  "license_url": "https://github.com/denvergeeks/discourse-hover-previews/blob/main/LICENSE",
   "learn_more": "TODO",
   "theme_version": "0.0.1",
   "minimum_discourse_version": null,
