@@ -708,6 +708,29 @@ function buildCardHTML(topic, site, isMobile = false) {
   }
 }
 
+const cardHeightObserver = new ResizeObserver((entries) => {
+  for (const entry of entries) {
+    entry.target.style.setProperty(
+      "--thc-card-height",
+      `${entry.contentRect.height}px`
+    );
+  }
+});
+
+function observeCardHeight(tooltip) {
+  if (!tooltip) return;
+
+  const card = tooltip.querySelector(".topic-hover-card");
+  if (!card) return;
+
+  cardHeightObserver.disconnect();
+  cardHeightObserver.observe(card);
+  card.style.setProperty(
+    "--thc-card-height",
+    `${card.getBoundingClientRect().height}px`
+  );
+}
+
 export default apiInitializer((api) => {
   const site = api.container.lookup("service:site");
   const currentUser =
@@ -835,8 +858,10 @@ export default apiInitializer((api) => {
 
       if (topicCache[topicId]) {
         tooltip.innerHTML = buildCardHTML(topicCache[topicId], site, mobile);
+        observeCardHeight(tooltip);
       } else {
         tooltip.innerHTML = skeletonHTML();
+        observeCardHeight(tooltip);
         fetchTopic(topicId)
           .then((data) => {
             if (currentTopicId === topicId) {
@@ -846,6 +871,7 @@ export default apiInitializer((api) => {
                 site,
                 isMobileView()
               );
+              observeCardHeight(tooltip);
               positionTooltip(anchorRect);
             }
           })
@@ -1020,6 +1046,7 @@ export default apiInitializer((api) => {
       hideCard();
       currentTopicId = null;
       suppressNextClick = false;
+      cardHeightObserver.disconnect();
     });
 
     debugLog("Hover cards initialized", {
