@@ -551,16 +551,11 @@ function buildCardHTML(topic, site, isMobile = false) {
     ? `<div class="topic-hover-card__title">${title}</div>`
     : "";
 
-  const firstPost = topic.post_stream?.posts?.[0];
-  const excerptSource =
-    topic.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
-  const cleanedExcerpt = stripHtml(excerptSource);
-  const limit = isMobile ? 180 : 260;
-  const finalExcerpt =
-    cleanedExcerpt.length >= 20
-      ? cleanedExcerpt.slice(0, limit).trim() +
-        (cleanedExcerpt.length > limit ? "…" : "")
-      : "";
+const firstPost = topic.post_stream?.posts?.[0];
+const excerptSource =
+  topic.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
+const cleanedExcerpt = stripHtml(excerptSource);
+const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
 
   const excerpt =
     showExcerpt && finalExcerpt
