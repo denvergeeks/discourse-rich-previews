@@ -32,6 +32,10 @@ function isMobileView() {
   return window.innerWidth < 768;
 }
 
+function isMobileLayout() {
+  return window.innerWidth < 768;
+}
+
 async function getJSON(url) {
   const response = await fetch(url, {
     credentials: "same-origin",
@@ -854,7 +858,8 @@ export default apiInitializer((api) => {
       }
 
       currentTopicId = topicId;
-      const mobile = isMobileView();
+//      const mobile = isMobileView();
+const mobile = isMobileLayout();
 
       if (topicCache[topicId]) {
         tooltip.innerHTML = buildCardHTML(topicCache[topicId], site, mobile);
@@ -869,7 +874,8 @@ export default apiInitializer((api) => {
               tooltip.innerHTML = buildCardHTML(
                 data,
                 site,
-                isMobileView()
+//                isMobileView()
+isMobileLayout()
               );
               observeCardHeight(tooltip);
               positionTooltip(anchorRect);
