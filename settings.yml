@@ -113,7 +113,7 @@ image_size_percent:
   default: 30
   min: 15
   max: 60
-  description: "Sets the image as a percentage of the hover card size."
+  description: "Sets the image size as a percentage of the hover card size."
 
 mobile_width_percent:
   type: integer
