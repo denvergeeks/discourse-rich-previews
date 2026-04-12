@@ -6,7 +6,7 @@ card_delay_ms:
   description: Delay in milliseconds before the hover card appears.
 
 enable_on_mobile:
-  default: false
+  default: true
   type: bool
   description: Enable tap-to-preview behavior on touch devices.
 
@@ -160,7 +160,7 @@ show_views:
   description: Display the topic view count on desktop.
 
 show_views_mobile:
-  default: false
+  default: true
   type: bool
   description: Display the topic view count on mobile.
 
@@ -180,7 +180,7 @@ show_likes:
   description: Display the topic like count on desktop.
 
 show_likes_mobile:
-  default: false
+  default: true
   type: bool
   description: Display the topic like count on mobile.
 
@@ -190,7 +190,7 @@ show_activity:
   description: Display the most recent topic activity date on desktop.
 
 show_activity_mobile:
-  default: false
+  default: true
   type: bool
   description: Display the most recent topic activity date on mobile.
 
