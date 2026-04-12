@@ -593,7 +593,7 @@ function buildCardHTML(topic, site, isMobile = false) {
     isMobile
   );
 
-  const desktopImageSizePercent = settings.image_size_percent ?? 15;
+  const desktopThumbnailSizePercent = settings.thumbnail_size_percent ?? 15;
   const autoFitMaxWidth = settings.thumbnail_auto_fit_max_width || "10rem";
   const configuredPlacement = settings.thumbnail_placement || "left";
   const placement = isMobile ? "top" : configuredPlacement;
@@ -789,7 +789,7 @@ function buildCardHTML(topic, site, isMobile = false) {
 
   const wrapperStyle = isMobile
     ? ""
-    : `style="--thc-image-size-percent:${desktopImageSizePercent}; --thc-auto-thumb-max-width:${autoFitMaxWidth};"`;
+    : `style="--thc-thumbnail-size-percent:${desktopThumbnailSizePercent}; --thc-auto-thumb-max-width:${autoFitMaxWidth};"`;
 
   switch (placement) {
     case "left":

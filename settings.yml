@@ -46,11 +46,6 @@ show_thumbnail:
   default: true
   description: "Display the topic thumbnail image on desktop."
 
-show_thumbnail_mobile:
-  type: bool
-  default: true
-  description: "Display the topic thumbnail image on mobile."
-
 thumbnail_placement:
   type: enum
   default: left
@@ -65,21 +60,26 @@ thumbnail_size_mode:
   type: enum
   default: auto_fit_height
   choices:
+    - auto_fit_height  
     - manual
-    - auto_fit_height
-  description: "Manual uses Image size percent. Auto fit height uses Thumbnail auto-fit max width for the left/right thumbnail box."
+  description: "Setting this to auto-fit-height matches the image height to the card height, and uses the setting Thumbnail Auto-Fit Max Width (below) to constrain the image width. Setting this to manual mode uses the setting Thumbnail Size as Percent (below)."
 
 thumbnail_auto_fit_max_width:
   type: string
   default: "10rem"
-  description: "Used only in auto-fit-height mode. Sets the maximum width of the left/right thumbnail box. Accepts any valid CSS width value such as 8rem, 160px, or 12vw."
+  description: "Used only in auto-fit-height Thumbnail Sizing Mode (above). Sets the maximum width of the left/right thumbnail. Accepts any valid CSS width value such as 8rem, 160px, or 12vw."
 
-image_size_percent:
+thumbnail_size_percent:
   type: integer
   default: 15
   min: 10
   max: 60
-  description: "Used only in manual thumbnail size mode. Sets the left/right image width as a percentage of the hover card width."
+  description: "Used only in manual Thumbnail Sizing Mode (above). Sets the left/right image width as a percentage of the hover card width."
+
+show_thumbnail_mobile:
+  type: bool
+  default: true
+  description: "Display the topic thumbnail image on mobile."
 
 show_category:
   type: bool

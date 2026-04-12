@@ -4,137 +4,137 @@ en:
 
   settings:
   
-    card_delay_ms: "Hover delay"
+    card_delay_ms: "Hover Delay"
     card_delay_ms_description: "Delay in milliseconds before the hover card appears."
   
-    enable_on_mobile: "Enable on mobile"
+    enable_on_mobile: "Enable on Mobile"
     enable_on_mobile_description: "Enable tap-to-preview behavior on touch devices. If not enabled, all settings below for Mobile are ignored."
     
     density: "Density"
     density_description: "Controls desktop hover card density."
 
-    density_mobile: "Density on mobile"
+    density_mobile: "Density on Mobile"
     density_mobile_description: "Controls mobile hover card density."
 
-    card_width: "Card width"
+    card_width: "Card Width"
     card_width_description: "Any valid CSS width value, such as 32rem, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem)."
 
-    mobile_width_percent: "Mobile width percent"
+    mobile_width_percent: "Mobile Width Percent"
     mobile_width_percent_description: "Controls the mobile preview width as a percentage of the viewport width."
 
-    show_thumbnail: "Show thumbnail"
+    show_thumbnail: "Show Thumbnail"
     show_thumbnail_description: "Display the topic thumbnail image on desktop."
 
-    show_thumbnail_mobile: "Show thumbnail on mobile"
-    show_thumbnail_mobile_description: "Display the topic thumbnail image on mobile."
-
-    thumbnail_placement: "Thumbnail placement"
+    thumbnail_placement: "Thumbnail Placement"
     thumbnail_placement_description: "Choose where the thumbnail appears."
 
-    thumbnail_size_mode: "Thumbnail size mode"
-    thumbnail_size_mode_description: "Manual uses Image size percent. Auto fit height uses Thumbnail auto-fit max width for the left/right thumbnail box."
+    thumbnail_size_mode: "Thumbnail Sizing Mode"
+    thumbnail_size_mode_description: "Setting this to auto-fit-height matches the image height to the card height, and uses the setting Thumbnail Auto-Fit Max Width (below) to constrain the image width. Setting this to manual mode uses the setting Thumbnail Size as Percent (below)."
 
-    thumbnail_auto_fit_max_width: "Thumbnail auto-fit max width"
-    thumbnail_auto_fit_max_width_description: "Used only in auto-fit-height mode. Sets the maximum width of the left/right thumbnail box. Accepts any valid CSS width value such as 8rem, 160px, or 12vw."
+    thumbnail_auto_fit_max_width: "Thumbnail Auto-Fit Max Width"
+    thumbnail_auto_fit_max_width_description: "Used only in auto-fit-height Thumbnail Sizing Mode (above). Sets the maximum width of the left/right thumbnail. Accepts any valid CSS width value such as 8rem, 160px, or 12vw."
 
-    image_size_percent: "Image size percent"
-    image_size_percent_description: "Used only in manual thumbnail size mode. Sets the left/right image width as a percentage of the hover card width."
+    thumbnail_size_percent: "Thumbnail Size as Percent"
+    thumbnail_size_percent_description: "Used only in manual Thumbnail Sizing Mode (above). Sets the left/right image width as a percentage of the hover card width."
 
-    show_category: "Show category"
+    show_thumbnail_mobile: "Show Thumbnail on Mobile"
+    show_thumbnail_mobile_description: "Display the topic thumbnail image on mobile."
+
+    show_category: "Show Category"
     show_category_description: "Display the topic category badge on desktop when category data is available."
 
-    show_category_mobile: "Show category on mobile"
+    show_category_mobile: "Show Category on Mobile"
     show_category_mobile_description: "Display the topic category badge on mobile when category data is available."
 
-    show_tags: "Show tags"
+    show_tags: "Show Tags"
     show_tags_description: "Display topic tags on desktop when tag data is available."
 
-    show_tags_mobile: "Show tags on mobile"
+    show_tags_mobile: "Show Tags on Mobile"
     show_tags_mobile_description: "Display topic tags on mobile when tag data is available."
 
-    show_title: "Show title"
+    show_title: "Show Title"
     show_title_description: "Display the topic title on desktop."
 
-    show_title_mobile: "Show title on mobile"
+    show_title_mobile: "Show Title on Mobile"
     show_title_mobile_description: "Display the topic title on mobile."
 
-    show_excerpt: "Show excerpt"
+    show_excerpt: "Show Excerpt"
     show_excerpt_description: "Display a text excerpt on desktop."
 
-    show_excerpt_mobile: "Show excerpt on mobile"
+    show_excerpt_mobile: "Show Excerpt on Mobile"
     show_excerpt_mobile_description: "Display a text excerpt on mobile."
 
-    excerpt_length: "Excerpt length"
+    excerpt_length: "Excerpt Length"
     excerpt_length_description: "Number of excerpt lines to show on desktop."
 
-    excerpt_length_mobile: "Excerpt length on mobile"
+    excerpt_length_mobile: "Excerpt Length on Mobile"
     excerpt_length_mobile_description: "Number of excerpt lines to show on mobile."
 
-    show_op: "Show original poster"
+    show_op: "Show Original Poster"
     show_op_description: "Display the original poster avatar and username in the metadata row on desktop."
 
-    show_op_mobile: "Show original poster on mobile"
+    show_op_mobile: "Show Original Poster on Mobile"
     show_op_mobile_description: "Display the original poster avatar and username in the metadata row on mobile."
 
-    show_publish_date: "Show publish date"
+    show_publish_date: "Show Publish Date"
     show_publish_date_description: "Display the topic creation date on desktop."
 
-    show_publish_date_mobile: "Show publish date on mobile"
+    show_publish_date_mobile: "Show Publish Date on Mobile"
     show_publish_date_mobile_description: "Display the topic creation date on mobile."
 
-    show_views: "Show views"
+    show_views: "Show Number of Views"
     show_views_description: "Display the topic view count on desktop."
 
-    show_views_mobile: "Show views on mobile"
+    show_views_mobile: "Show Number of Views on Mobile"
     show_views_mobile_description: "Display the topic view count on mobile."
 
-    show_reply_count: "Show reply count"
+    show_reply_count: "Show Reply Count"
     show_reply_count_description: "Display the topic reply count on desktop."
 
-    show_reply_count_mobile: "Show reply count on mobile"
+    show_reply_count_mobile: "Show Reply Count on Mobile"
     show_reply_count_mobile_description: "Display the topic reply count on mobile."
 
-    show_likes: "Show likes"
+    show_likes: "Show Number of Likes"
     show_likes_description: "Display the topic like count on desktop."
 
-    show_likes_mobile: "Show likes on mobile"
+    show_likes_mobile: "Show Number of Likes on Mobile"
     show_likes_mobile_description: "Display the topic like count on mobile."
 
-    show_activity: "Show last activity"
+    show_activity: "Show Last Activity"
     show_activity_description: "Display the most recent topic activity date on desktop."
 
-    show_activity_mobile: "Show last activity on mobile"
+    show_activity_mobile: "Show Last Activity on Mobile"
     show_activity_mobile_description: "Display the most recent topic activity date on mobile."
 
-    enable_on_topics: "Enable on topics"
+    enable_on_topics: "Enable on Topics"
     enable_on_topics_description: "Show hover cards for internal topic links inside the original post."
 
-    enable_on_replies: "Enable on replies"
+    enable_on_replies: "Enable on Replies"
     enable_on_replies_description: "Show hover cards for internal topic links inside replies."
 
-    enable_on_topic_lists: "Enable on topic lists"
+    enable_on_topic_lists: "Enable on Topic Lists"
     enable_on_topic_lists_description: "Show hover cards for internal topic links shown in standard topic list views."
 
-    enable_on_category_homepage_topic_lists: "Enable on category homepage topic lists"
+    enable_on_category_homepage_topic_lists: "Enable on Category Homepage Topic Lists"
     enable_on_category_homepage_topic_lists_description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts."
 
     enable_on_doc_categories: "Enable on Doc Categories"
     enable_on_doc_categories_description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas."
 
-    enable_on_kanban_boards: "Enable on Kanban boards"
+    enable_on_kanban_boards: "Enable on Kanban Boards"
     enable_on_kanban_boards_description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views."
 
-    enable_on_suggested_topic_links: "Enable on suggested topic links"
+    enable_on_suggested_topic_links: "Enable on Suggested Topic Links"
     enable_on_suggested_topic_links_description: "Show hover cards for links in the suggested topics section."
 
-    user_preference_field_name: "User preference field name"
+    user_preference_field_name: "User Preference Field Name"
     user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys."
 
     resolve_user_field_id_for_admins: "Resolve user field ID for admins"
     resolve_user_field_id_for_admins_description: "When enabled, admins can configure the preference field by name or user_field_X; the component resolves the numeric user-field ID via /admin/config/user-fields.json."
 
-    topic_cache_max: "Topic cache max"
+    topic_cache_max: "Topic Cache Max"
     topic_cache_max_description: "Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session."
 
-    debug_mode: "Debug mode"
+    debug_mode: "Debug Mode"
     debug_mode_description: "Log hover-card detection and user-field resolution details to the browser console for staff debugging."

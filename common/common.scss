@@ -159,8 +159,8 @@
 .topic-hover-card--thumb-left.topic-hover-card--thumb-size-manual .topic-hover-card__thumbnail,
 .topic-hover-card--thumb-right.topic-hover-card--thumb-size-manual .topic-hover-card__thumbnail {
   position: relative;
-  flex: 0 0 calc(var(--thc-image-size-percent, 15) * 1%);
-  width: calc(var(--thc-image-size-percent, 15) * 1%);
+  flex: 0 0 calc(var(--thc-thumbnail-size-percent, 15) * 1%);
+  width: calc(var(--thc-thumbnail-size-percent, 15) * 1%);
   align-self: stretch;
   overflow: hidden;
 }
