@@ -790,7 +790,7 @@ function buildCardHTML(topic, site, isMobile = false) {
 
   const wrapperStyle = isMobile
     ? ""
-    : `style="--thc-image-size-percent:${desktopImageSizePercent};"`;
+    : `style="--thc-image-size-percent:${desktopImageSizePercent}; --thc-auto-thumb-width: 10rem;"`;
 
   switch (placement) {
     case "left":
