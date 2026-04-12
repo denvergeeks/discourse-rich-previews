@@ -82,11 +82,7 @@
 .topic-hover-card--thumb-top,
 .topic-hover-card--thumb-bottom {
   .topic-hover-card__thumbnail {
-    flex: 0 0
-      calc(
-        var(--thc-card-height, var(--thc-max-h, 10rem)) *
-          (var(--thc-image-size-percent, 30) / 100)
-      );
+    flex: 0 0 calc(var(--thc-max-h, 10rem) * (var(--thc-image-size-percent, 30) / 100));
     min-height: 0;
     overflow: hidden;
   }
