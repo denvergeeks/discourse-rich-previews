@@ -243,10 +243,18 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   align-items: center;
   gap: 0.25rem;
   flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .topic-hover-card__metadata {
   color: var(--primary-medium, $primary-medium);
+}
+
+.topic-hover-card__metadata > *,
+.topic-hover-card__stats > * {
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .topic-hover-card__tags {
@@ -261,7 +269,9 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   align-items: center;
   gap: 0.25rem;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
+  white-space: nowrap;
 
   img {
     border-radius: 999px;
@@ -270,17 +280,31 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
 
   .username {
     max-width: 8rem;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 }
 
+.topic-hover-card__publish-date {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .topic-hover-card__stat {
   display: inline-flex;
   align-items: center;
   gap: 0.18rem;
+  min-width: 0;
   white-space: nowrap;
+  flex: 0 0 auto;
 
   .d-icon {
     width: 0.85em;
@@ -297,8 +321,18 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   flex-wrap: nowrap;
   width: 100%;
   color: var(--primary-medium, $primary-medium);
-  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--thc-badge-fade)), transparent 100%);
-  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--thc-badge-fade)), transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - var(--thc-badge-fade)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - var(--thc-badge-fade)),
+    transparent 100%
+  );
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-size: 100% 100%;
