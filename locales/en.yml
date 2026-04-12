@@ -39,6 +39,24 @@ en:
     show_thumbnail_mobile: "Show Thumbnail on Mobile"
     show_thumbnail_mobile_description: "Display the topic thumbnail image on mobile."
 
+    thumbnail_placement_mobile: "Thumbnail Placement on Mobile"
+    thumbnail_placement_mobile_description: "On mobile, choose where the thumbnail appears."
+
+    thumbnail_size_mode_mobile: "Thumbnail Sizing Mode on Mobile"
+    thumbnail_size_mode_mobile_description: "On mobile, auto-fit-height matches the image height to the card height and uses Thumbnail Auto-Fit Max Width on Mobile to constrain width. Manual mode uses Thumbnail Size as Percent on Mobile."
+
+    thumbnail_auto_fit_max_width_mobile: "Thumbnail Auto-Fit Max Width on Mobile"
+    thumbnail_auto_fit_max_width_mobile_description: "Used only in mobile auto-fit-height thumbnail sizing mode. Accepts any valid CSS width value such as 7rem, 140px, or 30vw."
+
+    thumbnail_size_percent_mobile: "Thumbnail Size as Percent on Mobile"
+    thumbnail_size_percent_mobile_description: "Used only in mobile manual thumbnail sizing mode. Sets the left/right image width as a percentage of the hover card width."
+
+    thumbnail_height_top_bottom: "Top/Bottom Thumbnail Height on Desktop"
+    thumbnail_height_top_bottom_description: "Used when the thumbnail is placed on top or bottom on desktop. Accepts any valid CSS height value such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem)."
+
+    thumbnail_height_top_bottom_mobile: "Top/Bottom Thumbnail Height on Mobile"
+    thumbnail_height_top_bottom_mobile_description: "Used when the thumbnail is placed on top or bottom on mobile. Accepts any valid CSS height value such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem)."
+
     show_title: "Show Title on Desktop"
     show_title_description: "Display the topic title on desktop."
 

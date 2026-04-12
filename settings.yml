@@ -80,6 +80,46 @@ show_thumbnail_mobile:
   type: bool
   description: Show the topic thumbnail image on mobile.
 
+thumbnail_placement_mobile:
+  default: top
+  type: enum
+  choices:
+    - top
+    - right
+    - bottom
+    - left
+  description: Thumbnail placement on mobile (top, right, bottom, or left of card content).
+
+thumbnail_size_mode_mobile:
+  default: manual
+  type: enum
+  choices:
+    - manual
+    - auto_fit_height
+  description: On mobile, auto-fit-height matches image height to card height. Manual mode uses the configured width percentage.
+
+thumbnail_auto_fit_max_width_mobile:
+  default: 8rem
+  type: string
+  description: Used only in mobile auto-fit-height mode. Accepts any valid CSS width value such as 7rem, 140px, or 30vw.
+
+thumbnail_size_percent_mobile:
+  default: 33
+  type: integer
+  min: 15
+  max: 60
+  description: Used only in mobile manual mode. Sets the thumbnail width as a percentage of the hover card width.
+
+thumbnail_height_top_bottom:
+  default: auto
+  type: string
+  description: Used when the thumbnail is placed on top or bottom on desktop. Accepts any valid CSS height value such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem).
+
+thumbnail_height_top_bottom_mobile:
+  default: auto
+  type: string
+  description: Used when the thumbnail is placed on top or bottom on mobile. Accepts any valid CSS height value such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem).
+
 show_title:
   default: true
   type: bool

@@ -130,7 +130,6 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
 .topic-hover-card--thumb-bottom {
   .topic-hover-card__thumbnail {
     width: 100%;
-    aspect-ratio: 16 / 9;
     flex: 0 0 auto;
     overflow: hidden;
   }
@@ -146,6 +145,26 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   .topic-hover-card__thumbnail > img,
   .topic-hover-card__thumbnail-bg {
     object-fit: cover;
+  }
+}
+
+.topic-hover-card--thumb-top-bottom-height-auto {
+  &.topic-hover-card--thumb-top,
+  &.topic-hover-card--thumb-bottom {
+    .topic-hover-card__thumbnail {
+      aspect-ratio: 16 / 9;
+      height: auto;
+    }
+  }
+}
+
+.topic-hover-card--thumb-top-bottom-height-custom {
+  &.topic-hover-card--thumb-top,
+  &.topic-hover-card--thumb-bottom {
+    .topic-hover-card__thumbnail {
+      aspect-ratio: auto;
+      height: var(--thc-top-bottom-thumb-height, auto);
+    }
   }
 }
 
@@ -219,6 +238,19 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+@media (width < 768px) {
+  .topic-hover-card--thumb-left.topic-hover-card--thumb-size-auto-fit-height
+    .topic-hover-card__thumbnail,
+  .topic-hover-card--thumb-right.topic-hover-card--thumb-size-auto-fit-height
+    .topic-hover-card__thumbnail,
+  .topic-hover-card--thumb-left.topic-hover-card--thumb-size-manual
+    .topic-hover-card__thumbnail,
+  .topic-hover-card--thumb-right.topic-hover-card--thumb-size-manual
+    .topic-hover-card__thumbnail {
+    max-width: 42%;
+  }
 }
 
 .topic-hover-card__title,

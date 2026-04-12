@@ -186,6 +186,8 @@ function discourseIcon(name) {
   }
 }
 
+// Keep each separator attached to the following item so wrapped metadata
+// never leaves orphaned dots at the end of a line.
 function joinMetadataGroups(items, separator = "·") {
   const filtered = items.filter(Boolean);
   if (!filtered.length) return "";
@@ -245,16 +247,56 @@ function densitySetting(isMobile) {
   return ["default", "cozy", "compact"].includes(value) ? value : "default";
 }
 
-function thumbnailSizeMode() {
-  const value = settings.thumbnail_size_mode ?? "auto_fit_height";
+function thumbnailSizeMode(isMobile = false) {
+  const value = isMobile
+    ? settings.thumbnail_size_mode_mobile ??
+      settings.thumbnail_size_mode ??
+      "auto_fit_height"
+    : settings.thumbnail_size_mode ?? "auto_fit_height";
+
   return ["manual", "auto_fit_height"].includes(value)
     ? value
     : "auto_fit_height";
 }
 
-function thumbnailPlacement() {
-  const value = settings.thumbnail_placement ?? "left";
+function thumbnailPlacement(isMobile = false) {
+  const value = isMobile
+    ? settings.thumbnail_placement_mobile ??
+      settings.thumbnail_placement ??
+      "top"
+    : settings.thumbnail_placement ?? "left";
+
   return ["top", "right", "bottom", "left"].includes(value) ? value : "left";
+}
+
+function thumbnailSizePercent(isMobile = false) {
+  const raw = isMobile
+    ? settings.thumbnail_size_percent_mobile ??
+      settings.thumbnail_size_percent ??
+      15
+    : settings.thumbnail_size_percent ?? 15;
+
+  return numberSetting(raw, 15);
+}
+
+function thumbnailAutoFitMaxWidth(isMobile = false) {
+  const raw = isMobile
+    ? settings.thumbnail_auto_fit_max_width_mobile ??
+      settings.thumbnail_auto_fit_max_width ??
+      "10rem"
+    : settings.thumbnail_auto_fit_max_width ?? "10rem";
+
+  return stringSetting(raw, "10rem");
+}
+
+function thumbnailTopBottomHeight(isMobile = false) {
+  const raw = isMobile
+    ? settings.thumbnail_height_top_bottom_mobile ??
+      settings.thumbnail_height_top_bottom ??
+      "auto"
+    : settings.thumbnail_height_top_bottom ?? "auto";
+
+  return stringSetting(raw, "auto");
 }
 
 function fieldValueIsTruthy(value) {
@@ -307,6 +349,10 @@ function setCachedValue(cache, key, value, max) {
   if (cache.size > max) {
     cache.delete(cache.keys().next().value);
   }
+}
+
+function getExcerptCacheKey(topic) {
+  return topic?.id ?? null;
 }
 
 function inDocCategoriesView(link) {
@@ -516,118 +562,29 @@ function buildTitleHTML(topic, isMobile) {
   return `<div class="topic-hover-card__title">${escapeHTML(title)}</div>`;
 }
 
-function buildExcerptHTML(topic, isMobile) {
+function buildExcerptHTML(topic, isMobile, excerptCache) {
   if (!mobileBool("show_excerpt", "show_excerpt_mobile", isMobile)) return "";
 
-  const lines = mobileInt(
-    "excerpt_length",
-    "excerpt_length_mobile",
-    3,
-    isMobile
-  );
+  const lines = mobileInt("excerpt_length", "excerpt_length_mobile", 3, isMobile);
   const firstPost = topic.post_stream?.posts?.[0];
-  const excerptSource =
-    topic.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
-  const cleanedExcerpt = topic.__thc_excerpt ?? sanitizeExcerpt(excerptSource);
-  topic.__thc_excerpt = cleanedExcerpt;
+  const excerptSource = topic.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
+
+  const excerptCacheKey = getExcerptCacheKey(topic);
+  let cleanedExcerpt = excerptCacheKey
+    ? getCachedValue(excerptCache, excerptCacheKey)
+    : null;
+
+  if (!cleanedExcerpt) {
+    cleanedExcerpt = sanitizeExcerpt(excerptSource);
+    if (excerptCacheKey) {
+      setCachedValue(excerptCache, excerptCacheKey, cleanedExcerpt, 500);
+    }
+  }
+
   const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
 
   if (!finalExcerpt) return "";
   return `<div class="topic-hover-card__excerpt" style="--thc-excerpt-lines:${lines};">${escapeHTML(finalExcerpt)}</div>`;
-}
-
-function buildOpHTML(topic, isMobile) {
-  if (!mobileBool("show_op", "show_op_mobile", isMobile)) return "";
-
-  const op =
-    topic.details?.created_by ||
-    (topic.post_stream?.posts?.[0]?.username && {
-      username: topic.post_stream.posts[0].username,
-      avatar_template: topic.post_stream.posts[0].avatar_template,
-    }) ||
-    topic.posters?.[0]?.user;
-
-  if (!op?.username) return "";
-
-  const avatarURL = safeAvatarURL(op.avatar_template, 24);
-  const avatarImg = avatarURL
-    ? `<img src="${escapeHTML(avatarURL)}" width="24" height="24" alt="" loading="lazy" decoding="async">`
-    : "";
-
-  return `<span class="topic-hover-card__op">${avatarImg}<span class="username">${escapeHTML(
-    op.username
-  )}</span></span>`;
-}
-
-function buildPublishDateHTML(topic, isMobile) {
-  if (!mobileBool("show_publish_date", "show_publish_date_mobile", isMobile))
-    return "";
-  if (!topic.created_at) return "";
-
-  const d = new Date(topic.created_at);
-  if (Number.isNaN(d.getTime())) return "";
-
-  const fmt = d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-
-  return `<span class="topic-hover-card__publish-date">${escapeHTML(fmt)}</span>`;
-}
-
-function buildStatsHTML(topic, isMobile) {
-  const stats = [];
-
-  if (mobileBool("show_views", "show_views_mobile", isMobile)) {
-    stats.push(
-      `<span class="topic-hover-card__stat">${discourseIcon("far-eye")} ${escapeHTML(
-        formatNumber(topic.views)
-      )}</span>`
-    );
-  }
-
-  if (mobileBool("show_reply_count", "show_reply_count_mobile", isMobile)) {
-    const replyCount =
-      topic.reply_count ?? Math.max((topic.posts_count ?? 1) - 1, 0);
-    stats.push(
-      `<span class="topic-hover-card__stat">${discourseIcon("comment")} ${escapeHTML(
-        formatNumber(replyCount)
-      )}</span>`
-    );
-  }
-
-  if (mobileBool("show_likes", "show_likes_mobile", isMobile)) {
-    const likes = topic.like_count ?? topic.topic_post_like_count ?? 0;
-    stats.push(
-      `<span class="topic-hover-card__stat">${discourseIcon("heart")} ${escapeHTML(
-        formatNumber(likes)
-      )}</span>`
-    );
-  }
-
-  if (
-    mobileBool("show_activity", "show_activity_mobile", isMobile) &&
-    topic.last_posted_at
-  ) {
-    const d = new Date(topic.last_posted_at);
-    if (!Number.isNaN(d.getTime())) {
-      const fmt = d.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-      stats.push(
-        `<span class="topic-hover-card__stat">${discourseIcon("clock")} ${escapeHTML(
-          fmt
-        )}</span>`
-      );
-    }
-  }
-
-  return stats.length
-    ? `<div class="topic-hover-card__stats">${stats.join("")}</div>`
-    : "";
 }
 
 function buildMetadataHTML(topic, isMobile) {
@@ -650,29 +607,27 @@ function buildMobileActionsHTML(topic, isMobile) {
   return `<div class="topic-hover-card__mobile-actions"><a class="btn btn-primary topic-hover-card__open-topic" href="${topicUrl}" data-thc-open-topic>Open topic</a></div>`;
 }
 
-function buildCardHTML(topic, categories, isMobile = false) {
+function buildCardHTML(topic, categories, excerptCache, isMobile = false) {
   const showThumbnail = mobileBool(
     "show_thumbnail",
     "show_thumbnail_mobile",
     isMobile
   );
-  const desktopThumbnailSizePercent = numberSetting(
-    settings.thumbnail_size_percent,
-    15
-  );
-  const autoFitMaxWidth = stringSetting(
-    settings.thumbnail_auto_fit_max_width,
-    "10rem"
-  );
-  const configuredPlacement = thumbnailPlacement();
-  const placement = isMobile ? "top" : configuredPlacement;
+  const placement = thumbnailPlacement(isMobile);
+  const sizeMode = thumbnailSizeMode(isMobile);
+  const thumbnailSizePercentValue = thumbnailSizePercent(isMobile);
+  const autoFitMaxWidth = thumbnailAutoFitMaxWidth(isMobile);
+  const topBottomHeight = thumbnailTopBottomHeight(isMobile);
   const density = densitySetting(isMobile);
   const densityClass = `topic-hover-card--density-${density}`;
-  const sizeMode = isMobile ? "manual" : thumbnailSizeMode();
   const sizeModeClass =
     sizeMode === "auto_fit_height"
       ? "topic-hover-card--thumb-size-auto-fit-height"
       : "topic-hover-card--thumb-size-manual";
+  const topBottomHeightClass =
+    topBottomHeight.trim().toLowerCase() === "auto"
+      ? "topic-hover-card--thumb-top-bottom-height-auto"
+      : "topic-hover-card--thumb-top-bottom-height-custom";
 
   const mobileCloseButton = isMobile
     ? `<button class="topic-hover-card__close" type="button" data-thc-close aria-label="Close preview">
@@ -691,29 +646,27 @@ function buildCardHTML(topic, categories, isMobile = false) {
     <div class="topic-hover-card__body">
       ${mobileCloseButton}
       ${buildTitleHTML(topic, isMobile)}
-      ${buildExcerptHTML(topic, isMobile)}
+      ${buildExcerptHTML(topic, isMobile, excerptCache)}
       ${buildMetadataHTML(topic, isMobile)}
       ${buildBadgesHTML(topic, categories, isMobile)}
       ${buildMobileActionsHTML(topic, isMobile)}
     </div>
   `;
 
-  const wrapperStyle = isMobile
-    ? ""
-    : `style="--thc-thumbnail-size-percent:${desktopThumbnailSizePercent}; --thc-auto-thumb-max-width:${escapeHTML(
-        autoFitMaxWidth
-      )};"`;
+  const wrapperStyle = `style="--thc-thumbnail-size-percent:${thumbnailSizePercentValue}; --thc-auto-thumb-max-width:${escapeHTML(
+    autoFitMaxWidth
+  )}; --thc-top-bottom-thumb-height:${escapeHTML(topBottomHeight)};"`;
 
   switch (placement) {
     case "left":
-      return `<div class="topic-hover-card topic-hover-card--thumb-left ${sizeModeClass} ${densityClass}" ${wrapperStyle}>${thumbnail}${bodyInner}</div>`;
+      return `<div class="topic-hover-card topic-hover-card--thumb-left ${sizeModeClass} ${topBottomHeightClass} ${densityClass}" ${wrapperStyle}>${thumbnail}${bodyInner}</div>`;
     case "right":
-      return `<div class="topic-hover-card topic-hover-card--thumb-right ${sizeModeClass} ${densityClass}" ${wrapperStyle}>${thumbnail}${bodyInner}</div>`;
+      return `<div class="topic-hover-card topic-hover-card--thumb-right ${sizeModeClass} ${topBottomHeightClass} ${densityClass}" ${wrapperStyle}>${thumbnail}${bodyInner}</div>`;
     case "bottom":
-      return `<div class="topic-hover-card topic-hover-card--thumb-bottom ${sizeModeClass} ${densityClass}" ${wrapperStyle}>${bodyInner}${thumbnail}</div>`;
+      return `<div class="topic-hover-card topic-hover-card--thumb-bottom ${sizeModeClass} ${topBottomHeightClass} ${densityClass}" ${wrapperStyle}>${bodyInner}${thumbnail}</div>`;
     case "top":
     default:
-      return `<div class="topic-hover-card topic-hover-card--thumb-top ${sizeModeClass} ${densityClass}" ${wrapperStyle}>${thumbnail}${bodyInner}</div>`;
+      return `<div class="topic-hover-card topic-hover-card--thumb-top ${sizeModeClass} ${topBottomHeightClass} ${densityClass}" ${wrapperStyle}>${thumbnail}${bodyInner}</div>`;
   }
 }
 
@@ -723,7 +676,7 @@ export default apiInitializer((api) => {
 
   const config = readConfig();
   const categories = getSiteCategories(api);
-  const currentUser = api.getCurrentUser?.() || null;
+  const currentUser = api.getCurrentUser();
   const viewport = createViewportState();
 
   let tooltip = null;
@@ -740,6 +693,7 @@ export default apiInitializer((api) => {
   const topicCache = new Map();
   const renderCache = new Map();
   const inFlightFetches = new Map();
+  const excerptCache = new Map();
   const cleanupFns = [];
   let pageChangeBound = false;
 
@@ -827,7 +781,7 @@ export default apiInitializer((api) => {
     const cached = getCachedValue(renderCache, key);
     if (cached) return cached;
 
-    const html = buildCardHTML(topic, categories, isMobile);
+    const html = buildCardHTML(topic, categories, excerptCache, isMobile);
     setCachedValue(renderCache, key, html, config.topicCacheMax * 2);
     return html;
   }
@@ -993,11 +947,29 @@ export default apiInitializer((api) => {
   async function fetchFullCurrentUser() {
     if (!currentUser?.username) return null;
 
+    let store = null;
+
     try {
-      const store = api.container.lookup("service:store");
+      store = api.container.lookup("service:store");
+
+      if (!store) {
+        logDebug(
+          config,
+          "Could not fetch full current user record: store unavailable",
+          {
+            username: currentUser.username,
+          }
+        );
+        return null;
+      }
+
       return (await store.find("user", currentUser.username)) || null;
     } catch (error) {
-      logDebug(config, "Could not fetch full current user record", error);
+      logDebug(config, "Could not fetch full current user record", {
+        username: currentUser.username,
+        hasStore: !!store,
+        error,
+      });
       return null;
     }
   }
