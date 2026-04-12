@@ -48,8 +48,34 @@ async function getJSON(url) {
   return await response.json();
 }
 
+function currentTopicIdFromLocation() {
+  const m = window.location.pathname.match(TOPIC_LINK_RE);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function isSameTopicFragmentLink(href) {
+  if (!href) return false;
+
+  try {
+    const url = new URL(href, window.location.origin);
+    if (url.origin !== window.location.origin) return false;
+    if (!url.hash) return false;
+
+    const linkMatch = url.pathname.match(TOPIC_LINK_RE);
+    if (!linkMatch) return false;
+
+    const linkTopicId = parseInt(linkMatch[1], 10);
+    const currentTopicId = currentTopicIdFromLocation();
+
+    return currentTopicId && linkTopicId === currentTopicId;
+  } catch {
+    return false;
+  }
+}
+
 function topicIdFromHref(href) {
   if (!href) return null;
+  if (isSameTopicFragmentLink(href)) return null;
 
   try {
     const url = new URL(href, window.location.origin);
