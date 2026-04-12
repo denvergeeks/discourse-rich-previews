@@ -48,7 +48,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: var(--thc-max-h, 10rem);
+  height: auto;
+  max-height: none;
   min-height: 0;
 }
 
@@ -82,8 +83,9 @@
 .topic-hover-card--thumb-top,
 .topic-hover-card--thumb-bottom {
   .topic-hover-card__thumbnail {
-    flex: 0 0 calc(var(--thc-max-h, 10rem) * (var(--thc-image-size-percent, 30) / 100));
-    min-height: 0;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    flex: 0 0 auto;
     overflow: hidden;
   }
 
@@ -105,7 +107,8 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  max-height: var(--thc-max-h, 10rem);
+  height: auto;
+  max-height: none;
 }
 
 .topic-hover-card--thumb-right {
