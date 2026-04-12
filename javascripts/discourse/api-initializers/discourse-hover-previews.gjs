@@ -184,6 +184,28 @@ function discourseIcon(name) {
   }
 }
 
+function joinMetadataGroups(items, separator = "·") {
+  const filtered = items.filter(Boolean);
+  if (!filtered.length) return "";
+
+  return filtered
+    .map(
+      (item, index) => `
+        <span class="topic-hover-card__meta-group">
+          ${
+            index === 0
+              ? ""
+              : `<span class="topic-hover-card__meta-separator" aria-hidden="true">${escapeHTML(
+                  separator
+                )}</span>`
+          }
+          ${item}
+        </span>
+      `
+    )
+    .join("");
+}
+
 function getSiteCategories(api) {
   return api.container.lookup("service:site")?.categories || [];
 }
@@ -529,6 +551,7 @@ function buildPublishDateHTML(topic, isMobile) {
     month: "short",
     day: "numeric",
   });
+
   return `<span class="topic-hover-card__publish-date">${escapeHTML(fmt)}</span>`;
 }
 
@@ -581,13 +604,11 @@ function buildStatsHTML(topic, isMobile) {
 }
 
 function buildMetadataHTML(topic, isMobile) {
-  const content = [
+  const content = joinMetadataGroups([
     buildOpHTML(topic, isMobile),
     buildPublishDateHTML(topic, isMobile),
     buildStatsHTML(topic, isMobile),
-  ]
-    .filter(Boolean)
-    .join("");
+  ]);
 
   return content ? `<div class="topic-hover-card__metadata">${content}</div>` : "";
 }
