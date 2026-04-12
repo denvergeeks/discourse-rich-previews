@@ -16,7 +16,7 @@ en:
     enable_on_mobile_description: "Enable tap-to-preview behavior on touch devices."
 
     user_preference_field_name: "User preference field name"
-    user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys (e.g. disable_topic_hover_cards), numeric IDs (e.g. 1), and user_field_X keys (e.g. user_field_1)."
+    user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys."
 
     debug_mode: "Debug mode"
     debug_mode_description: "Log hover-card detection and user-field resolution details to the browser console for staff debugging."
@@ -31,16 +31,16 @@ en:
     enable_on_replies_description: "Show hover cards for internal topic links inside replies."
 
     enable_on_topic_lists: "Enable on topic lists"
-    enable_on_topic_lists_description: "Show hover cards for internal topic links shown in standard topic list views (Latest, Top, category topic lists, tags, etc.)."
+    enable_on_topic_lists_description: "Show hover cards for internal topic links shown in standard topic list views."
 
     enable_on_category_homepage_topic_lists: "Enable on category homepage topic lists"
-    enable_on_category_homepage_topic_lists_description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts, including Categories + Latest layouts rendered at / or /categories."
+    enable_on_category_homepage_topic_lists_description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts."
 
     enable_on_doc_categories: "Enable on Doc Categories"
-    enable_on_doc_categories_description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas (when available)."
+    enable_on_doc_categories_description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas."
 
     enable_on_kanban_boards: "Enable on Kanban boards"
-    enable_on_kanban_boards_description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views (when available)."
+    enable_on_kanban_boards_description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views."
 
     enable_on_suggested_topic_links: "Enable on suggested topic links"
     enable_on_suggested_topic_links_description: "Show hover cards for links in the suggested topics section."
@@ -55,13 +55,16 @@ en:
     thumbnail_placement_description: "Choose where the thumbnail appears."
 
     thumbnail_size_mode: "Thumbnail size mode"
-    thumbnail_size_mode_description: "Manual uses Image size percent. Auto fit height adjusts left/right thumbnail width automatically to show the full image at the card body's height."
+    thumbnail_size_mode_description: "Manual uses Image size percent. Auto fit height uses Thumbnail auto-fit max width for the left/right thumbnail box."
+
+    thumbnail_auto_fit_max_width: "Thumbnail auto-fit max width"
+    thumbnail_auto_fit_max_width_description: "Used only in auto-fit-height mode. Sets the maximum width of the left/right thumbnail box. Accepts any valid CSS width value such as 8rem, 160px, or 12vw."
 
     density: "Density"
-    density_description: "Controls desktop hover card density. Matches the relative options used by Density Toggle: default, cozy, and compact."
+    density_description: "Controls desktop hover card density."
 
     density_mobile: "Density on mobile"
-    density_mobile_description: "Controls mobile hover card density. Matches the relative options used by Density Toggle: default, cozy, and compact."
+    density_mobile_description: "Controls mobile hover card density."
 
     image_size_percent: "Image size percent"
     image_size_percent_description: "Used only in manual thumbnail size mode. Sets the left/right image width as a percentage of the hover card width."

@@ -25,7 +25,7 @@ enable_on_mobile:
 user_preference_field_name:
   type: string
   default: "disable_topic_hover_cards"
-  description: "Custom user field key used to disable hover cards per user. Supports direct keys (e.g. disable_topic_hover_cards), numeric IDs (e.g. 1), and user_field_X keys (e.g. user_field_1)."
+  description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys."
 
 debug_mode:
   type: bool
@@ -50,22 +50,22 @@ enable_on_replies:
 enable_on_topic_lists:
   type: bool
   default: true
-  description: "Show hover cards for internal topic links shown in standard topic list views (Latest, Top, category topic lists, tags, etc.)."
+  description: "Show hover cards for internal topic links shown in standard topic list views."
 
 enable_on_category_homepage_topic_lists:
   type: bool
   default: true
-  description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts, including Categories + Latest layouts rendered at / or /categories."
+  description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts."
 
 enable_on_doc_categories:
   type: bool
   default: true
-  description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas (when available)."
+  description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas."
 
 enable_on_kanban_boards:
   type: bool
   default: true
-  description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views (when available)."
+  description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views."
 
 enable_on_suggested_topic_links:
   type: bool
@@ -98,7 +98,12 @@ thumbnail_size_mode:
   choices:
     - manual
     - auto_fit_height
-  description: "Manual uses Image size percent. Auto fit height adjusts left/right thumbnail width automatically to show the full image at the card body's height."
+  description: "Manual uses Image size percent. Auto fit height uses Thumbnail auto-fit max width for the left/right thumbnail box."
+
+thumbnail_auto_fit_max_width:
+  type: string
+  default: "10rem"
+  description: "Used only in auto-fit-height mode. Sets the maximum width of the left/right thumbnail box. Accepts any valid CSS width value such as 8rem, 160px, or 12vw."
 
 density:
   type: enum
@@ -107,7 +112,7 @@ density:
     - default
     - cozy
     - compact
-  description: "Controls desktop hover card density. Matches the relative options used by Density Toggle: default, cozy, and compact."
+  description: "Controls desktop hover card density."
 
 density_mobile:
   type: enum
@@ -116,7 +121,7 @@ density_mobile:
     - default
     - cozy
     - compact
-  description: "Controls mobile hover card density. Matches the relative options used by Density Toggle: default, cozy, and compact."
+  description: "Controls mobile hover card density."
 
 image_size_percent:
   type: integer

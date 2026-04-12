@@ -594,6 +594,7 @@ function buildCardHTML(topic, site, isMobile = false) {
   );
 
   const desktopImageSizePercent = settings.image_size_percent ?? 15;
+  const autoFitMaxWidth = settings.thumbnail_auto_fit_max_width || "10rem";
   const configuredPlacement = settings.thumbnail_placement || "left";
   const placement = isMobile ? "top" : configuredPlacement;
   const density = densitySetting(isMobile);
@@ -741,9 +742,7 @@ function buildCardHTML(topic, site, isMobile = false) {
   if (showLikes) {
     const likes = topic.like_count ?? topic.topic_post_like_count ?? 0;
     statItems.push(
-      `<span class="topic-hover-card__stat">${dIconSVG("heart")} ${fmtNum(
-        likes
-      )}</span>`
+      `<span class="topic-hover-card__stat">${dIconSVG("heart")} ${fmtNum(likes)}</span>`
     );
   }
 
@@ -773,64 +772,55 @@ function buildCardHTML(topic, site, isMobile = false) {
 
   const mobileActions = isMobile
     ? `<div class="topic-hover-card__mobile-actions">
-         <a class="btn btn-primary topic-hover-card__open-topic" href="${topicUrl}" data-thc-open-topic>
-           Open topic
-         </a>
+         <a class="btn btn-primary topic-hover-card__open-topic" href="${topicUrl}" data-thc-open-topic>Open topic</a>
        </div>`
     : "";
 
   const bodyInner = `
+    <div class="topic-hover-card__body">
       ${mobileCloseButton}
       ${titleHTML}
       ${excerpt}
       ${metadata}
       ${badgesHTML}
       ${mobileActions}
+    </div>
   `;
 
-const autoFitMaxWidth = settings.thumbnail_auto_fit_max_width || "10rem";
-
-const wrapperStyle = isMobile
-  ? ""
-  : `style="--thc-image-size-percent:${desktopImageSizePercent}; --thc-auto-thumb-max-width:${autoFitMaxWidth};"`;
+  const wrapperStyle = isMobile
+    ? ""
+    : `style="--thc-image-size-percent:${desktopImageSizePercent}; --thc-auto-thumb-max-width:${autoFitMaxWidth};"`;
 
   switch (placement) {
     case "left":
       return `
         <div class="topic-hover-card topic-hover-card--thumb-left ${sizeModeClass} ${densityClass}" ${wrapperStyle}>
           ${thumbnail}
-          <div class="topic-hover-card__body">
-            ${bodyInner}
-          </div>
-        </div>`;
-
+          ${bodyInner}
+        </div>
+      `;
     case "right":
       return `
         <div class="topic-hover-card topic-hover-card--thumb-right ${sizeModeClass} ${densityClass}" ${wrapperStyle}>
           ${thumbnail}
-          <div class="topic-hover-card__body">
-            ${bodyInner}
-          </div>
-        </div>`;
-
+          ${bodyInner}
+        </div>
+      `;
     case "bottom":
       return `
         <div class="topic-hover-card topic-hover-card--thumb-bottom ${sizeModeClass} ${densityClass}" ${wrapperStyle}>
-          <div class="topic-hover-card__body">
-            ${bodyInner}
-          </div>
+          ${bodyInner}
           ${thumbnail}
-        </div>`;
-
+        </div>
+      `;
     case "top":
     default:
       return `
         <div class="topic-hover-card topic-hover-card--thumb-top ${sizeModeClass} ${densityClass}" ${wrapperStyle}>
           ${thumbnail}
-          <div class="topic-hover-card__body">
-            ${bodyInner}
-          </div>
-        </div>`;
+          ${bodyInner}
+        </div>
+      `;
   }
 }
 
@@ -841,7 +831,6 @@ export default apiInitializer((api) => {
 
   (async () => {
     const isDisabled = await hoverCardsDisabledForUser(api, currentUser);
-
     if (isDisabled) {
       debugLog("Hover cards disabled for current user");
       return;
@@ -973,8 +962,13 @@ export default apiInitializer((api) => {
           })
           .catch(() => {
             if (currentTopicId === topicId) {
-              tooltip.innerHTML =
-                `<div class="topic-hover-card topic-hover-card--density-default"><div class="topic-hover-card__body"><div class="topic-hover-card__loading">Could not load topic.</div></div></div>`;
+              tooltip.innerHTML = `
+                <div class="topic-hover-card">
+                  <div class="topic-hover-card__body">
+                    <div class="topic-hover-card__loading">Could not load topic.</div>
+                  </div>
+                </div>
+              `;
             }
           });
       }
@@ -985,7 +979,9 @@ export default apiInitializer((api) => {
 
     function hideCard() {
       if (!tooltip) return;
+
       tooltip.classList.remove("is-visible");
+
       later(() => {
         if (!tooltip.classList.contains("is-visible")) {
           currentTopicId = null;
