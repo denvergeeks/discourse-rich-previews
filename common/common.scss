@@ -115,15 +115,29 @@
   flex-direction: row-reverse;
 }
 
-.topic-hover-card--thumb-left .topic-hover-card__thumbnail,
-.topic-hover-card--thumb-right .topic-hover-card__thumbnail {
-  flex: 0 0 calc(var(--thc-image-size-percent, 30) * 1%);
-  width: calc(var(--thc-image-size-percent, 30) * 1%);
-}
-
 .topic-hover-card--thumb-left .topic-hover-card__body,
 .topic-hover-card--thumb-right .topic-hover-card__body {
   flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.topic-hover-card--thumb-left .topic-hover-card__thumbnail,
+.topic-hover-card--thumb-right .topic-hover-card__thumbnail {
+  position: relative;
+  flex: 0 0 calc(var(--thc-image-size-percent, 30) * 1%);
+  width: calc(var(--thc-image-size-percent, 30) * 1%);
+  align-self: stretch;
+  overflow: hidden;
+}
+
+.topic-hover-card--thumb-left .topic-hover-card__thumbnail img,
+.topic-hover-card--thumb-right .topic-hover-card__thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (max-width: 767px) {
