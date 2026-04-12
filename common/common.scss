@@ -288,7 +288,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   width: 100%;
   color: var(--primary-medium, $primary-medium);
   -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--thc-badge-fade)), transparent 100%);
