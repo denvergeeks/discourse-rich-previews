@@ -10,16 +10,16 @@ en:
     enable_on_mobile: "Enable on Mobile"
     enable_on_mobile_description: "Enable tap-to-preview behavior on touch devices. If not enabled, all settings below for Mobile are ignored."
     
-    density: "Density"
+    density: "Density on Desktop"
     density_description: "Controls desktop hover card density."
 
     density_mobile: "Density on Mobile"
     density_mobile_description: "Controls mobile hover card density."
 
-    card_width: "Card Width"
+    card_width: "Card Width on Desktop"
     card_width_description: "Any valid CSS width value, such as 32rem, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem)."
 
-    mobile_width_percent: "Mobile Width Percent"
+    mobile_width_percent: "Card Width on Mobile"
     mobile_width_percent_description: "Controls the mobile hover card width as a percentage of the viewport width."
 
     show_thumbnail: "Show Thumbnail on Desktop"
@@ -48,7 +48,7 @@ en:
 
     show_excerpt: "Show Excerpt on Desktop"
     show_excerpt_description: "Display a text excerpt on desktop."
-    
+
     excerpt_length: "Excerpt Length on Desktop"
     excerpt_length_description: "Number of excerpt lines to show on desktop."
 
@@ -76,7 +76,7 @@ en:
     show_op_mobile: "Show Original Poster on Mobile"
     show_op_mobile_description: "Display the original poster avatar and username in the metadata row on mobile."
 
-    show_publish_date: "Show Publish Date"
+    show_publish_date: "Show Publish Date on Desktop"
     show_publish_date_description: "Display the topic creation date on desktop."
 
     show_publish_date_mobile: "Show Publish Date on Mobile"
