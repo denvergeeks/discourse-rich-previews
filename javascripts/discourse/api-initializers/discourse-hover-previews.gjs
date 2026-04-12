@@ -234,7 +234,6 @@ function getCachedTopic(cache, topicId) {
   }
 
   const value = cache.get(topicId);
-
   cache.delete(topicId);
   cache.set(topicId, value);
 
@@ -803,29 +802,6 @@ function buildCardHTML(topic, site, isMobile = false) {
   }
 }
 
-const cardHeightObserver = new ResizeObserver((entries) => {
-  for (const entry of entries) {
-    entry.target.style.setProperty(
-      "--thc-card-height",
-      `${entry.contentRect.height}px`
-    );
-  }
-});
-
-function observeCardHeight(tooltip) {
-  if (!tooltip) return;
-
-  const card = tooltip.querySelector(".topic-hover-card");
-  if (!card) return;
-
-  cardHeightObserver.disconnect();
-  cardHeightObserver.observe(card);
-  card.style.setProperty(
-    "--thc-card-height",
-    `${card.getBoundingClientRect().height}px`
-  );
-}
-
 export default apiInitializer((api) => {
   const site = api.container.lookup("service:site");
   const currentUser =
@@ -954,16 +930,13 @@ export default apiInitializer((api) => {
 
       if (cachedTopic) {
         tooltip.innerHTML = buildCardHTML(cachedTopic, site, mobile);
-        observeCardHeight(tooltip);
       } else {
         tooltip.innerHTML = skeletonHTML();
-        observeCardHeight(tooltip);
 
         fetchTopic(topicId)
           .then((data) => {
             if (currentTopicId === topicId) {
               tooltip.innerHTML = buildCardHTML(data, site, isMobileLayout());
-              observeCardHeight(tooltip);
               positionTooltip(anchorRect);
             }
           })
@@ -1147,7 +1120,6 @@ export default apiInitializer((api) => {
       hideCard();
       currentTopicId = null;
       suppressNextClick = false;
-      cardHeightObserver.disconnect();
     });
 
     debugLog("Hover cards initialized", {
