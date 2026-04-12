@@ -9,41 +9,11 @@ en:
     card_delay_ms: "Hover delay"
     card_delay_ms_description: "Delay in milliseconds before the hover card appears."
 
-    topic_cache_max: "Topic cache max"
-    topic_cache_max_description: "Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session."
-
     enable_on_mobile: "Enable on mobile"
     enable_on_mobile_description: "Enable tap-to-preview behavior on touch devices."
-
-    user_preference_field_name: "User preference field name"
-    user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys."
-
-    debug_mode: "Debug mode"
-    debug_mode_description: "Log hover-card detection and user-field resolution details to the browser console for staff debugging."
-
-    resolve_user_field_id_for_admins: "Resolve user field ID for admins"
-    resolve_user_field_id_for_admins_description: "When enabled, admins can configure the preference field by name or user_field_X; the component resolves the numeric user-field ID via /admin/config/user-fields.json."
-
-    enable_on_topics: "Enable on topics"
-    enable_on_topics_description: "Show hover cards for internal topic links inside the original post."
-
-    enable_on_replies: "Enable on replies"
-    enable_on_replies_description: "Show hover cards for internal topic links inside replies."
-
-    enable_on_topic_lists: "Enable on topic lists"
-    enable_on_topic_lists_description: "Show hover cards for internal topic links shown in standard topic list views."
-
-    enable_on_category_homepage_topic_lists: "Enable on category homepage topic lists"
-    enable_on_category_homepage_topic_lists_description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts."
-
-    enable_on_doc_categories: "Enable on Doc Categories"
-    enable_on_doc_categories_description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas."
-
-    enable_on_kanban_boards: "Enable on Kanban boards"
-    enable_on_kanban_boards_description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views."
-
-    enable_on_suggested_topic_links: "Enable on suggested topic links"
-    enable_on_suggested_topic_links_description: "Show hover cards for links in the suggested topics section."
+    
+    mobile_width_percent: "Mobile width percent"
+    mobile_width_percent_description: "Controls the mobile preview width as a percentage of the viewport width."
 
     show_thumbnail: "Show thumbnail"
     show_thumbnail_description: "Display the topic thumbnail image on desktop."
@@ -68,9 +38,6 @@ en:
 
     image_size_percent: "Image size percent"
     image_size_percent_description: "Used only in manual thumbnail size mode. Sets the left/right image width as a percentage of the hover card width."
-
-    mobile_width_percent: "Mobile width percent"
-    mobile_width_percent_description: "Controls the mobile preview width as a percentage of the viewport width."
 
     show_category: "Show category"
     show_category_description: "Display the topic category badge on desktop when category data is available."
@@ -137,3 +104,36 @@ en:
 
     show_activity_mobile: "Show last activity on mobile"
     show_activity_mobile_description: "Display the most recent topic activity date on mobile."
+
+    enable_on_topics: "Enable on topics"
+    enable_on_topics_description: "Show hover cards for internal topic links inside the original post."
+
+    enable_on_replies: "Enable on replies"
+    enable_on_replies_description: "Show hover cards for internal topic links inside replies."
+
+    enable_on_topic_lists: "Enable on topic lists"
+    enable_on_topic_lists_description: "Show hover cards for internal topic links shown in standard topic list views."
+
+    enable_on_category_homepage_topic_lists: "Enable on category homepage topic lists"
+    enable_on_category_homepage_topic_lists_description: "Show hover cards for internal topic links shown in topic-list areas on category homepage layouts."
+
+    enable_on_doc_categories: "Enable on Doc Categories"
+    enable_on_doc_categories_description: "Show hover cards for internal topic links inside Discourse Doc Categories views and navigation areas."
+
+    enable_on_kanban_boards: "Enable on Kanban boards"
+    enable_on_kanban_boards_description: "Show hover cards for internal topic links inside Discourse Kanban board cards and board views."
+
+    enable_on_suggested_topic_links: "Enable on suggested topic links"
+    enable_on_suggested_topic_links_description: "Show hover cards for links in the suggested topics section."
+
+    user_preference_field_name: "User preference field name"
+    user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys."
+
+    resolve_user_field_id_for_admins: "Resolve user field ID for admins"
+    resolve_user_field_id_for_admins_description: "When enabled, admins can configure the preference field by name or user_field_X; the component resolves the numeric user-field ID via /admin/config/user-fields.json."
+
+    topic_cache_max: "Topic cache max"
+    topic_cache_max_description: "Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session."
+
+    debug_mode: "Debug mode"
+    debug_mode_description: "Log hover-card detection and user-field resolution details to the browser console for staff debugging."
