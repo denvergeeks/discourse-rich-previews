@@ -759,9 +759,7 @@ function buildCardHTML(topic, site, isMobile = false) {
       ${mobileActions}
   `;
 
-  const wrapperStyle = isMobile
-    ? ""
-    : `style="--thc-image-size-percent:${desktopImageSizePercent};"`;
+  const wrapperStyle = isMobile ? "" : `style="--thc-image-size-percent:${desktopImageSizePercent};"`;
 
   switch (placement) {
     case "left":
