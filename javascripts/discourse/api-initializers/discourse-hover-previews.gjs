@@ -567,7 +567,6 @@ function buildCardHTML(topic, site, isMobile = false) {
   );
 
   const desktopImageSizePercent = settings.image_size_percent ?? 30;
-  const mobileThumbnailHeight = settings.mobile_thumbnail_height ?? 160;
 
   const configuredPlacement = settings.thumbnail_placement || "left";
   const placement = isMobile ? "top" : configuredPlacement;
@@ -761,7 +760,7 @@ function buildCardHTML(topic, site, isMobile = false) {
   `;
 
   const wrapperStyle = isMobile
-    ? `style="--thc-mobile-image-height:${mobileThumbnailHeight}px;"`
+    ? ""
     : `style="--thc-image-size-percent:${desktopImageSizePercent};"`;
 
   switch (placement) {
