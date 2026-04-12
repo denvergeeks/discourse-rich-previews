@@ -1,6 +1,6 @@
 $thc-radius: 0.75rem;
-$thc-shadow-light: rgba(0, 0, 0, 0.18);
-$thc-shadow-dark: rgba(0, 0, 0, 0.45);
+$thc-shadow-light: rgb(0 0 0 / 0.18);
+$thc-shadow-dark: rgb(0 0 0 / 0.45);
 $thc-space-1: 0.2rem;
 $thc-space-2: 0.35rem;
 $thc-space-3: 0.45rem;
@@ -100,7 +100,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
 .topic-hover-card__thumbnail-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgb(0 0 0 / 0.08);
   pointer-events: none;
 }
 
@@ -413,7 +413,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   display: block;
 
   path {
-    stroke: currentColor;
+    stroke: currentcolor;
     stroke-width: 2;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
@@ -643,6 +643,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
     transform: none;
   }
 }
+
 
 .topic-hover-card__loading {
   font-size: 0.85em;
