@@ -42,14 +42,14 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
     right: auto !important;
     bottom: 0 !important;
     top: auto !important;
-    transform: translate3d(-50%, 8px, 0) !important;
+    transform: translate3d(-50%, 8px, 0);
     max-width: none;
     width: var(--thc-mobile-width, 100vw);
     padding: 0;
   }
 
   .topic-hover-card-tooltip.is-visible {
-    transform: translate3d(-50%, 0, 0) !important;
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -238,16 +238,22 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
 }
 
 .topic-hover-card__metadata,
-.topic-hover-card__stats,
+.topic-hover-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+
+.topic-hover-card__metadata {
+  color: var(--primary-medium, $primary-medium);
+}
+
 .topic-hover-card__tags {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   flex-wrap: wrap;
-}
-
-.topic-hover-card__metadata {
-  color: var(--primary-medium, $primary-medium);
 }
 
 .topic-hover-card__op {
@@ -288,7 +294,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
   color: var(--primary-medium, $primary-medium);
   -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--thc-badge-fade)), transparent 100%);
@@ -351,6 +357,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   justify-content: center;
   width: 2rem;
   height: 2rem;
+  box-sizing: border-box;
   border-radius: 999px;
   padding: 0;
   background: var(--danger, #b31b1b);
@@ -361,8 +368,8 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
 }
 
 .topic-hover-card__close-icon {
-  width: 2rem;
-  height: 2rem;
+  width: 1rem;
+  height: 1rem;
   display: block;
 
   path {
@@ -560,6 +567,10 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
     max-height: min(85vh, 32rem);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+  }
+
+  .topic-hover-card__badges {
+    flex-wrap: wrap;
   }
 }
 

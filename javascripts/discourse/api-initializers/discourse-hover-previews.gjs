@@ -63,11 +63,7 @@ function sanitizeURL(url) {
   try {
     const parsed = new URL(url, window.location.origin);
 
-    if (
-      parsed.protocol !== "http:" &&
-      parsed.protocol !== "https:" &&
-      parsed.protocol !== "data:"
-    ) {
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return null;
     }
 
@@ -176,7 +172,8 @@ function skeletonHTML() {
           <div class="skeleton-line meta"></div>
         </div>
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
 function discourseIcon(name) {

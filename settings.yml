@@ -6,7 +6,7 @@ card_delay_ms:
   description: Delay in milliseconds before the hover card appears.
 
 enable_on_mobile:
-  default: true
+  default: false
   type: bool
   description: Enable tap-to-preview behavior on touch devices.
 
@@ -20,7 +20,7 @@ density:
   description: Controls desktop hover card density.
 
 density_mobile:
-  default: default
+  default: cozy
   type: enum
   choices:
     - default
@@ -61,7 +61,7 @@ thumbnail_size_mode:
   choices:
     - manual
     - auto_fit_height
-  description: Auto-fit-height matches image height to card height. Manual uses the configured width percentage.
+  description: Auto-fit-height matches image height to card height. Manual mode uses the configured width percentage.
 
 thumbnail_auto_fit_max_width:
   default: 10rem
@@ -117,32 +117,32 @@ excerpt_length_mobile:
 show_category:
   default: true
   type: bool
-  description: Display the topic category badge on desktop.
+  description: Display the topic category badge on desktop when category data is available.
 
 show_category_mobile:
   default: true
   type: bool
-  description: Display the topic category badge on mobile.
+  description: Display the topic category badge on mobile when category data is available.
 
 show_tags:
   default: true
   type: bool
-  description: Display topic tags on desktop.
+  description: Display topic tags on desktop when tag data is available.
 
 show_tags_mobile:
   default: true
   type: bool
-  description: Display topic tags on mobile.
+  description: Display topic tags on mobile when tag data is available.
 
 show_op:
   default: true
   type: bool
-  description: Display the original poster avatar and username on desktop.
+  description: Display the original poster avatar and username in the metadata row on desktop.
 
 show_op_mobile:
   default: true
   type: bool
-  description: Display the original poster avatar and username on mobile.
+  description: Display the original poster avatar and username in the metadata row on mobile.
 
 show_publish_date:
   default: true
@@ -187,22 +187,22 @@ show_likes_mobile:
 show_activity:
   default: true
   type: bool
-  description: Display the most recent topic activity date on desktop.
+  description: Display the last activity date on desktop.
 
 show_activity_mobile:
   default: true
   type: bool
-  description: Display the most recent topic activity date on mobile.
+  description: Display the last activity date on mobile.
 
 enable_on_topics:
   default: true
   type: bool
-  description: Show hover cards for internal topic links in the original post.
+  description: Show hover cards for internal topic links inside the original post.
 
 enable_on_replies:
   default: true
   type: bool
-  description: Show hover cards for internal topic links in replies.
+  description: Show hover cards for internal topic links inside replies.
 
 enable_on_topic_lists:
   default: true
@@ -217,12 +217,12 @@ enable_on_category_homepage_topic_lists:
 enable_on_doc_categories:
   default: true
   type: bool
-  description: Show hover cards for internal topic links in Discourse Doc Categories views.
+  description: Show hover cards inside Discourse Doc Categories views.
 
 enable_on_kanban_boards:
   default: true
   type: bool
-  description: Show hover cards for internal topic links in Discourse Kanban board views.
+  description: Show hover cards inside Discourse Kanban board views.
 
 enable_on_suggested_topic_links:
   default: true
@@ -232,21 +232,21 @@ enable_on_suggested_topic_links:
 user_preference_field_name:
   default: disable_topic_hover_cards
   type: string
-  description: Custom user field key used to disable hover cards per user.
+  description: Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys.
 
 resolve_user_field_id_for_admins:
   default: true
   type: bool
-  description: Resolve configured user field names to numeric IDs for staff using /admin/config/user-fields.json.
+  description: When enabled, staff can configure the preference field by name or user_field_X and the component will resolve the numeric user-field ID from the admin endpoint.
 
 topic_cache_max:
   default: 100
   type: integer
-  min: 10
+  min: 0
   max: 500
-  description: Maximum number of topic JSON responses kept in the in-memory LRU cache.
+  description: Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session.
 
 debug_mode:
   default: false
   type: bool
-  description: Log hover-card detection and user-field resolution details to the browser console.
+  description: Log hover-card detection and user-field resolution details to the browser console for debugging.
