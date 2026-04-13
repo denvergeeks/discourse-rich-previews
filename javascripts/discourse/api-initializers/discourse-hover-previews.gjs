@@ -106,7 +106,8 @@ function buildRuntimeConfig(baseConfig, settings) {
       "10rem"
     ),
     thumbnailAutoFitMaxWidthMobile: stringSetting(
-      settings.thumbnail_auto_fit_max_width_mobile ?? settings.thumbnail_auto_fit_max_width,
+      settings.thumbnail_auto_fit_max_width_mobile ??
+        settings.thumbnail_auto_fit_max_width,
       "8rem"
     ),
 
@@ -128,7 +129,8 @@ function buildRuntimeConfig(baseConfig, settings) {
       "auto"
     ),
     thumbnailHeightTopBottomMobile: stringSetting(
-      settings.thumbnail_height_top_bottom_mobile ?? settings.thumbnail_height_top_bottom,
+      settings.thumbnail_height_top_bottom_mobile ??
+        settings.thumbnail_height_top_bottom,
       "auto"
     ),
 
@@ -249,7 +251,9 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
   if (!name) return "";
 
   return `
-    <span class="topic-hover-card__badge topic-hover-card__badge--category"${color ? ` style="--thc-category-color:${escapeHTML(color)};"` : ""}>
+    <span class="topic-hover-card__badge topic-hover-card__badge--category"${
+      color ? ` style="--thc-category-color:${escapeHTML(color)};"` : ""
+    }>
       ${escapeHTML(name)}
     </span>
   `;
@@ -346,7 +350,9 @@ function buildOpHTML(topic, config, isMobile) {
 
   const avatarURL = safeAvatarURL(op.avatar_template, 24);
   const avatarImg = avatarURL
-    ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(avatarURL)}" alt="" loading="lazy" decoding="async" />`
+    ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
+        avatarURL
+      )}" alt="" loading="lazy" decoding="async" />`
     : "";
 
   return `
@@ -695,7 +701,10 @@ export default apiInitializer((api) => {
     if (!tooltip) return;
 
     if (viewport.isMobileInteractionMode()) {
-      const left = Math.max(VIEWPORT_MARGIN, (window.innerWidth - tooltip.offsetWidth) / 2);
+      const left = Math.max(
+        VIEWPORT_MARGIN,
+        (window.innerWidth - tooltip.offsetWidth) / 2
+      );
       const top = Math.max(VIEWPORT_MARGIN, 16);
       tooltip.style.top = `${top}px`;
       tooltip.style.left = `${left}px`;
@@ -710,7 +719,10 @@ export default apiInitializer((api) => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const cardH = tooltip.offsetHeight || 320;
-    const cardW = Math.min(tooltip.offsetWidth || 512, vw - VIEWPORT_MARGIN * 2);
+    const cardW = Math.min(
+      tooltip.offsetWidth || 512,
+      vw - VIEWPORT_MARGIN * 2
+    );
 
     const gapBelow = 10;
     const gapAbove = 4;
@@ -815,14 +827,10 @@ export default apiInitializer((api) => {
   }
 
   async function fetchTopic(topicId, signal) {
-    // Check Discourse store first - zero network cost if topic already loaded in session
-    const store = api.getStore?.();
-    if (store) {
-      const cachedRecord = store.peekRecord('topic', topicId);
-      if (cachedRecord) return cachedRecord;
-    }
+    const store = api.container.lookup("service:store");
+    const storeRecord = store?.peekRecord?.("topic", topicId);
+    if (storeRecord) return storeRecord;
 
-    // Fallback to topicCache
     const cached = getCachedValue(topicCache, topicId);
     if (cached) return cached;
 
@@ -1168,9 +1176,6 @@ export default apiInitializer((api) => {
       suppressNextClick = false;
       clearCurrentAnchorDescription();
     });
-
-    // Register cleanup with Discourse lifecycle to prevent leaks when theme is disabled
-    api.cleanupStream(runCleanup);
 
     logDebug(config, "Hover cards initialized", {
       mobileEnabled: config.mobileEnabled,
