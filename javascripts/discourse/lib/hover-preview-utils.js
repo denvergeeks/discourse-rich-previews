@@ -43,6 +43,7 @@ export function readConfig(settings) {
     enableOnTopicPage: settings.enable_on_topic_page !== false,
     enableOnUserProfile: settings.enable_on_user_profile !== false,
     enableOnOther: settings.enable_on_other !== false,
+    enableOnKanbanBoards: settings.enable_on_kanban_boards === true,
 
     userPreferenceFieldName: stringSetting(
       settings.user_preference_field_name,
@@ -315,6 +316,20 @@ export function isEligiblePreviewLink(link, config) {
 export function linkInSupportedArea(link, config) {
   if (!(link instanceof Element)) return false;
   if (!isEligiblePreviewLink(link, config)) return false;
+
+  if (config.enableOnKanbanBoards) {
+    const isBoardUrl =
+      window.location.pathname === "/latest" &&
+      new URLSearchParams(window.location.search).has("board");
+
+    const inKanbanUi = !!link.closest(
+      ".kanban-board, .kanban-column, .kanban-card, .kanban-topic-card, [class*='kanban']"
+    );
+
+    if (isBoardUrl || inKanbanUi) {
+      return true;
+    }
+  }
 
   if (config.enableOnTopicPage && link.closest(".topic-post, .topic-body, .suggested-topics")) {
     return true;

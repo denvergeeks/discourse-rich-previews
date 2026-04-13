@@ -150,6 +150,9 @@ en:
     enable_on_other: "Enable on Other Cooked Content"
     enable_on_other_description: "Show hover cards in other cooked content areas not covered by the main view settings."
 
+    enable_on_kanban_boards: "Enable on Kanban Boards"
+    enable_on_kanban_boards_description: "Show hover cards for internal topic links in kanban board views, including pages like /latest?board=*."
+    
     user_preference_field_name: "User Preference Field Name"
     user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X keys."
 

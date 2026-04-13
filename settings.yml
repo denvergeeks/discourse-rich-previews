@@ -279,6 +279,11 @@ enable_on_other:
   type: bool
   description: Enable hover cards in other cooked content areas not covered by the main view settings.
 
+enable_on_kanban_boards:
+  type: bool
+  default: false
+  description: Enable hover cards in kanban board views.
+
 user_preference_field_name:
   default: disable_topic_hover_cards
   type: string
