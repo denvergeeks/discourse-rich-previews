@@ -4,7 +4,7 @@ export const TOOLTIP_ID = "topic-hover-card-tooltip";
 export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
 export const DELAY_HIDE = 280;
 export const VIEWPORT_MARGIN = 8;
-export const MOBILE_BREAKPOINT = 767;
+export const MOBILE_BREAKPOINT = 768;
 export const TOPIC_LINK_RE = /\/t\/(?:[^/]+\/)?([0-9]+)(?:\/[0-9]+)?/;
 
 // ─── Config reader ────────────────────────────────────────────────────────────
@@ -65,17 +65,24 @@ export function logDebug(config, ...args) {
 // ─── Viewport state ───────────────────────────────────────────────────────────
 
 export function createViewportState() {
+  const anyHoverQuery = window.matchMedia("(any-hover: hover)");
+  const hoverQuery = window.matchMedia("(hover: hover)");
+
   return {
-    isMobileLayout() {
-      return window.innerWidth <= MOBILE_BREAKPOINT;
+    hasHoverInput() {
+      return anyHoverQuery.matches || hoverQuery.matches;
+    },
+
+    isNarrowViewport() {
+      return window.innerWidth < MOBILE_BREAKPOINT;
     },
 
     isMobileInteractionMode() {
-      return (
-        this.isMobileLayout() ||
-        window.matchMedia("(hover: none)").matches ||
-        window.matchMedia("(pointer: coarse)").matches
-      );
+      return !this.hasHoverInput() && this.isNarrowViewport();
+    },
+
+    isMobileLayout() {
+      return this.isNarrowViewport();
     },
   };
 }
@@ -176,20 +183,28 @@ export function sanitizeExcerpt(html) {
 
 export function normalizeTag(tag) {
   if (!tag) return null;
-  if (typeof tag === "string") return tag.trim();
+
+  if (typeof tag === "string") {
+    const trimmed = tag.trim();
+    return trimmed || null;
+  }
 
   if (typeof tag === "object") {
-    return (
+    const candidate =
       tag.name ||
       tag.id ||
       tag.text ||
       tag.value ||
       tag.slug ||
-      null
-    );
+      null;
+
+    if (candidate === null || candidate === undefined) return null;
+    const trimmed = String(candidate).trim();
+    return trimmed || null;
   }
 
-  return String(tag).trim();
+  const trimmed = String(tag).trim();
+  return trimmed || null;
 }
 
 export function formatNumber(value) {
@@ -328,7 +343,9 @@ export function linkInSupportedArea(link, config) {
 
   if (
     config.enableOnCategories &&
-    link.closest(".categories-list, .category-list, .category-boxes, .categories-and-latest-topics, .categories-and-featured-topics, .categories-with-featured-topics, .categories-only")
+    link.closest(
+      ".categories-list, .category-list, .category-boxes, .categories-and-latest-topics, .categories-and-featured-topics, .categories-with-featured-topics, .categories-only"
+    )
   ) {
     return true;
   }
