@@ -1,5 +1,3 @@
-import { later, cancel } from "@ember/runloop";
-import { apiInitializer } from "discourse/lib/api";
 import {
   DELAY_HIDE,
   VIEWPORT_MARGIN,
@@ -20,6 +18,7 @@ import {
   escapeHTML,
   safeAvatarURL,
   sanitizeExcerpt,
+  normalizeTag,
   formatNumber,
 } from "../lib/hover-preview-utils";
 
