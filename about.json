@@ -4,7 +4,7 @@
   "authors": "@denvergeeks",
   "about_url": "https://github.com/denvergeeks/discourse-hover-previews",
   "license_url": "https://github.com/denvergeeks/discourse-hover-previews/blob/main/LICENSE",
-  "theme_version": "0.3.2",
+  "theme_version": "0.3.3",
   "minimum_discourse_version": "3.3.0",
   "maximum_discourse_version": null,
   "assets": {},
