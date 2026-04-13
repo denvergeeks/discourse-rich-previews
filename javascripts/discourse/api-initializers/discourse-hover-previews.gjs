@@ -208,20 +208,18 @@ function buildThumbnailHTML(topic, config, isMobile) {
     isMobile
   );
 
+  const isAutoFit =
+    pick(
+      config,
+      "thumbnailSizeModeDesktop",
+      "thumbnailSizeModeMobile",
+      isMobile
+    ) === "auto_fit_height";
+
   return `
     <div class="topic-hover-card__thumb-wrap">
       <img
-        class="topic-hover-card__thumb${
-          !isMobile &&
-          pick(
-            config,
-            "thumbnailSizeModeDesktop",
-            "thumbnailSizeModeMobile",
-            isMobile
-          ) === "auto_fit_height"
-            ? " topic-hover-card__thumb--auto-fit"
-            : ""
-        }"
+        class="topic-hover-card__thumb${isAutoFit ? " topic-hover-card__thumb--auto-fit" : ""}"
         src="${escapeHTML(imageURL)}"
         alt=""
         loading="lazy"
@@ -471,7 +469,7 @@ function buildMobileActionsHTML(topic, isMobile) {
   const topicUrl = `${window.location.origin}/t/${slug}/${id}`;
 
   return `
-    <div class="topic-hover-card__actions">
+    <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
       <a
         class="btn btn-primary topic-hover-card__open-topic"
         href="${topicUrl}"
@@ -479,7 +477,11 @@ function buildMobileActionsHTML(topic, isMobile) {
       >
         Open topic
       </a>
-      <button class="btn btn-default topic-hover-card__close" type="button" data-thc-close>
+      <button
+        class="btn btn-default topic-hover-card__close"
+        type="button"
+        data-thc-close
+      >
         Close
       </button>
     </div>
@@ -696,7 +698,20 @@ export default apiInitializer((api) => {
   }
 
   function positionTooltip(anchorRect) {
-    if (!tooltip || viewport.isMobileInteractionMode()) return;
+    if (!tooltip) return;
+
+    if (viewport.isMobileInteractionMode()) {
+      const left = Math.max(VIEWPORT_MARGIN, (window.innerWidth - tooltip.offsetWidth) / 2);
+      const top = Math.max(VIEWPORT_MARGIN, 16);
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+      tooltip.classList.remove("is-above");
+
+      if (currentAnchor) {
+        currentAnchor.setAttribute("aria-describedby", TOOLTIP_ID);
+      }
+      return;
+    }
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -1011,12 +1026,14 @@ export default apiInitializer((api) => {
     if (closeBtn) {
       event.preventDefault();
       event.stopPropagation();
+      suppressNextClick = false;
       hideCard();
       return;
     }
 
     const openBtn = target.closest("[data-thc-open-topic]");
     if (openBtn) {
+      suppressNextClick = false;
       event.stopPropagation();
       hideCard();
       return;
@@ -1062,10 +1079,9 @@ export default apiInitializer((api) => {
     const topicId = topicIdFromHref(link.href);
     if (!topicId) return;
 
+    currentAnchor = link;
     event.preventDefault();
     event.stopPropagation();
-
-    currentAnchor = link;
     suppressNextClick = true;
     resetSuppressedClickSoon();
     showCard(topicId, link.getBoundingClientRect());
@@ -1074,6 +1090,11 @@ export default apiInitializer((api) => {
   function onDocumentClick(event) {
     if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
     if (!(event.target instanceof Element)) return;
+
+    if (event.target.closest("[data-thc-open-topic]")) {
+      suppressNextClick = false;
+      return;
+    }
 
     if (suppressNextClick) {
       const link = event.target.closest("a[href]");
