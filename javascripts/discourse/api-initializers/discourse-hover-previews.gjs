@@ -47,13 +47,130 @@ function discourseIcon(name) {
   }
 }
 
-function numberSetting(value, fallback) {
+function numberSetting(value, fallback, min = null, max = null) {
   const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
+  if (!Number.isFinite(n)) return fallback;
+
+  let result = n;
+  if (min !== null) result = Math.max(min, result);
+  if (max !== null) result = Math.min(max, result);
+  return result;
 }
 
 function stringSetting(value, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function enumSetting(value, allowed, fallback) {
+  return allowed.includes(value) ? value : fallback;
+}
+
+function buildRuntimeConfig(baseConfig, settings) {
+  return {
+    ...baseConfig,
+
+    densityDesktop: enumSetting(settings.density, ["default", "cozy", "compact"], "default"),
+    densityMobile: enumSetting(
+      settings.density_mobile ?? settings.density,
+      ["default", "cozy", "compact"],
+      "cozy"
+    ),
+
+    showThumbnailDesktop: settings.show_thumbnail !== false,
+    showThumbnailMobile: settings.show_thumbnail_mobile !== false,
+
+    thumbnailPlacementDesktop: enumSetting(
+      settings.thumbnail_placement,
+      ["top", "right", "bottom", "left"],
+      "left"
+    ),
+    thumbnailPlacementMobile: enumSetting(
+      settings.thumbnail_placement_mobile ?? settings.thumbnail_placement,
+      ["top", "right", "bottom", "left"],
+      "top"
+    ),
+
+    thumbnailSizeModeDesktop: enumSetting(
+      settings.thumbnail_size_mode,
+      ["manual", "auto_fit_height"],
+      "auto_fit_height"
+    ),
+    thumbnailSizeModeMobile: enumSetting(
+      settings.thumbnail_size_mode_mobile ?? settings.thumbnail_size_mode,
+      ["manual", "auto_fit_height"],
+      "manual"
+    ),
+
+    thumbnailAutoFitMaxWidthDesktop: stringSetting(
+      settings.thumbnail_auto_fit_max_width,
+      "10rem"
+    ),
+    thumbnailAutoFitMaxWidthMobile: stringSetting(
+      settings.thumbnail_auto_fit_max_width_mobile ??
+        settings.thumbnail_auto_fit_max_width,
+      "8rem"
+    ),
+
+    thumbnailSizePercentDesktop: numberSetting(
+      settings.thumbnail_size_percent,
+      15,
+      5,
+      50
+    ),
+    thumbnailSizePercentMobile: numberSetting(
+      settings.thumbnail_size_percent_mobile ?? settings.thumbnail_size_percent,
+      33,
+      15,
+      60
+    ),
+
+    thumbnailHeightTopBottomDesktop: stringSetting(
+      settings.thumbnail_height_top_bottom,
+      "auto"
+    ),
+    thumbnailHeightTopBottomMobile: stringSetting(
+      settings.thumbnail_height_top_bottom_mobile ??
+        settings.thumbnail_height_top_bottom,
+      "auto"
+    ),
+
+    showTitleDesktop: settings.show_title !== false,
+    showTitleMobile: settings.show_title_mobile !== false,
+
+    showExcerptDesktop: settings.show_excerpt !== false,
+    showExcerptMobile: settings.show_excerpt_mobile !== false,
+    excerptLengthDesktop: numberSetting(settings.excerpt_length, 3, 1, 12),
+    excerptLengthMobile: numberSetting(
+      settings.excerpt_length_mobile ?? settings.excerpt_length,
+      3,
+      1,
+      12
+    ),
+
+    showCategoryDesktop: settings.show_category !== false,
+    showCategoryMobile: settings.show_category_mobile !== false,
+
+    showTagsDesktop: settings.show_tags !== false,
+    showTagsMobile: settings.show_tags_mobile !== false,
+
+    showOpDesktop: settings.show_op !== false,
+    showOpMobile: settings.show_op_mobile !== false,
+
+    showPublishDateDesktop: settings.show_publish_date !== false,
+    showPublishDateMobile: settings.show_publish_date_mobile !== false,
+
+    showViewsDesktop: settings.show_views !== false,
+    showViewsMobile: settings.show_views_mobile !== false,
+
+    showReplyCountDesktop: settings.show_reply_count !== false,
+    showReplyCountMobile: settings.show_reply_count_mobile !== false,
+
+    showLikesDesktop: settings.show_likes !== false,
+    showLikesMobile: settings.show_likes_mobile !== false,
+
+    showActivityDesktop: settings.show_activity !== false,
+    showActivityMobile: settings.show_activity_mobile !== false,
+  };
 }
 
 function joinMetadataGroups(items, separator = "·") {
@@ -76,80 +193,35 @@ function findCategoryById(categories, categoryId) {
   return categories.find((c) => Number(c.id) === Number(categoryId)) || null;
 }
 
-function mobileBool(name, mobileName, isMobile) {
-  return isMobile ? !!settings[mobileName] : !!settings[name];
+function pick(config, desktopKey, mobileKey, isMobile) {
+  return isMobile ? config[mobileKey] : config[desktopKey];
 }
 
-function mobileInt(name, mobileName, fallback, isMobile) {
-  const raw = isMobile
-    ? settings[mobileName] ?? settings[name] ?? fallback
-    : settings[name] ?? fallback;
-
-  return numberSetting(raw, fallback);
-}
-
-function densitySetting(isMobile) {
-  const value = isMobile
-    ? settings.density_mobile ?? settings.density ?? "default"
-    : settings.density ?? "default";
-
-  return ["default", "cozy", "compact"].includes(value) ? value : "default";
-}
-
-function thumbnailSizeMode(isMobile) {
-  const value = isMobile
-    ? settings.thumbnail_size_mode_mobile ??
-      settings.thumbnail_size_mode ??
-      "auto_fit_height"
-    : settings.thumbnail_size_mode ?? "auto_fit_height";
-
-  return ["manual", "auto_fit_height"].includes(value)
-    ? value
-    : "auto_fit_height";
-}
-
-function thumbnailPlacement(isMobile) {
-  const value = isMobile
-    ? settings.thumbnail_placement_mobile ??
-      settings.thumbnail_placement ??
-      "top"
-    : settings.thumbnail_placement ?? "left";
-
-  return ["top", "right", "bottom", "left"].includes(value) ? value : "left";
-}
-
-function buildThumbnailHTML(topic, mode, isMobile) {
+function buildThumbnailHTML(topic, config, isMobile) {
   const imageURL = sanitizeURL(topic.image_url);
   if (!imageURL) return "";
 
-  const topBottomHeight = stringSetting(
+  const topBottomHeight = pick(
+    config,
+    "thumbnailHeightTopBottomDesktop",
+    "thumbnailHeightTopBottomMobile",
     isMobile
-      ? settings.thumbnail_height_top_bottom_mobile ??
-          settings.thumbnail_height_top_bottom ??
-          "auto"
-      : settings.thumbnail_height_top_bottom ?? "auto",
-    "auto"
   );
 
-  if (isMobile || mode === "manual") {
-    return `
-      <div class="topic-hover-card__thumb-wrap">
-        <img
-          class="topic-hover-card__thumb"
-          src="${escapeHTML(imageURL)}"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          style="--thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight)};"
-        />
-      </div>
-    `;
-  }
-
   return `
-    <div class="topic-hover-card__thumb-wrap topic-hover-card__thumb-wrap--auto-fit">
+    <div class="topic-hover-card__thumb-wrap">
       <img
-        class="topic-hover-card__thumb topic-hover-card__thumb--auto-fit"
+        class="topic-hover-card__thumb${
+          !isMobile &&
+          pick(
+            config,
+            "thumbnailSizeModeDesktop",
+            "thumbnailSizeModeMobile",
+            isMobile
+          ) === "auto_fit_height"
+            ? " topic-hover-card__thumb--auto-fit"
+            : ""
+        }"
         src="${escapeHTML(imageURL)}"
         alt=""
         loading="lazy"
@@ -160,8 +232,11 @@ function buildThumbnailHTML(topic, mode, isMobile) {
   `;
 }
 
-function buildCategoryHTML(topic, categories, isMobile) {
-  if (!mobileBool("show_category", "show_category_mobile", isMobile)) return "";
+function buildCategoryHTML(topic, categories, config, isMobile) {
+  if (!pick(config, "showCategoryDesktop", "showCategoryMobile", isMobile)) {
+    return "";
+  }
+
   if (!topic.category_id) return "";
 
   const category = findCategoryById(categories, topic.category_id);
@@ -186,8 +261,8 @@ function buildCategoryHTML(topic, categories, isMobile) {
   `;
 }
 
-function buildTagsHTML(topic, isMobile) {
-  if (!mobileBool("show_tags", "show_tags_mobile", isMobile)) return "";
+function buildTagsHTML(topic, config, isMobile) {
+  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
   if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
 
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
@@ -208,9 +283,9 @@ function buildTagsHTML(topic, isMobile) {
   `;
 }
 
-function buildBadgesHTML(topic, categories, isMobile) {
-  const categoryHTML = buildCategoryHTML(topic, categories, isMobile);
-  const tagsHTML = buildTagsHTML(topic, isMobile);
+function buildBadgesHTML(topic, categories, config, isMobile) {
+  const categoryHTML = buildCategoryHTML(topic, categories, config, isMobile);
+  const tagsHTML = buildTagsHTML(topic, config, isMobile);
 
   if (!categoryHTML && !tagsHTML) return "";
 
@@ -222,8 +297,8 @@ function buildBadgesHTML(topic, categories, isMobile) {
   `;
 }
 
-function buildTitleHTML(topic, isMobile) {
-  if (!mobileBool("show_title", "show_title_mobile", isMobile)) return "";
+function buildTitleHTML(topic, config, isMobile) {
+  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) return "";
   const title = topic.fancy_title ?? topic.title ?? "(no title)";
 
   return `
@@ -233,10 +308,18 @@ function buildTitleHTML(topic, isMobile) {
   `;
 }
 
-function buildExcerptHTML(topic, isMobile) {
-  if (!mobileBool("show_excerpt", "show_excerpt_mobile", isMobile)) return "";
+function buildExcerptHTML(topic, config, isMobile) {
+  if (!pick(config, "showExcerptDesktop", "showExcerptMobile", isMobile)) {
+    return "";
+  }
 
-  const lines = mobileInt("excerpt_length", "excerpt_length_mobile", 3, isMobile);
+  const lines = pick(
+    config,
+    "excerptLengthDesktop",
+    "excerptLengthMobile",
+    isMobile
+  );
+
   const firstPost = topic.post_stream?.posts?.[0];
   const excerptSource =
     topic.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
@@ -254,8 +337,8 @@ function buildExcerptHTML(topic, isMobile) {
   `;
 }
 
-function buildOpHTML(topic, isMobile) {
-  if (!mobileBool("show_op", "show_op_mobile", isMobile)) return "";
+function buildOpHTML(topic, config, isMobile) {
+  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) return "";
 
   const op =
     topic.details?.created_by ||
@@ -282,8 +365,8 @@ function buildOpHTML(topic, isMobile) {
   `;
 }
 
-function buildPublishDateHTML(topic, isMobile) {
-  if (!mobileBool("show_publish_date", "show_publish_date_mobile", isMobile)) {
+function buildPublishDateHTML(topic, config, isMobile) {
+  if (!pick(config, "showPublishDateDesktop", "showPublishDateMobile", isMobile)) {
     return "";
   }
 
@@ -304,10 +387,10 @@ function buildPublishDateHTML(topic, isMobile) {
   `;
 }
 
-function buildStatsHTML(topic, isMobile) {
+function buildStatsHTML(topic, config, isMobile) {
   const stats = [];
 
-  if (mobileBool("show_views", "show_views_mobile", isMobile)) {
+  if (pick(config, "showViewsDesktop", "showViewsMobile", isMobile)) {
     stats.push(`
       <span class="topic-hover-card__stat">
         ${discourseIcon("far-eye")}
@@ -316,7 +399,7 @@ function buildStatsHTML(topic, isMobile) {
     `);
   }
 
-  if (mobileBool("show_reply_count", "show_reply_count_mobile", isMobile)) {
+  if (pick(config, "showReplyCountDesktop", "showReplyCountMobile", isMobile)) {
     const replyCount = topic.reply_count ?? Math.max((topic.posts_count ?? 1) - 1, 0);
     stats.push(`
       <span class="topic-hover-card__stat">
@@ -326,7 +409,7 @@ function buildStatsHTML(topic, isMobile) {
     `);
   }
 
-  if (mobileBool("show_likes", "show_likes_mobile", isMobile)) {
+  if (pick(config, "showLikesDesktop", "showLikesMobile", isMobile)) {
     const likes = topic.like_count ?? topic.topic_post_like_count ?? 0;
     stats.push(`
       <span class="topic-hover-card__stat">
@@ -337,7 +420,7 @@ function buildStatsHTML(topic, isMobile) {
   }
 
   if (
-    mobileBool("show_activity", "show_activity_mobile", isMobile) &&
+    pick(config, "showActivityDesktop", "showActivityMobile", isMobile) &&
     topic.last_posted_at
   ) {
     const d = new Date(topic.last_posted_at);
@@ -364,11 +447,11 @@ function buildStatsHTML(topic, isMobile) {
     : "";
 }
 
-function buildMetadataHTML(topic, isMobile) {
+function buildMetadataHTML(topic, config, isMobile) {
   const content = joinMetadataGroups([
-    buildOpHTML(topic, isMobile),
-    buildPublishDateHTML(topic, isMobile),
-    buildStatsHTML(topic, isMobile),
+    buildOpHTML(topic, config, isMobile),
+    buildPublishDateHTML(topic, config, isMobile),
+    buildStatsHTML(topic, config, isMobile),
   ]);
 
   return content
@@ -403,41 +486,56 @@ function buildMobileActionsHTML(topic, isMobile) {
   `;
 }
 
-function buildCardHTML(topic, categories, isMobile = false) {
-  const showThumbnail = mobileBool(
-    "show_thumbnail",
-    "show_thumbnail_mobile",
+function buildCardHTML(topic, categories, config, isMobile = false) {
+  const showThumbnail = pick(
+    config,
+    "showThumbnailDesktop",
+    "showThumbnailMobile",
     isMobile
   );
 
-  const desktopThumbnailSizePercent = numberSetting(
-    settings.thumbnail_size_percent,
-    15
-  );
-
-  const mobileThumbnailSizePercent = numberSetting(
-    settings.thumbnail_size_percent_mobile ?? settings.thumbnail_size_percent,
-    33
-  );
-
-  const autoFitMaxWidth = stringSetting(
+  const placement = pick(
+    config,
+    "thumbnailPlacementDesktop",
+    "thumbnailPlacementMobile",
     isMobile
-      ? settings.thumbnail_auto_fit_max_width_mobile ??
-          settings.thumbnail_auto_fit_max_width ??
-          "8rem"
-      : settings.thumbnail_auto_fit_max_width ?? "10rem",
-    isMobile ? "8rem" : "10rem"
   );
 
-  const placement = thumbnailPlacement(isMobile);
-  const density = densitySetting(isMobile);
+  const density = pick(config, "densityDesktop", "densityMobile", isMobile);
   const densityClass = `topic-hover-card--density-${density}`;
 
-  const sizeMode = thumbnailSizeMode(isMobile);
+  const sizeMode = pick(
+    config,
+    "thumbnailSizeModeDesktop",
+    "thumbnailSizeModeMobile",
+    isMobile
+  );
+
   const sizeModeClass =
     sizeMode === "auto_fit_height"
       ? "topic-hover-card--thumb-size-auto-fit-height"
       : "topic-hover-card--thumb-size-manual";
+
+  const thumbnailPercent = pick(
+    config,
+    "thumbnailSizePercentDesktop",
+    "thumbnailSizePercentMobile",
+    isMobile
+  );
+
+  const autoFitMaxWidth = pick(
+    config,
+    "thumbnailAutoFitMaxWidthDesktop",
+    "thumbnailAutoFitMaxWidthMobile",
+    isMobile
+  );
+
+  const topBottomHeight = pick(
+    config,
+    "thumbnailHeightTopBottomDesktop",
+    "thumbnailHeightTopBottomMobile",
+    isMobile
+  );
 
   const mobileCloseButton = isMobile
     ? `
@@ -454,27 +552,24 @@ function buildCardHTML(topic, categories, isMobile = false) {
 
   const thumbnail =
     topic.image_url && showThumbnail
-      ? buildThumbnailHTML(topic, sizeMode, isMobile)
+      ? buildThumbnailHTML(topic, config, isMobile)
       : "";
 
   const bodyInner = `
     <div class="topic-hover-card__body">
       ${mobileCloseButton}
-      ${buildTitleHTML(topic, isMobile)}
-      ${buildExcerptHTML(topic, isMobile)}
-      ${buildMetadataHTML(topic, isMobile)}
-      ${buildBadgesHTML(topic, categories, isMobile)}
+      ${buildTitleHTML(topic, config, isMobile)}
+      ${buildExcerptHTML(topic, config, isMobile)}
+      ${buildMetadataHTML(topic, config, isMobile)}
+      ${buildBadgesHTML(topic, categories, config, isMobile)}
       ${buildMobileActionsHTML(topic, isMobile)}
     </div>
   `;
 
-  const sizePercent = isMobile
-    ? mobileThumbnailSizePercent
-    : desktopThumbnailSizePercent;
-
   const wrapperStyle = `
-    --thc-thumbnail-size-percent:${sizePercent};
+    --thc-thumbnail-size-percent:${thumbnailPercent};
     --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth)};
+    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight)};
   `;
 
   switch (placement) {
@@ -523,7 +618,9 @@ function buildCardHTML(topic, categories, isMobile = false) {
 }
 
 export default apiInitializer((api) => {
-  const config = readConfig(settings);
+  const baseConfig = readConfig(settings);
+  const config = buildRuntimeConfig(baseConfig, settings);
+
   if (!config.enabled) return;
 
   const categories = getSiteCategories(api);
@@ -604,10 +701,7 @@ export default apiInitializer((api) => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const cardH = tooltip.offsetHeight || 320;
-    const cardW = Math.min(
-      tooltip.offsetWidth || 512,
-      vw - VIEWPORT_MARGIN * 2
-    );
+    const cardW = Math.min(tooltip.offsetWidth || 512, vw - VIEWPORT_MARGIN * 2);
 
     const gapBelow = 10;
     const gapAbove = 4;
@@ -650,7 +744,7 @@ export default apiInitializer((api) => {
     const cached = getCachedValue(renderCache, key);
     if (cached) return cached;
 
-    const html = buildCardHTML(topic, categories, isMobile);
+    const html = buildCardHTML(topic, categories, config, isMobile);
     setCachedValue(renderCache, key, html, config.topicCacheMax * 2);
     return html;
   }
@@ -1057,6 +1151,14 @@ export default apiInitializer((api) => {
       topicCacheMax: config.topicCacheMax,
       configuredField: config.userPreferenceFieldName,
       currentViewportIsMobile: viewport.isMobileInteractionMode(),
+      densityDesktop: config.densityDesktop,
+      densityMobile: config.densityMobile,
+      thumbnailPlacementDesktop: config.thumbnailPlacementDesktop,
+      thumbnailPlacementMobile: config.thumbnailPlacementMobile,
+      thumbnailSizeModeDesktop: config.thumbnailSizeModeDesktop,
+      thumbnailSizeModeMobile: config.thumbnailSizeModeMobile,
+      thumbnailSizePercentDesktop: config.thumbnailSizePercentDesktop,
+      thumbnailSizePercentMobile: config.thumbnailSizePercentMobile,
     });
   })().catch((error) => {
     // eslint-disable-next-line no-console
