@@ -7,7 +7,7 @@ $thc-space-3: 0.45rem;
 $thc-space-4: 0.55rem;
 $thc-space-5: 0.7rem;
 
-.topic-hover-card-tooltip {
+#topic-hover-card-tooltip {
   --thc-shadow-color: #{$thc-shadow-light};
   position: fixed;
   z-index: 5000;
@@ -16,30 +16,29 @@ $thc-space-5: 0.7rem;
   width: 100%;
   opacity: 0;
   transform: translate3d(0, 4px, 0);
-  transition:
-    opacity 0.16s ease-out,
-    transform 0.16s ease-out;
+  will-change: transform, opacity;
+  transition: opacity 160ms ease, transform 160ms ease;
   color: var(--primary, $primary);
 }
 
-html.dark .topic-hover-card-tooltip,
-html[data-theme="dark"] .topic-hover-card-tooltip,
-.d-theme-dark .topic-hover-card-tooltip {
+html.dark #topic-hover-card-tooltip,
+html[data-theme="dark"] #topic-hover-card-tooltip,
+.d-theme-dark #topic-hover-card-tooltip {
   --thc-shadow-color: #{$thc-shadow-dark};
 }
 
-.topic-hover-card-tooltip.is-visible {
+#topic-hover-card-tooltip.is-visible {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   pointer-events: auto;
 }
 
-.topic-hover-card-tooltip.is-above {
+#topic-hover-card-tooltip.is-above {
   transform: translate3d(0, -4px, 0);
 }
 
 @media (width <= 767px) {
-  .topic-hover-card-tooltip {
+  #topic-hover-card-tooltip {
     left: 50% !important;
     right: auto !important;
     bottom: 0 !important;
@@ -50,7 +49,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
     padding: 0;
   }
 
-  .topic-hover-card-tooltip.is-visible {
+  #topic-hover-card-tooltip.is-visible {
     transform: translate3d(-50%, 0, 0);
   }
 }
@@ -67,7 +66,7 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   height: auto;
   max-height: none;
   min-height: 0;
-  contain: layout paint;
+  contain: layout;
 }
 
 .topic-hover-card__thumbnail {
@@ -447,8 +446,8 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
   box-sizing: border-box;
   border-radius: 999px;
   padding: 0;
-  background: var(--danger, #b31b1b);
-  color: #fff;
+  color: var(--secondary);
+  background: var(--danger);
   border: 0;
   cursor: pointer;
   pointer-events: auto;
@@ -684,9 +683,9 @@ html[data-theme="dark"] .topic-hover-card-tooltip,
     background: var(--primary-low, $primary-low);
   }
 
-  .topic-hover-card-tooltip,
-  .topic-hover-card-tooltip.is-visible,
-  .topic-hover-card-tooltip.is-above {
+  #topic-hover-card-tooltip,
+  #topic-hover-card-tooltip.is-visible,
+  #topic-hover-card-tooltip.is-above {
     transition: none;
     transform: none;
   }
