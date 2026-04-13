@@ -3,8 +3,8 @@
   --thc-mobile-width: 92vw;
   --thc-radius: 12px;
   --thc-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.18),
-    0 6px 18px rgba(0, 0, 0, 0.12);
+    0 18px 48px rgba(var(--primary-rgb), 0.18),
+    0 6px 18px rgba(var(--primary-rgb), 0.12);
   --thc-border: 1px solid rgba(var(--primary-rgb), 0.08);
   --thc-bg: var(--secondary);
   --thc-text: var(--primary);
@@ -22,7 +22,7 @@
   transition:
     opacity 140ms ease,
     transform 140ms ease;
-  will-change: top, left, transform, opacity;
+  will-change: transform, opacity;
 
   &.is-visible {
     opacity: 1;

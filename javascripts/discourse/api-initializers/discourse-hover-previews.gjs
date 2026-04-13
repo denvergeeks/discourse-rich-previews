@@ -106,8 +106,7 @@ function buildRuntimeConfig(baseConfig, settings) {
       "10rem"
     ),
     thumbnailAutoFitMaxWidthMobile: stringSetting(
-      settings.thumbnail_auto_fit_max_width_mobile ??
-        settings.thumbnail_auto_fit_max_width,
+      settings.thumbnail_auto_fit_max_width_mobile ?? settings.thumbnail_auto_fit_max_width,
       "8rem"
     ),
 
@@ -129,8 +128,7 @@ function buildRuntimeConfig(baseConfig, settings) {
       "auto"
     ),
     thumbnailHeightTopBottomMobile: stringSetting(
-      settings.thumbnail_height_top_bottom_mobile ??
-        settings.thumbnail_height_top_bottom,
+      settings.thumbnail_height_top_bottom_mobile ?? settings.thumbnail_height_top_bottom,
       "auto"
     ),
 
@@ -251,9 +249,7 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
   if (!name) return "";
 
   return `
-    <span class="topic-hover-card__badge topic-hover-card__badge--category"${
-      color ? ` style="--thc-category-color:${escapeHTML(color)};"` : ""
-    }>
+    <span class="topic-hover-card__badge topic-hover-card__badge--category"${color ? ` style="--thc-category-color:${escapeHTML(color)};"` : ""}>
       ${escapeHTML(name)}
     </span>
   `;
@@ -350,9 +346,7 @@ function buildOpHTML(topic, config, isMobile) {
 
   const avatarURL = safeAvatarURL(op.avatar_template, 24);
   const avatarImg = avatarURL
-    ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
-        avatarURL
-      )}" alt="" loading="lazy" decoding="async" />`
+    ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(avatarURL)}" alt="" loading="lazy" decoding="async" />`
     : "";
 
   return `
@@ -821,6 +815,14 @@ export default apiInitializer((api) => {
   }
 
   async function fetchTopic(topicId, signal) {
+    // Check Discourse store first - zero network cost if topic already loaded in session
+    const store = api.getStore?.();
+    if (store) {
+      const cachedRecord = store.peekRecord('topic', topicId);
+      if (cachedRecord) return cachedRecord;
+    }
+
+    // Fallback to topicCache
     const cached = getCachedValue(topicCache, topicId);
     if (cached) return cached;
 
@@ -1166,6 +1168,9 @@ export default apiInitializer((api) => {
       suppressNextClick = false;
       clearCurrentAnchorDescription();
     });
+
+    // Register cleanup with Discourse lifecycle to prevent leaks when theme is disabled
+    api.cleanupStream(runCleanup);
 
     logDebug(config, "Hover cards initialized", {
       mobileEnabled: config.mobileEnabled,
