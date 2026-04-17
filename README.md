@@ -1,4 +1,4 @@
-# **Theme Name**
+# **Discourse Rich Previews**
 
 **Theme Summary**
 
