@@ -177,11 +177,17 @@
   }
 
   .topic-hover-card__thumb-wrap {
+    position: relative;
     float: left;
     width: calc(var(--thc-thumbnail-size-percent) * 1%);
     max-width: var(--thc-auto-thumb-max-width);
+    height: calc(1.38em * var(--thc-wrap-lines, 5) + 0.4em);
     margin: 0.1rem 0.8rem 0.35rem 0;
     overflow: hidden;
+    border-radius: 0.5rem;
+    /*background: rgba(var(--primary-rgb), 0.04); */
+    background: color-mix(in srgb, var(--thc-bg) 96%, transparent);
+    isolation: isolate;
   }
 
   &.topic-hover-card--right .topic-hover-card__thumb-wrap {
@@ -195,11 +201,32 @@
     margin: 0.1rem 0.8rem 0.35rem 0;
   }
 
+  .topic-hover-card__thumb-bg {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: blur(14px) saturate(1.05);
+    transform: scale(1.12);
+    opacity: 0.72;
+    z-index: 0;
+  }
+
+  .topic-hover-card__thumb-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* background: rgba(var(--secondary-rgb), 0.18); */
+    background: color-mix(in srgb, var(--thc-bg) 82%, transparent);
+  }
+
   .topic-hover-card__thumb {
+    position: relative;
+    z-index: 1;
     width: 100%;
-    height: auto;
-    max-height: 9rem;
-    object-fit: cover;
+    height: 100%;
+    object-fit: contain;
     display: block;
   }
 
@@ -210,21 +237,20 @@
     line-height: 1.38;
     max-height: calc(1.38em * var(--thc-wrap-lines, 5) + 0.4em);
   }
-}
 
-.topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
-  .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 1.4em;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--thc-bg)
-  );
+  .topic-hover-card__excerpt::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1.4em;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--thc-bg)
+    );
+  }
 }
 
 .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt.topic-hover-card--density-default {
@@ -510,12 +536,18 @@
 
   .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt {
     .topic-hover-card__thumb-wrap {
+      position: relative;
       float: left;
       width: clamp(5.5rem, 32%, 7.25rem) !important;
       min-width: clamp(5.5rem, 32%, 7.25rem) !important;
       max-width: clamp(5.5rem, 32%, 7.25rem) !important;
+      height: calc(1.32em * var(--thc-wrap-lines-mobile, 4) + 0.4em);
       margin: 0.05rem 0.65rem 0.3rem 0 !important;
       overflow: hidden;
+      border-radius: 0.45rem;
+      /* background: rgba(var(--primary-rgb), 0.04); */
+      background: color-mix(in srgb, var(--thc-bg) 96%, transparent);
+      isolation: isolate;
     }
 
     &.topic-hover-card--right .topic-hover-card__thumb-wrap {
@@ -529,11 +561,32 @@
       margin: 0.05rem 0.65rem 0.3rem 0 !important;
     }
 
+    .topic-hover-card__thumb-bg {
+      position: absolute;
+      inset: 0;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      filter: blur(12px) saturate(1.02);
+      transform: scale(1.1);
+      opacity: 0.68;
+      z-index: 0;
+    }
+
+    .topic-hover-card__thumb-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      /* background: rgba(var(--secondary-rgb), 0.2); */
+      background: color-mix(in srgb, var(--thc-bg) 80%, transparent);
+    }
+
     .topic-hover-card__thumb {
+      position: relative;
+      z-index: 1;
       width: 100%;
-      height: auto !important;
-      max-height: 6.5rem;
-      object-fit: cover;
+      height: 100% !important;
+      object-fit: contain;
       display: block;
     }
 
@@ -555,21 +608,20 @@
       line-height: 1.32;
       max-height: calc(1.32em * var(--thc-wrap-lines-mobile, 4) + 0.4em);
     }
-  }
 
-  .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
-    .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    height: 1.3em;
-    pointer-events: none;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      var(--thc-bg)
-    );
+    .topic-hover-card__excerpt::after {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      height: 1.3em;
+      pointer-events: none;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--thc-bg)
+      );
+    }
   }
 
   .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt.topic-hover-card--density-default {

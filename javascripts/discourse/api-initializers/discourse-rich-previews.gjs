@@ -68,35 +68,34 @@ function pick(config, desktopKey, mobileKey, isMobile) {
   return isMobile ? config[mobileKey] : config[desktopKey];
 }
 
-function buildThumbnailHTML(topic, config, isMobile) {
-  const imageURL = sanitizeURL(topic.image_url);
-  if (!imageURL) return "";
+function buildThumbnailHTML(topic, config, isMobile = false) {
+  const imageUrl = sanitizeURL(topic.image_url);
+  if (!imageUrl) {
+    return "";
+  }
 
-  const topBottomHeight = pick(
+  const thumbHeight = pick(
     config,
     "thumbnailHeightTopBottomDesktop",
     "thumbnailHeightTopBottomMobile",
     isMobile
   );
 
-  const isAutoFit =
-    pick(
-      config,
-      "thumbnailSizeModeDesktop",
-      "thumbnailSizeModeMobile",
-      isMobile
-    ) === "auto_fit_height";
-
   return `
     <div class="topic-hover-card__thumb-wrap">
+      <div
+        class="topic-hover-card__thumb-bg"
+        style="background-image: url('${escapeHTML(imageUrl)}');"
+        aria-hidden="true"
+      ></div>
       <img
-        class="topic-hover-card__thumb${isAutoFit ? " topic-hover-card__thumb--auto-fit" : ""}"
-        src="${escapeHTML(imageURL)}"
+        class="topic-hover-card__thumb"
+        src="${escapeHTML(imageUrl)}"
         alt=""
         loading="lazy"
         decoding="async"
-        style="--thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};"
-      />
+        style="--thc-thumb-top-bottom-height:${escapeHTML(thumbHeight || "auto")};"
+      >
     </div>
   `;
 }
