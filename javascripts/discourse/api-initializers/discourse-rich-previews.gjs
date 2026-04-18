@@ -800,6 +800,10 @@ export default apiInitializer((api) => {
       .catch((error) => {
         if (error?.name === "AbortError") return;
 
+        console.error("[discourse-rich-previews] Could not load preview", {
+          target,
+          error,
+        });
         logDebug(config, "Could not load preview", { target, error });
 
         if (!tooltip || currentPreviewKey !== target.key) return;
