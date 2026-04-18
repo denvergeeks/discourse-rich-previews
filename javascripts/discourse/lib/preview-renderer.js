@@ -116,8 +116,8 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
     isMobile
   );
 
-  const showImage = config?.wikipediaPreviewShowImage !== false;
-  const useExtractHtml = config?.wikipediaPreviewUseExtractHtml !== false;
+  const showImage = config?.wikipediaPreviewsShowImage !== false;
+  const useExtractHtml = config?.wikipediaPreviewsUseExtractHtml !== false;
   const safeUrl = sanitizeURL(preview.url) || "#";
 
   const wrapperStyle = `
