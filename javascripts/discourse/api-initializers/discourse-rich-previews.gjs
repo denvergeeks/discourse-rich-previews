@@ -1011,7 +1011,7 @@ export default apiInitializer((api) => {
   }
 
   function onScroll(event) {
-    if (event.target?.closest?.(".topic-hover-card, #topic-hover-card-tooltip")) {
+    if (event.target?.closest?.(`.topic-hover-card, ${TOOLTIP_SELECTOR}`)) {
       return;
     }
 
