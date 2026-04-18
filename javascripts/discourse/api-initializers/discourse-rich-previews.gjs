@@ -23,7 +23,7 @@ import {
   sanitizeExcerpt,
   normalizeTag,
   formatNumber,
-} from "../lib/hover-preview-utils";
+} from "../lib/rich-preview-utils";
 
 import { matchPreviewTarget } from "../lib/preview-router";
 import {
@@ -1074,7 +1074,7 @@ export default apiInitializer((api) => {
     });
   })().catch((error) => {
     // eslint-disable-next-line no-console
-    console.error("[topic-hover-cards] Fatal init error:", error);
+    console.error("[discourse-rich-previews] Fatal init error:", error);
     runCleanup();
   });
 });

@@ -3,7 +3,7 @@ import {
   setCachedValue,
   getJSON,
   sanitizeExcerpt,
-} from "../hover-preview-utils";
+} from "../rich-preview-utils";
 
 export function createTopicProvider(api, config, topicCache, inFlightFetches) {
   async function fetchTopic(topicId, signal) {

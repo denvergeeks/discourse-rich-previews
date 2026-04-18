@@ -1,4 +1,4 @@
-import { parseTopicUrl } from "./hover-preview-utils";
+import { parseTopicUrl } from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
 
 function normalizeWikipediaPageKey(pathname) {

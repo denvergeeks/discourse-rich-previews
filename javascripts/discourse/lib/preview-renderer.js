@@ -1,4 +1,4 @@
-import { escapeHTML, sanitizeURL } from "./hover-preview-utils";
+import { escapeHTML, sanitizeURL } from "./rich-preview-utils";
 
 export function buildPreviewHTML(preview, categories, config, isMobile = false) {
   if (!preview) {

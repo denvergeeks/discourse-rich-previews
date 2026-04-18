@@ -3,7 +3,7 @@ import {
   sanitizeExcerpt,
   getCachedValue,
   setCachedValue,
-} from "../hover-preview-utils";
+} from "../rich-preview-utils";
 
 const WIKIPEDIA_HOST_RE = /(^|\.)wikipedia\.org$/i;
 
