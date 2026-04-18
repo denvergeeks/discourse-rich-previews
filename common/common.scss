@@ -1,4 +1,4 @@
-#topic-hover-card-tooltip {
+#discourse-rich-preview-tooltip {
   --thc-width: 32rem;
   --thc-mobile-width: 92vw;
   --thc-radius: 12px;
@@ -426,7 +426,7 @@
 }
 
 @media (max-width: 767px) {
-  #topic-hover-card-tooltip {
+  #discourse-rich-preview-tooltip {
     inset-inline: 8px auto;
   }
 
