@@ -1069,8 +1069,8 @@ export default apiInitializer((api) => {
       thumbnailSizeModeMobile: config.thumbnailSizeModeMobile,
       thumbnailSizePercentDesktop: config.thumbnailSizePercentDesktop,
       thumbnailSizePercentMobile: config.thumbnailSizePercentMobile,
-      wikipediaEnabled: config.hoverPreviewsEnableWikipedia,
-      wikipediaBaseUrl: config.hoverPreviewsWikipediaBaseUrl,
+      wikipediaPreviewsEnabled: config.wikipediaPreviewsEnabled,
+      wikipediaPreviewsBaseUrl: config.wikipediaPreviewsBaseUrl,
     });
   })().catch((error) => {
     // eslint-disable-next-line no-console

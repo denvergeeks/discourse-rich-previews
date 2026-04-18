@@ -168,16 +168,16 @@ export function readConfig(settings) {
     excludedTags: normalizeListSetting(settings.excluded_tags),
     excludedClasses: normalizeListSetting(settings.excluded_classes),
 
-    hoverPreviewsEnableWikipedia:
-      settings.hover_previews_enable_wikipedia !== false,
-    hoverPreviewsWikipediaBaseUrl: stringSetting(
-      settings.hover_previews_wikipedia_base_url,
+    wikipediaPreviewsEnabled:
+      settings.wikipedia_previews_enabled !== false,
+    wikipediaPreviewsBaseUrl: stringSetting(
+      settings.wikipedia_previews_base_url,
       "en.wikipedia.org"
     ),
-    wikipediaPreviewShowImage:
-      settings.wikipedia_preview_show_image !== false,
-    wikipediaPreviewUseExtractHtml:
-      settings.wikipedia_preview_use_extract_html !== false,
+    wikipediaPreviewsShowImage:
+      settings.wikipedia_previews_show_image !== false,
+    wikipediaPreviewsUseExtractHtml:
+      settings.wikipedia_previews_use_extract_html !== false,
 
     userPreferenceFieldName: stringSetting(
       settings.user_preference_field_name,
@@ -510,7 +510,7 @@ export function isEligiblePreviewLink(link, config) {
   }
 
   if (isWikipediaArticleLink(link)) {
-    return config?.hoverPreviewsEnableWikipedia !== false;
+    return config?.wikipediaPreviewsEnabled !== false;
   }
 
   const parsed = parseTopicUrl(link.href);

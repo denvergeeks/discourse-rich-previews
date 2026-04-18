@@ -8,7 +8,7 @@ import {
 const WIKIPEDIA_HOST_RE = /(^|\.)wikipedia\.org$/i;
 
 export function matchesWikipediaTarget(link, config) {
-  if (config?.hoverPreviewsEnableWikipedia === false) {
+  if (config?.wikipediaPreviewsEnabled === false) {
     return false;
   }
 
@@ -34,11 +34,11 @@ function getWikipediaHost(link, config) {
 
     return (
       url.hostname ||
-      config?.hoverPreviewsWikipediaBaseUrl ||
+      config?.wikipediaPreviewsBaseUrl ||
       "en.wikipedia.org"
     );
   } catch {
-    return config?.hoverPreviewsWikipediaBaseUrl || "en.wikipedia.org";
+    return config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org";
   }
 }
 
@@ -141,11 +141,11 @@ async function fetchWikipediaPreview(host, title, config, signal) {
     title: summary?.title || page.title || title,
     excerpt,
     html:
-      config?.wikipediaPreviewUseExtractHtml !== false
+      config?.wikipediaPreviewsUseExtractHtml !== false
         ? summary?.extract_html || null
         : null,
     image_url:
-      config?.wikipediaPreviewShowImage !== false
+      config?.wikipediaPreviewsShowImage !== false
         ? summary?.thumbnail?.source || null
         : null,
     url:

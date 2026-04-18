@@ -308,22 +308,22 @@ excluded_classes:
   default: onebox
   description: CSS classes whose links or ancestors should be excluded from hover cards.
 
-hover_previews_enable_wikipedia:
+wikipedia_previews_enabled:
   default: true
   type: bool
-  description: Enable previews for Wikipedia article links.
+  description: Enable hover cards for Wikipedia article links.
 
-hover_previews_wikipedia_base_url:
+wikipedia_previews_base_url:
   default: en.wikipedia.org
   type: string
   description: Default Wikipedia host used when needed, such as en.wikipedia.org.
 
-wikipedia_preview_show_image:
+wikipedia_previews_show_image:
   default: true
   type: bool
   description: Show the article thumbnail image in Wikipedia previews when available.
 
-wikipedia_preview_use_extract_html:
+wikipedia_previews_use_extract_html:
   default: true
   type: bool
   description: Use the HTML extract returned by Wikipedia for preview text when available.
