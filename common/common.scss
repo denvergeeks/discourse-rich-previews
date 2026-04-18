@@ -76,7 +76,7 @@
   flex: 0 0 auto;
   min-width: 0;
   overflow: hidden;
-  background: var(--primary-low);
+  /* background: var(--primary-low); */
 }
 
 .topic-hover-card__thumb {
@@ -84,7 +84,7 @@
   width: 100%;
   height: auto;
   object-fit: cover;
-  background: var(--primary-low);
+  /* background: var(--primary-low); */
 }
 
 .topic-hover-card__thumb--auto-fit {
