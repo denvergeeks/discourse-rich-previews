@@ -22,6 +22,7 @@ density:
     - default
     - cozy
     - compact
+    - dense
   description: Controls hover card density on desktop.
 
 density_mobile:
@@ -31,6 +32,7 @@ density_mobile:
     - default
     - cozy
     - compact
+    - dense
   description: Controls hover card density on mobile.
 
 card_width:
@@ -335,6 +337,7 @@ wikipedia_density:
     - default
     - cozy
     - compact
+    - dense
   description: Controls Wikipedia preview density on desktop.
 
 wikipedia_density_mobile:
@@ -344,6 +347,7 @@ wikipedia_density_mobile:
     - default
     - cozy
     - compact
+    - dense
   description: Controls Wikipedia preview density on mobile.
 
 user_preference_field_name:
