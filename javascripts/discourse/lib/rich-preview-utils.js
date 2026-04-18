@@ -702,7 +702,7 @@ export function sanitizeExcerpt(htmlOrText) {
 
   temp
     .querySelectorAll(
-      "script, style, noscript, img, picture, figure, video, audio, source, iframe, svg, .lightbox-wrapper, .d-lazyload"
+      "script, style, noscript, img, picture, figure, video, audio, source, iframe, svg, .lightbox-wrapper, .image-wrapper, .d-lazyload, .onebox img"
     )
     .forEach((el) => el.remove());
 
