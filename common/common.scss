@@ -211,8 +211,7 @@
     max-height: calc(1.38em * var(--thc-wrap-lines, 5) + 0.4em);
   }
 
-  .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
-    .topic-hover-card__excerpt::after {
+  .topic-hover-card__excerpt::after {
     content: "";
     position: absolute;
     inset-inline: 0;
@@ -222,10 +221,9 @@
     background: linear-gradient(
       to bottom,
       transparent,
-      var(--secondary)
+      var(--thc-bg)
     );
   }
-
 }
 
 .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt.topic-hover-card--density-default {
@@ -567,7 +565,7 @@
       background: linear-gradient(
         to bottom,
         transparent,
-        var(--secondary)
+        var(--thc-bg)
       );
     }
   }
