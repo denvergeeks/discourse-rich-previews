@@ -700,7 +700,18 @@ export function sanitizeExcerpt(htmlOrText) {
   const temp = document.createElement("div");
   temp.innerHTML = source;
 
-  temp.querySelectorAll("script, style, noscript").forEach((el) => el.remove());
+  temp
+    .querySelectorAll(
+      "script, style, noscript, img, picture, figure, video, audio, source, iframe, svg, .lightbox-wrapper, .d-lazyload"
+    )
+    .forEach((el) => el.remove());
+
+  temp.querySelectorAll("a").forEach((el) => {
+    const text = (el.textContent || "").trim();
+    if (!text) {
+      el.remove();
+    }
+  });
 
   const text = temp.textContent || temp.innerText || "";
   return text.replace(/\s+/g, " ").trim();
