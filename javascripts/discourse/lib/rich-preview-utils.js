@@ -1,6 +1,6 @@
 export const DELAY_HIDE = 120;
 export const VIEWPORT_MARGIN = 8;
-export const TOOLTIP_ID = "topic-hover-card-tooltip";
+export const TOOLTIP_ID = "discourse-rich-preview-tooltip";
 export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
 
 function intSetting(value, fallback, min = null, max = null) {
@@ -482,7 +482,7 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
-  if (link.closest(".topic-hover-card, #topic-hover-card-tooltip")) {
+  if (link.closest(`.topic-hover-card, ${TOOLTIP_SELECTOR}`)) {
     return false;
   }
 
@@ -698,7 +698,28 @@ export function sanitizeExcerpt(htmlOrText) {
 }
 
 export function normalizeTag(tag) {
-  return String(tag ?? "").trim();
+  if (!tag) {
+    return "";
+  }
+
+  if (typeof tag === "string") {
+    return tag.trim();
+  }
+
+  if (typeof tag === "object") {
+    // adjust fields to match whatever your topic JSON actually uses
+    const value =
+      tag.name ||
+      tag.text ||
+      tag.id ||
+      tag.slug ||
+      tag.value ||
+      "";
+
+    return String(value).trim();
+  }
+
+  return String(tag).trim();
 }
 
 export function formatNumber(value) {
