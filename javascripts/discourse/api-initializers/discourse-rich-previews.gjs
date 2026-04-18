@@ -87,8 +87,6 @@ function buildThumbnailHTML(topic, config, isMobile) {
       isMobile
     ) === "auto_fit_height";
 
-  const isWrapExcerpt = sizeMode === "wrap_excerpt";
-
   return `
     <div class="topic-hover-card__thumb-wrap">
       <img
