@@ -497,17 +497,36 @@
 }
 
 .topic-hover-card--topic.topic-hover-card--density-cozy .topic-hover-card__body {
-  gap: 0.58rem;
-  padding: 0.82rem 0.9rem;
-}
-
-.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__body {
   gap: 0.5rem;
   padding: 0.72rem 0.82rem;
 }
 
-.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__title {
+.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__body {
+  gap: 0.38rem;
+  padding: 0.62rem 0.72rem;
+}
+
+.topic-hover-card--topic.topic-hover-card--density-cozy .topic-hover-card__title {
   font-size: var(--font-0);
+}
+
+.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__title {
+  font-size: var(--font-down-1);
+  line-height: 1.22;
+}
+
+.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__meta {
+  gap: 0.24rem 0.4rem;
+  font-size: var(--font-down-2);
+}
+
+.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__badges,
+.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__tags {
+  gap: 0.28rem;
+}
+
+.topic-hover-card--topic.topic-hover-card--density-compact .topic-hover-card__badge {
+  padding: 0.14rem 0.38rem;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__body {
@@ -516,13 +535,13 @@
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__body {
-  gap: 0.68rem;
-  padding: 0.88rem 0.96rem;
+  gap: 0.52rem;
+  padding: 0.76rem 0.84rem;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__body {
-  gap: 0.52rem;
-  padding: 0.76rem 0.84rem;
+  gap: 0.4rem;
+  padding: 0.64rem 0.72rem;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__title {
@@ -532,12 +551,12 @@
 
 .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__title {
   font-size: var(--font-0);
-  line-height: 1.3;
+  line-height: 1.26;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__title {
   font-size: var(--font-down-1);
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__excerpt {
@@ -548,14 +567,14 @@
 
 .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__excerpt {
   font-size: var(--font-down-1);
-  line-height: 1.42;
-  --thc-excerpt-lines: 4;
+  line-height: 1.34;
+  --thc-excerpt-lines: 3;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__excerpt {
   font-size: var(--font-down-2);
-  line-height: 1.34;
-  --thc-excerpt-lines: 3;
+  line-height: 1.26;
+  --thc-excerpt-lines: 2;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__meta {
@@ -564,9 +583,10 @@
 
 .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__meta {
   font-size: var(--font-down-2);
+  gap: 0.25rem 0.4rem;
 }
 
 .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__meta {
   font-size: var(--font-down-2);
-  gap: 0.25rem 0.4rem;
+  gap: 0.18rem 0.32rem;
 }
