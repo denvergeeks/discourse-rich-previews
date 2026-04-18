@@ -1,5 +1,12 @@
-import { topicIdFromHref } from "./hover-preview-utils";
+import { parseTopicUrl } from "./hover-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
+
+function normalizeWikipediaPageKey(pathname) {
+  return decodeURIComponent(pathname.replace(/^\/wiki\//, ""))
+    .replaceAll("_", " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export function matchPreviewTarget(link, config) {
   if (!(link instanceof HTMLAnchorElement)) {
@@ -24,7 +31,9 @@ function matchTopicPreview(link, config) {
     return null;
   }
 
-  const topicId = topicIdFromHref(link.href);
+  const parsed = parseTopicUrl(link.href);
+  const topicId = parsed?.topicId;
+
   if (!topicId) {
     return null;
   }
@@ -42,18 +51,23 @@ function matchWikipediaPreview(link, config) {
     return null;
   }
 
-  if (!matchesWikipediaTarget(link)) {
+  if (!matchesWikipediaTarget(link, config)) {
     return null;
   }
 
   try {
     const url = new URL(link.href, window.location.origin);
-    const pageKey = decodeURIComponent(url.pathname.replace(/^\/wiki\//, ""));
+    const host = url.hostname.toLowerCase();
+    const pageKey = normalizeWikipediaPageKey(url.pathname);
+
+    if (!pageKey) {
+      return null;
+    }
 
     return {
       type: "wikipedia",
-      key: `wikipedia:${url.hostname}:${pageKey}`,
-      host: url.hostname,
+      key: `wikipedia:${host}:${pageKey}`,
+      host,
       pageKey,
       link,
     };

@@ -284,6 +284,30 @@ enable_on_kanban_boards:
   default: false
   description: Enable hover cards in kanban board views.
 
+included_tags:
+  type: list
+  list_type: compact
+  default: ""
+  description: HTML tag names that explicitly allow hover previews when matched. If not empty, links must match one of these tags or included classes.
+
+included_classes:
+  type: list
+  list_type: compact
+  default: ""
+  description: CSS classes that explicitly allow hover previews when matched. If not empty, links must match one of these classes or included tags.
+
+excluded_tags:
+  type: list
+  list_type: compact
+  default: code|pre
+  description: HTML tag names whose links should be excluded from hover previews.
+
+excluded_classes:
+  type: list
+  list_type: compact
+  default: onebox
+  description: CSS classes whose links or ancestors should be excluded from hover previews.
+
 hover_previews_enable_wikipedia:
   default: true
   type: bool

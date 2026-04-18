@@ -34,19 +34,6 @@ import {
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 
-function skeletonHTML() {
-  return `
-    <div class="topic-hover-card topic-hover-card--loading">
-      <div class="topic-hover-card__body">
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--title"></div>
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--line"></div>
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--line"></div>
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--meta"></div>
-      </div>
-    </div>
-  `;
-}
-
 function discourseIcon(name) {
   try {
     return iconHTML(name) || "";
@@ -55,139 +42,15 @@ function discourseIcon(name) {
   }
 }
 
-function numberSetting(value, fallback, min = null, max = null) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-
-  let result = n;
-  if (min !== null) result = Math.max(min, result);
-  if (max !== null) result = Math.min(max, result);
-  return result;
-}
-
-function stringSetting(value, fallback = "") {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
-}
-
-function enumSetting(value, allowed, fallback) {
-  return allowed.includes(value) ? value : fallback;
-}
-
-function buildRuntimeConfig(baseConfig, settings) {
-  return {
-    ...baseConfig,
-
-    densityDesktop: enumSetting(settings.density, ["default", "cozy", "compact"], "default"),
-    densityMobile: enumSetting(
-      settings.density_mobile ?? settings.density,
-      ["default", "cozy", "compact"],
-      "cozy"
-    ),
-
-    showThumbnailDesktop: settings.show_thumbnail !== false,
-    showThumbnailMobile: settings.show_thumbnail_mobile !== false,
-
-    thumbnailPlacementDesktop: enumSetting(
-      settings.thumbnail_placement,
-      ["top", "right", "bottom", "left"],
-      "left"
-    ),
-    thumbnailPlacementMobile: enumSetting(
-      settings.thumbnail_placement_mobile ?? settings.thumbnail_placement,
-      ["top", "right", "bottom", "left"],
-      "top"
-    ),
-
-    thumbnailSizeModeDesktop: enumSetting(
-      settings.thumbnail_size_mode,
-      ["manual", "auto_fit_height"],
-      "auto_fit_height"
-    ),
-    thumbnailSizeModeMobile: enumSetting(
-      settings.thumbnail_size_mode_mobile ?? settings.thumbnail_size_mode,
-      ["manual", "auto_fit_height"],
-      "manual"
-    ),
-
-    thumbnailAutoFitMaxWidthDesktop: stringSetting(
-      settings.thumbnail_auto_fit_max_width,
-      "10rem"
-    ),
-    thumbnailAutoFitMaxWidthMobile: stringSetting(
-      settings.thumbnail_auto_fit_max_width_mobile ??
-        settings.thumbnail_auto_fit_max_width,
-      "8rem"
-    ),
-
-    thumbnailSizePercentDesktop: numberSetting(
-      settings.thumbnail_size_percent,
-      15,
-      5,
-      50
-    ),
-    thumbnailSizePercentMobile: numberSetting(
-      settings.thumbnail_size_percent_mobile ?? settings.thumbnail_size_percent,
-      33,
-      15,
-      60
-    ),
-
-    thumbnailHeightTopBottomDesktop: stringSetting(
-      settings.thumbnail_height_top_bottom,
-      "auto"
-    ),
-    thumbnailHeightTopBottomMobile: stringSetting(
-      settings.thumbnail_height_top_bottom_mobile ??
-        settings.thumbnail_height_top_bottom,
-      "auto"
-    ),
-
-    showTitleDesktop: settings.show_title !== false,
-    showTitleMobile: settings.show_title_mobile !== false,
-
-    showExcerptDesktop: settings.show_excerpt !== false,
-    showExcerptMobile: settings.show_excerpt_mobile !== false,
-    excerptLengthDesktop: numberSetting(settings.excerpt_length, 3, 1, 12),
-    excerptLengthMobile: numberSetting(
-      settings.excerpt_length_mobile ?? settings.excerpt_length,
-      3,
-      1,
-      12
-    ),
-
-    showCategoryDesktop: settings.show_category !== false,
-    showCategoryMobile: settings.show_category_mobile !== false,
-
-    showTagsDesktop: settings.show_tags !== false,
-    showTagsMobile: settings.show_tags_mobile !== false,
-
-    showOpDesktop: settings.show_op !== false,
-    showOpMobile: settings.show_op_mobile !== false,
-
-    showPublishDateDesktop: settings.show_publish_date !== false,
-    showPublishDateMobile: settings.show_publish_date_mobile !== false,
-
-    showViewsDesktop: settings.show_views !== false,
-    showViewsMobile: settings.show_views_mobile !== false,
-
-    showReplyCountDesktop: settings.show_reply_count !== false,
-    showReplyCountMobile: settings.show_reply_count_mobile !== false,
-
-    showLikesDesktop: settings.show_likes !== false,
-    showLikesMobile: settings.show_likes_mobile !== false,
-
-    showActivityDesktop: settings.show_activity !== false,
-    showActivityMobile: settings.show_activity_mobile !== false,
-  };
-}
-
 function joinMetadataGroups(items, separator = "·") {
   const filtered = items.filter(Boolean);
   if (!filtered.length) return "";
 
   return filtered
     .map((item, index) =>
-      index === 0 ? item : `<span class="topic-hover-card__sep">${escapeHTML(separator)}</span>${item}`
+      index === 0
+        ? item
+        : `<span class="topic-hover-card__sep">${escapeHTML(separator)}</span>${item}`
     )
     .join("");
 }
@@ -232,7 +95,7 @@ function buildThumbnailHTML(topic, config, isMobile) {
         alt=""
         loading="lazy"
         decoding="async"
-        style="--thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight)};"
+        style="--thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};"
       />
     </div>
   `;
@@ -474,13 +337,15 @@ function buildMobileActionsHTML(topic, isMobile) {
 
   const slug = escapeHTML(String(topic.slug || topic.id || ""));
   const id = escapeHTML(String(topic.id || ""));
-  const topicUrl = `${window.location.origin}/t/${slug}/${id}`;
+  const topicUrl = sanitizeURL(
+    `${window.location.origin}/t/${slug}/${id}`
+  );
 
   return `
     <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
       <a
         class="btn btn-primary topic-hover-card__open-topic"
-        href="${topicUrl}"
+        href="${escapeHTML(topicUrl || "#")}"
         data-thc-open-topic
       >
         Open topic
@@ -628,8 +493,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
 }
 
 export default apiInitializer((api) => {
-  const baseConfig = readConfig(settings);
-  const config = buildRuntimeConfig(baseConfig, settings);
+  const config = readConfig(settings);
 
   if (!config.enabled) return;
 
@@ -779,7 +643,7 @@ export default apiInitializer((api) => {
   }
 
   function getRenderCacheKey(preview, isMobile) {
-    return `${preview.id}:${isMobile ? "mobile" : "desktop"}`;
+    return `${preview.type}:${preview.id}:${isMobile ? "mobile" : "desktop"}`;
   }
 
   function getRenderedCard(preview, isMobile) {
@@ -886,7 +750,6 @@ export default apiInitializer((api) => {
     currentPreviewKey = target.key;
 
     tooltip.innerHTML = buildLoadingPreviewHTML();
-
     tooltip.classList.add("is-visible");
     positionTooltipNextFrame(anchorRect);
 
@@ -1206,6 +1069,8 @@ export default apiInitializer((api) => {
       thumbnailSizeModeMobile: config.thumbnailSizeModeMobile,
       thumbnailSizePercentDesktop: config.thumbnailSizePercentDesktop,
       thumbnailSizePercentMobile: config.thumbnailSizePercentMobile,
+      wikipediaEnabled: config.hoverPreviewsEnableWikipedia,
+      wikipediaBaseUrl: config.hoverPreviewsWikipediaBaseUrl,
     });
   })().catch((error) => {
     // eslint-disable-next-line no-console

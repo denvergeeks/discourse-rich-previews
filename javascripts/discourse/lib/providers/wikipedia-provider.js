@@ -1,9 +1,14 @@
-import { logDebug, sanitizeExcerpt } from "../hover-preview-utils";
+import {
+  logDebug,
+  sanitizeExcerpt,
+  getCachedValue,
+  setCachedValue,
+} from "../hover-preview-utils";
 
 const WIKIPEDIA_HOST_RE = /(^|\.)wikipedia\.org$/i;
 
-export function matchesWikipediaTarget(link) {
-  if (!settings.hover_previews_enable_wikipedia) {
+export function matchesWikipediaTarget(link, config) {
+  if (config?.hoverPreviewsEnableWikipedia === false) {
     return false;
   }
 
@@ -23,26 +28,29 @@ export function matchesWikipediaTarget(link) {
   }
 }
 
-function getWikipediaHost(link) {
+function getWikipediaHost(link, config) {
   try {
     const url = new URL(link.href, window.location.origin);
 
     return (
       url.hostname ||
-      settings.hover_previews_wikipedia_base_url ||
+      config?.hoverPreviewsWikipediaBaseUrl ||
       "en.wikipedia.org"
     );
   } catch {
-    return settings.hover_previews_wikipedia_base_url || "en.wikipedia.org";
+    return config?.hoverPreviewsWikipediaBaseUrl || "en.wikipedia.org";
   }
 }
 
 function getWikipediaTitle(link) {
   try {
     const url = new URL(link.href, window.location.origin);
-    return decodeURIComponent(url.pathname.replace(/^\/wiki\//, ""));
+    return decodeURIComponent(url.pathname.replace(/^\/wiki\//, ""))
+      .replaceAll("_", " ")
+      .replace(/\s+/g, " ")
+      .trim();
   } catch {
-    return link.textContent?.trim() || "";
+    return (link?.textContent || "").replace(/\s+/g, " ").trim();
   }
 }
 
@@ -54,7 +62,7 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
         return null;
       }
 
-      const host = getWikipediaHost(link);
+      const host = getWikipediaHost(link, config);
       const title = getWikipediaTitle(link);
 
       if (!title) {
@@ -63,8 +71,9 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
 
       const cacheKey = `wikipedia:${host}:${title}`;
 
-      if (previewCache.has(cacheKey)) {
-        return previewCache.get(cacheKey);
+      const cached = getCachedValue(previewCache, cacheKey);
+      if (cached) {
+        return cached;
       }
 
       if (inFlightFetches.has(cacheKey)) {
@@ -74,7 +83,12 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
       const promise = fetchWikipediaPreview(host, title, config, signal)
         .then((data) => {
           if (data) {
-            previewCache.set(cacheKey, data);
+            setCachedValue(
+              previewCache,
+              cacheKey,
+              data,
+              config?.topicCacheMax || 100
+            );
           }
           return data;
         })
@@ -127,16 +141,16 @@ async function fetchWikipediaPreview(host, title, config, signal) {
     title: summary?.title || page.title || title,
     excerpt,
     html:
-      settings.wikipedia_preview_use_extract_html !== false
+      config?.wikipediaPreviewUseExtractHtml !== false
         ? summary?.extract_html || null
         : null,
     image_url:
-      settings.wikipedia_preview_show_image !== false
+      config?.wikipediaPreviewShowImage !== false
         ? summary?.thumbnail?.source || null
         : null,
     url:
       summary?.content_urls?.desktop?.page ||
-      `https://${host}/wiki/${page.key}`,
+      `https://${host}/wiki/${encodeURIComponent(page.key)}`,
     raw: {
       search: searchData,
       summary,

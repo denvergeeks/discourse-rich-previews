@@ -1,26 +1,61 @@
-// ─── Constants ────────────────────────────────────────────────────────────────
-
+export const DELAY_HIDE = 120;
+export const VIEWPORT_MARGIN = 8;
 export const TOOLTIP_ID = "topic-hover-card-tooltip";
 export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
-export const DELAY_HIDE = 280;
-export const VIEWPORT_MARGIN = 8;
-export const MOBILE_BREAKPOINT = 768;
-export const TOPIC_LINK_RE = /\/t\/(?:[^/]+\/)?([0-9]+)(?:\/[0-9]+)?/;
 
-// ─── Config reader ────────────────────────────────────────────────────────────
+function intSetting(value, fallback, min = null, max = null) {
+  const n = Number.parseInt(value, 10);
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
 
-function intSetting(raw, fallback, min = null, max = null) {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return fallback;
+  let result = n;
 
-  let value = n;
-  if (min !== null) value = Math.max(min, value);
-  if (max !== null) value = Math.min(max, value);
-  return value;
+  if (min !== null && result < min) {
+    result = min;
+  }
+
+  if (max !== null && result > max) {
+    result = max;
+  }
+
+  return result;
 }
 
-function stringSetting(raw, fallback = "") {
-  return typeof raw === "string" ? raw.trim() || fallback : fallback;
+function stringSetting(value, fallback = "") {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  const str = String(value).trim();
+  return str.length ? str : fallback;
+}
+
+function cssEscape(value) {
+  const str = String(value ?? "");
+
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(str);
+  }
+
+  return str.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+}
+
+function normalizeListSetting(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => String(v).trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split("|")
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  return [];
 }
 
 export function readConfig(settings) {
@@ -28,12 +63,95 @@ export function readConfig(settings) {
     enabled: settings.enabled !== false,
     debugMode: !!settings.debug_mode,
 
-    delayShow: intSetting(settings.delay_show, 280, 0, 5000),
+    delayShow: intSetting(settings.delay_show, 300, 0, 2000),
     cardWidth: stringSetting(settings.card_width, "32rem"),
-    mobileWidthPercent: intSetting(settings.mobile_width_percent, 92, 40, 100),
+    mobileWidthPercent: intSetting(settings.mobile_width_percent, 100, 70, 100),
     mobileEnabled: settings.mobile_enabled !== false,
 
-    topicCacheMax: intSetting(settings.topic_cache_max, 100, 1, 1000),
+    densityDesktop: stringSetting(settings.density, "default"),
+    densityMobile: stringSetting(settings.density_mobile, "cozy"),
+
+    showThumbnailDesktop: settings.show_thumbnail !== false,
+    thumbnailPlacementDesktop: stringSetting(
+      settings.thumbnail_placement,
+      "left"
+    ),
+    thumbnailSizeModeDesktop: stringSetting(
+      settings.thumbnail_size_mode,
+      "auto_fit_height"
+    ),
+    thumbnailAutoFitMaxWidthDesktop: stringSetting(
+      settings.thumbnail_auto_fit_max_width,
+      "10rem"
+    ),
+    thumbnailSizePercentDesktop: intSetting(
+      settings.thumbnail_size_percent,
+      15,
+      5,
+      50
+    ),
+
+    showThumbnailMobile: settings.show_thumbnail_mobile !== false,
+    thumbnailPlacementMobile: stringSetting(
+      settings.thumbnail_placement_mobile,
+      "top"
+    ),
+    thumbnailSizeModeMobile: stringSetting(
+      settings.thumbnail_size_mode_mobile,
+      "manual"
+    ),
+    thumbnailAutoFitMaxWidthMobile: stringSetting(
+      settings.thumbnail_auto_fit_max_width_mobile,
+      "8rem"
+    ),
+    thumbnailSizePercentMobile: intSetting(
+      settings.thumbnail_size_percent_mobile,
+      33,
+      15,
+      60
+    ),
+
+    thumbnailHeightTopBottomDesktop: stringSetting(
+      settings.thumbnail_height_top_bottom,
+      "auto"
+    ),
+    thumbnailHeightTopBottomMobile: stringSetting(
+      settings.thumbnail_height_top_bottom_mobile,
+      "auto"
+    ),
+
+    showTitleDesktop: settings.show_title !== false,
+    showTitleMobile: settings.show_title_mobile !== false,
+
+    showExcerptDesktop: settings.show_excerpt !== false,
+    excerptLengthDesktop: intSetting(settings.excerpt_length, 3, 1, 12),
+
+    showExcerptMobile: settings.show_excerpt_mobile !== false,
+    excerptLengthMobile: intSetting(settings.excerpt_length_mobile, 3, 1, 12),
+
+    showCategoryDesktop: settings.show_category !== false,
+    showCategoryMobile: settings.show_category_mobile !== false,
+
+    showTagsDesktop: settings.show_tags !== false,
+    showTagsMobile: settings.show_tags_mobile !== false,
+
+    showOpDesktop: settings.show_op !== false,
+    showOpMobile: settings.show_op_mobile !== false,
+
+    showPublishDateDesktop: settings.show_publish_date !== false,
+    showPublishDateMobile: settings.show_publish_date_mobile !== false,
+
+    showViewsDesktop: settings.show_views !== false,
+    showViewsMobile: settings.show_views_mobile !== false,
+
+    showReplyCountDesktop: settings.show_reply_count !== false,
+    showReplyCountMobile: settings.show_reply_count_mobile !== false,
+
+    showLikesDesktop: settings.show_likes !== false,
+    showLikesMobile: settings.show_likes_mobile !== false,
+
+    showActivityDesktop: settings.show_activity !== false,
+    showActivityMobile: settings.show_activity_mobile !== false,
 
     enableOnTopicList: settings.enable_on_topic_list !== false,
     enableOnLatest: settings.enable_on_latest !== false,
@@ -45,93 +163,48 @@ export function readConfig(settings) {
     enableOnOther: settings.enable_on_other !== false,
     enableOnKanbanBoards: settings.enable_on_kanban_boards === true,
 
+    includedTags: normalizeListSetting(settings.included_tags),
+    includedClasses: normalizeListSetting(settings.included_classes),
+    excludedTags: normalizeListSetting(settings.excluded_tags),
+    excludedClasses: normalizeListSetting(settings.excluded_classes),
+
+    hoverPreviewsEnableWikipedia:
+      settings.hover_previews_enable_wikipedia !== false,
+    hoverPreviewsWikipediaBaseUrl: stringSetting(
+      settings.hover_previews_wikipedia_base_url,
+      "en.wikipedia.org"
+    ),
+    wikipediaPreviewShowImage:
+      settings.wikipedia_preview_show_image !== false,
+    wikipediaPreviewUseExtractHtml:
+      settings.wikipedia_preview_use_extract_html !== false,
+
     userPreferenceFieldName: stringSetting(
       settings.user_preference_field_name,
       ""
     ),
     resolveUserFieldIdForAdmins:
       settings.resolve_user_field_id_for_admins !== false,
+
+    topicCacheMax: intSetting(settings.topic_cache_max, 100, 10, 500),
   };
 }
 
-// ─── Debug ────────────────────────────────────────────────────────────────────
+export function logDebug(config, message, data = null) {
+  if (!config?.debugMode) {
+    return;
+  }
 
-export function logDebug(config, ...args) {
-  if (config?.debugMode) {
-    // eslint-disable-next-line no-console
-    console.debug("[hover-previews]", ...args);
+  if (data !== null && data !== undefined) {
+    console.debug(`[topic-hover-cards] ${message}`, data);
+  } else {
+    console.debug(`[topic-hover-cards] ${message}`);
   }
 }
 
-// ─── Viewport state ───────────────────────────────────────────────────────────
-
-export function createViewportState() {
-  const anyHoverQuery = window.matchMedia("(any-hover: hover)");
-  const hoverQuery = window.matchMedia("(hover: hover)");
-
-  return {
-    hasHoverInput() {
-      return anyHoverQuery.matches || hoverQuery.matches;
-    },
-
-    isNarrowViewport() {
-      return window.innerWidth < MOBILE_BREAKPOINT;
-    },
-
-    isMobileInteractionMode() {
-      return !this.hasHoverInput() && this.isNarrowViewport();
-    },
-
-    isMobileLayout() {
-      return this.isNarrowViewport();
-    },
-  };
+export function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
-
-// ─── Simple LRU cache helpers ────────────────────────────────────────────────
-
-export function getCachedValue(map, key) {
-  if (!map.has(key)) return undefined;
-  const value = map.get(key);
-  map.delete(key);
-  map.set(key, value);
-  return value;
-}
-
-export function setCachedValue(map, key, value, max = 100) {
-  if (map.has(key)) {
-    map.delete(key);
-  }
-  map.set(key, value);
-
-  while (map.size > max) {
-    const firstKey = map.keys().next().value;
-    map.delete(firstKey);
-  }
-}
-
-// ─── HTTP / JSON helper ──────────────────────────────────────────────────────
-
-export async function getJSON(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
-    headers: {
-      Accept: "application/json",
-      "X-Requested-With": "XMLHttpRequest",
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const error = new Error(`HTTP ${response.status} for ${url}`);
-    error.status = response.status;
-    throw error;
-  }
-
-  return await response.json();
-}
-
-// ─── URL / text sanitizers ───────────────────────────────────────────────────
 
 export function escapeHTML(value) {
   return String(value ?? "")
@@ -143,152 +216,269 @@ export function escapeHTML(value) {
 }
 
 export function sanitizeURL(url) {
-  if (!url) return null;
+  if (!url) {
+    return "";
+  }
 
   try {
-    const parsed = new URL(url, window.location.origin);
-
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      return null;
+    const parsed = new URL(String(url), window.location.origin);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
     }
-
-    return parsed.toString();
   } catch {
+    return "";
+  }
+
+  return "";
+}
+
+export function isElementVisible(el) {
+  if (!(el instanceof Element)) {
+    return false;
+  }
+
+  const rect = el.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+export function createViewportState() {
+  return {
+    isMobileLayout() {
+      return window.matchMedia("(max-width: 767px)").matches;
+    },
+    isMobileInteractionMode() {
+      return (
+        window.matchMedia("(max-width: 767px)").matches ||
+        window.matchMedia("(hover: none), (pointer: coarse)").matches
+      );
+    },
+  };
+}
+
+export function getCachedValue(map, key) {
+  if (!map?.has(key)) {
     return null;
   }
+
+  const value = map.get(key);
+  map.delete(key);
+  map.set(key, value);
+  return value;
 }
 
-export function safeAvatarURL(template, size = 24) {
-  if (!template) return null;
-
-  const replaced = String(template).replace("{size}", String(size));
-  const full = replaced.startsWith("http")
-    ? replaced
-    : `${window.location.origin}${replaced}`;
-
-  return sanitizeURL(full);
-}
-
-export function sanitizeExcerpt(html) {
-  if (!html) return "";
-
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  doc
-    .querySelectorAll(
-      "figure, figcaption, img, picture, source, .lightbox-wrapper, .image-wrapper, .d-lazyload"
-    )
-    .forEach((el) => el.remove());
-
-  return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
-}
-
-export function normalizeTag(tag) {
-  if (!tag) return null;
-
-  if (typeof tag === "string") {
-    const trimmed = tag.trim();
-    return trimmed || null;
+export function setCachedValue(map, key, value, maxSize = 100) {
+  if (!map) {
+    return value;
   }
 
-  if (typeof tag === "object") {
-    const candidate =
-      tag.name ||
-      tag.id ||
-      tag.text ||
-      tag.value ||
-      tag.slug ||
-      null;
-
-    if (candidate === null || candidate === undefined) return null;
-    const trimmed = String(candidate).trim();
-    return trimmed || null;
+  if (map.has(key)) {
+    map.delete(key);
   }
 
-  const trimmed = String(tag).trim();
-  return trimmed || null;
-}
+  map.set(key, value);
 
-export function formatNumber(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "0";
-
-  if (n >= 1000) {
-    return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  while (map.size > maxSize) {
+    const oldestKey = map.keys().next().value;
+    map.delete(oldestKey);
   }
 
-  return String(n);
+  return value;
 }
 
-// ─── Topic URL parsing ───────────────────────────────────────────────────────
+export async function getJSON(url, options = {}) {
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      ...options.headers,
+    },
+    signal: options.signal,
+  });
 
-export function currentTopicIdFromLocation() {
-  const m = window.location.pathname.match(TOPIC_LINK_RE);
-  return m ? parseInt(m[1], 10) : null;
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} for ${url}`);
+  }
+
+  return response.json();
 }
 
-export function currentTopicPathFromLocation() {
+export function inCookedPost(el) {
+  return !!el?.closest?.(".cooked");
+}
+
+export function isCookedPostFragmentLink(link) {
+  if (!(link instanceof HTMLAnchorElement)) {
+    return false;
+  }
+
+  const href = link.getAttribute("href") || "";
+  if (!href) {
+    return false;
+  }
+
+  if (href.startsWith("#")) {
+    return true;
+  }
+
   try {
-    return new URL(window.location.href).pathname.replace(/\/+$/, "");
+    const url = new URL(link.href, window.location.origin);
+    return url.hash.length > 0;
   } catch {
-    return window.location.pathname.replace(/\/+$/, "");
+    return false;
   }
 }
 
 export function parseTopicUrl(href) {
-  if (!href) return null;
+  if (!href) {
+    return null;
+  }
 
   try {
     const url = new URL(href, window.location.origin);
-    if (url.origin !== window.location.origin) return null;
 
-    const match = url.pathname.match(TOPIC_LINK_RE);
-    if (!match) return null;
+    if (url.origin !== window.location.origin) {
+      return null;
+    }
+
+    const path = url.pathname.replace(/\/+$/, "");
+    const match = path.match(/^\/t\/([^/]+)\/(\d+)(?:\/(\d+))?$/);
+
+    if (!match) {
+      return null;
+    }
 
     return {
+      slug: match[1],
+      topicId: Number.parseInt(match[2], 10),
+      postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
       url,
-      topicId: parseInt(match[1], 10),
     };
   } catch {
     return null;
   }
 }
 
-export function topicIdFromHref(href) {
-  return parseTopicUrl(href)?.topicId ?? null;
-}
+export function currentTopicIdFromPage() {
+  const bodyTopicId = document.body?.dataset?.topicId;
+  if (bodyTopicId && /^\d+$/.test(bodyTopicId)) {
+    return Number.parseInt(bodyTopicId, 10);
+  }
 
-// ─── Link area detection ─────────────────────────────────────────────────────
+  const topicEl = document.querySelector("[data-topic-id]");
+  const topicId = topicEl?.getAttribute?.("data-topic-id");
+  if (topicId && /^\d+$/.test(topicId)) {
+    return Number.parseInt(topicId, 10);
+  }
 
-export function inCookedPost(link) {
-  return !!link?.closest(".topic-post .cooked a");
+  const topicLink = parseTopicUrl(window.location.href);
+  return topicLink?.topicId ?? null;
 }
 
 export function isCurrentTopicLink(link) {
   const parsed = parseTopicUrl(link?.href);
-  if (!parsed) return false;
+  const currentTopicId = currentTopicIdFromPage();
 
-  const currentTopicId = currentTopicIdFromLocation();
-  if (currentTopicId && parsed.topicId === currentTopicId) return true;
-
-  return parsed.url.pathname.replace(/\/+$/, "") === currentTopicPathFromLocation();
+  return !!(
+    parsed?.topicId &&
+    currentTopicId &&
+    parsed.topicId === currentTopicId
+  );
 }
 
-export function isCookedPostFragmentLink(link) {
-  if (!link || !inCookedPost(link)) return false;
+export function topicIdFromHref(href) {
+  return parseTopicUrl(href)?.topicId ?? null;
+}
 
-  const href = link.getAttribute("href") || "";
-  if (href.startsWith("#")) return true;
+function matchesTagList(link, tags) {
+  if (!link || !Array.isArray(tags) || !tags.length) {
+    return null;
+  }
 
+  const selector = tags.join(", ");
+  return selector ? link.closest(selector) : null;
+}
+
+function matchesClassList(link, classes) {
+  if (!link || !Array.isArray(classes) || !classes.length) {
+    return null;
+  }
+
+  const selector = classes.map((c) => `.${cssEscape(c)}`).join(", ");
+  const ancestorMatch = selector ? link.closest(selector) : null;
+
+  if (ancestorMatch) {
+    return ancestorMatch;
+  }
+
+  for (const cls of link.classList) {
+    if (classes.includes(String(cls).toLowerCase())) {
+      return link;
+    }
+  }
+
+  return null;
+}
+
+function matchesIncludedRules(link, config) {
+  const includedTags = Array.isArray(config?.includedTags)
+    ? config.includedTags
+    : [];
+  const includedClasses = Array.isArray(config?.includedClasses)
+    ? config.includedClasses
+    : [];
+
+  if (!includedTags.length && !includedClasses.length) {
+    return true;
+  }
+
+  return !!(
+    matchesTagList(link, includedTags) ||
+    matchesClassList(link, includedClasses)
+  );
+}
+
+function matchesExcludedRules(link, config) {
+  const excludedTags = Array.isArray(config?.excludedTags)
+    ? config.excludedTags
+    : [];
+  const excludedClasses = Array.isArray(config?.excludedClasses)
+    ? config.excludedClasses
+    : [];
+
+  const excludedTagMatch = matchesTagList(link, excludedTags);
+  if (excludedTagMatch) {
+    return {
+      type: "tag",
+      match: excludedTagMatch,
+    };
+  }
+
+  const excludedClassMatch = matchesClassList(link, excludedClasses);
+  if (excludedClassMatch) {
+    return {
+      type: "class",
+      match: excludedClassMatch,
+    };
+  }
+
+  return null;
+}
+
+export function isWikipediaArticleLink(link) {
   try {
     const url = new URL(link.href, window.location.origin);
-    return !!url.hash;
+    return (
+      /(^|\.)wikipedia\.org$/i.test(url.hostname) &&
+      url.pathname.startsWith("/wiki/")
+    );
   } catch {
     return false;
   }
 }
 
 export function isEligiblePreviewLink(link, config) {
-  if (!link) {
+  if (!(link instanceof HTMLAnchorElement)) {
     return false;
   }
 
@@ -296,17 +486,31 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
-  const isWikipediaLink = (() => {
-    try {
-      const url = new URL(link.href, window.location.origin);
-      return /(^|\.)wikipedia\.org$/i.test(url.hostname) && url.pathname.startsWith("/wiki/");
-    } catch {
-      return false;
-    }
-  })();
+  if (!matchesIncludedRules(link, config)) {
+    logDebug(config, "Skipping link due to include rules", {
+      href: link.href,
+    });
+    return false;
+  }
 
-  if (isWikipediaLink) {
-    return settings.hover_previews_enable_wikipedia;
+  const excluded = matchesExcludedRules(link, config);
+  if (excluded) {
+    if (excluded.type === "tag") {
+      logDebug(config, "Skipping link due to excluded tag", {
+        href: link.href,
+        tagName: excluded.match?.tagName,
+      });
+    } else {
+      logDebug(config, "Skipping link due to excluded class", {
+        href: link.href,
+        className: excluded.match?.className,
+      });
+    }
+    return false;
+  }
+
+  if (isWikipediaArticleLink(link)) {
+    return config?.hoverPreviewsEnableWikipedia !== false;
   }
 
   const parsed = parseTopicUrl(link.href);
@@ -413,48 +617,95 @@ export function linkInSupportedArea(link, config) {
   return false;
 }
 
-// ─── User preference field helpers ───────────────────────────────────────────
-
-function fieldValueIsTruthy(value) {
-  if (value === true || value === 1) return true;
-
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return ["1", "true", "yes", "on", "checked"].includes(normalized);
+export function normalizedFieldKeyVariants(rawValue) {
+  const raw = String(rawValue ?? "").trim();
+  if (!raw) {
+    return [];
   }
 
-  return false;
-}
+  const normalized = raw.toLowerCase();
+  const variants = new Set([normalized]);
 
-export function normalizedFieldKeyVariants(raw) {
-  const value = String(raw ?? "").trim();
-  if (!value) return [];
-
-  const lower = value.toLowerCase();
-  const variants = new Set([value, lower]);
-
-  if (/^\d+$/.test(value)) {
-    variants.add(`user_field_${value}`);
+  if (/^\d+$/.test(normalized)) {
+    variants.add(`user_field_${normalized}`);
   }
 
-  const prefixed = lower.match(/^user_field_(\d+)$/);
-  if (prefixed) {
-    variants.add(prefixed[1]);
-    variants.add(`user_field_${prefixed[1]}`);
+  const userFieldMatch = normalized.match(/^user_field_(\d+)$/);
+  if (userFieldMatch) {
+    variants.add(userFieldMatch[1]);
   }
 
   return [...variants];
 }
 
-export function findTruthyFieldMatch(fields, candidates) {
-  if (!fields || !candidates?.length) return false;
+function isTruthyUserFieldValue(value) {
+  if (value === true || value === 1) {
+    return true;
+  }
 
-  return candidates.some((candidate) => {
-    const value = fields[candidate];
-    return fieldValueIsTruthy(value);
-  });
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  return ["true", "t", "1", "yes", "y", "on"].includes(normalized);
+}
+
+export function findTruthyFieldMatch(source, candidates) {
+  if (!source || !candidates?.length) {
+    return null;
+  }
+
+  for (const key of candidates) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      if (isTruthyUserFieldValue(source[key])) {
+        return {
+          key,
+          value: source[key],
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 export function currentUserIsStaffLike(user) {
   return !!(user?.admin || user?.moderator || user?.staff);
+}
+
+export function safeAvatarURL(avatarTemplate, size = 24) {
+  if (!avatarTemplate) {
+    return "";
+  }
+
+  const replaced = String(avatarTemplate).replace("{size}", String(size));
+  return sanitizeURL(replaced);
+}
+
+export function sanitizeExcerpt(htmlOrText) {
+  const source = String(htmlOrText ?? "").trim();
+  if (!source) {
+    return "";
+  }
+
+  const temp = document.createElement("div");
+  temp.innerHTML = source;
+
+  temp.querySelectorAll("script, style, noscript").forEach((el) => el.remove());
+
+  const text = temp.textContent || temp.innerText || "";
+  return text.replace(/\s+/g, " ").trim();
+}
+
+export function normalizeTag(tag) {
+  return String(tag ?? "").trim();
+}
+
+export function formatNumber(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return "0";
+  }
+
+  return new Intl.NumberFormat().format(num);
 }

@@ -1,4 +1,4 @@
-import { escapeHTML } from "./hover-preview-utils";
+import { escapeHTML, sanitizeURL } from "./hover-preview-utils";
 
 export function buildPreviewHTML(preview, categories, config, isMobile = false) {
   if (!preview) {
@@ -108,6 +108,18 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
     isMobile
   );
 
+  const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
+  const showExcerpt = pick(
+    config,
+    "showExcerptDesktop",
+    "showExcerptMobile",
+    isMobile
+  );
+
+  const showImage = config?.wikipediaPreviewShowImage !== false;
+  const useExtractHtml = config?.wikipediaPreviewUseExtractHtml !== false;
+  const safeUrl = sanitizeURL(preview.url) || "#";
+
   const wrapperStyle = `
     --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
     --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth || "10rem")};
@@ -127,26 +139,41 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
     `
     : "";
 
-  const thumbnail = buildSharedThumbnailHTML(preview.image_url, config, isMobile);
+  const thumbnail =
+    showImage && preview.image_url
+      ? buildSharedThumbnailHTML(preview.image_url, config, isMobile)
+      : "";
 
-  const excerptHTML = preview.html
+  let excerptHTML = "";
+  if (showExcerpt) {
+    excerptHTML =
+      useExtractHtml && preview.html
+        ? `
+          <div class="topic-hover-card__excerpt">
+            ${preview.html}
+          </div>
+        `
+        : `
+          <div class="topic-hover-card__excerpt">
+            ${escapeHTML(preview.excerpt || "")}
+          </div>
+        `;
+  }
+
+  const titleHTML = showTitle
     ? `
-      <div class="topic-hover-card__excerpt">
-        ${preview.html}
-      </div>
+      <h3 class="topic-hover-card__title">
+        ${escapeHTML(preview.title || "Wikipedia")}
+      </h3>
     `
-    : `
-      <div class="topic-hover-card__excerpt">
-        ${escapeHTML(preview.excerpt || "")}
-      </div>
-    `;
+    : "";
 
   const mobileActionsHTML = isMobile
     ? `
       <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
         <a
           class="btn btn-primary topic-hover-card__open-topic"
-          href="${escapeHTML(preview.url)}"
+          href="${escapeHTML(safeUrl)}"
           target="_blank"
           rel="noopener noreferrer"
           data-thc-open-topic
@@ -167,16 +194,13 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
   const bodyInner = `
     <div class="topic-hover-card__body">
       ${mobileCloseButton}
-      <h3 class="topic-hover-card__title">
-        ${escapeHTML(preview.title || "Wikipedia")}
-      </h3>
-
+      ${titleHTML}
       ${excerptHTML}
 
       <div class="topic-hover-card__meta">
         <span class="topic-hover-card__meta-item">
           <a
-            href="${escapeHTML(preview.url)}"
+            href="${escapeHTML(safeUrl)}"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -238,16 +262,88 @@ function buildTopicFallbackHTML(preview, config, isMobile) {
   const density = pick(config, "densityDesktop", "densityMobile", isMobile);
   const densityClass = `topic-hover-card--density-${density || "default"}`;
 
+  const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
+  const showExcerpt = pick(
+    config,
+    "showExcerptDesktop",
+    "showExcerptMobile",
+    isMobile
+  );
+
+  const safeUrl = sanitizeURL(preview.url) || "";
+
+  const mobileCloseButton = isMobile
+    ? `
+      <button
+        class="topic-hover-card__mobile-x"
+        type="button"
+        aria-label="Close preview"
+        data-thc-close
+      >
+        &times;
+      </button>
+    `
+    : "";
+
+  const mobileActionsHTML = isMobile && safeUrl
+    ? `
+      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
+        <a
+          class="btn btn-primary topic-hover-card__open-topic"
+          href="${escapeHTML(safeUrl)}"
+          data-thc-open-topic
+        >
+          Open topic
+        </a>
+        <button
+          class="btn btn-default topic-hover-card__close"
+          type="button"
+          data-thc-close
+        >
+          Close
+        </button>
+      </div>
+    `
+    : isMobile
+    ? `
+      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
+        <button
+          class="btn btn-default topic-hover-card__close"
+          type="button"
+          data-thc-close
+        >
+          Close
+        </button>
+      </div>
+    `
+    : "";
+
   return `
     <div class="topic-hover-card ${densityClass}">
       <div class="topic-hover-card__body">
-        <h3 class="topic-hover-card__title">
-          ${escapeHTML(preview.title || "(no title)")}
-        </h3>
+        ${mobileCloseButton}
 
-        <div class="topic-hover-card__excerpt">
-          ${escapeHTML(preview.excerpt || "")}
-        </div>
+        ${
+          showTitle
+            ? `
+          <h3 class="topic-hover-card__title">
+            ${escapeHTML(preview.title || "(no title)")}
+          </h3>
+        `
+            : ""
+        }
+
+        ${
+          showExcerpt
+            ? `
+          <div class="topic-hover-card__excerpt">
+            ${escapeHTML(preview.excerpt || "")}
+          </div>
+        `
+            : ""
+        }
+
+        ${mobileActionsHTML}
       </div>
     </div>
   `;
