@@ -134,7 +134,12 @@ function buildTagsHTML(topic, config, isMobile) {
   if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
   if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
 
+  logDebug(config, "Raw topic tags", topic.tags);
+
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
+
+  logDebug(config, "Normalized tags", tags);
+
   if (!tags.length) return "";
 
   return `
