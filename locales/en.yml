@@ -176,6 +176,12 @@ en:
 
     wikipedia_previews_use_extract_html: "Use HTML Extract for Wikipedia Previews"
     wikipedia_previews_use_extract_html_description: "Use the HTML extract returned by Wikipedia for preview text when available."
+    
+    wikipedia_density: "Wikipedia Density on Desktop"
+    wikipedia_density_description: "Controls Wikipedia preview density on desktop."
+
+    wikipedia_density_mobile: "Wikipedia Density on Mobile"
+    wikipedia_density_mobile_description: "Controls Wikipedia preview density on mobile."
 
     user_preference_field_name: "User Preference Field Name"
     user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X format."

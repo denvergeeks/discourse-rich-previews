@@ -328,6 +328,24 @@ wikipedia_previews_use_extract_html:
   type: bool
   description: Use the HTML extract returned by Wikipedia for preview text when available.
 
+wikipedia_density:
+  default: cozy
+  type: enum
+  choices:
+    - default
+    - cozy
+    - compact
+  description: Controls Wikipedia preview density on desktop.
+
+wikipedia_density_mobile:
+  default: compact
+  type: enum
+  choices:
+    - default
+    - cozy
+    - compact
+  description: Controls Wikipedia preview density on mobile.
+
 user_preference_field_name:
   default: disable_topic_hover_cards
   type: string

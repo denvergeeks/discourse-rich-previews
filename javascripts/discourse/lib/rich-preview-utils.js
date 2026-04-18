@@ -71,6 +71,15 @@ export function readConfig(settings) {
     densityDesktop: stringSetting(settings.density, "default"),
     densityMobile: stringSetting(settings.density_mobile, "cozy"),
 
+    wikipediaDensityDesktop: stringSetting(
+      settings.wikipedia_density,
+      "cozy"
+    ),
+    wikipediaDensityMobile: stringSetting(
+      settings.wikipedia_density_mobile,
+      "compact"
+    ),
+
     showThumbnailDesktop: settings.show_thumbnail !== false,
     thumbnailPlacementDesktop: stringSetting(
       settings.thumbnail_placement,

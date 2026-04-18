@@ -72,7 +72,12 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
     isMobile
   );
 
-  const density = pick(config, "densityDesktop", "densityMobile", isMobile);
+  const density = pick(
+    config,
+    "wikipediaDensityDesktop",
+    "wikipediaDensityMobile",
+    isMobile
+);
   const densityClass = `topic-hover-card--density-${density || "default"}`;
 
   const sizeMode = pick(
@@ -259,7 +264,12 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
 }
 
 function buildTopicFallbackHTML(preview, config, isMobile) {
-  const density = pick(config, "densityDesktop", "densityMobile", isMobile);
+  const density = pick(
+    config,
+    "wikipediaDensityDesktop",
+    "wikipediaDensityMobile",
+    isMobile
+  );
   const densityClass = `topic-hover-card--density-${density || "default"}`;
 
   const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);

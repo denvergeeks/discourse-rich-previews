@@ -134,11 +134,11 @@ function buildTagsHTML(topic, config, isMobile) {
   if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
   if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
 
-  logDebug(config, "Raw topic tags", topic.tags);
+//  logDebug(config, "Raw topic tags", topic.tags);
 
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
 
-  logDebug(config, "Normalized tags", tags);
+//  logDebug(config, "Normalized tags", tags);
 
   if (!tags.length) return "";
 
@@ -456,7 +456,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     case "left":
       return `
         <div
-          class="topic-hover-card topic-hover-card--left ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--left ${densityClass} ${sizeModeClass}"
           style="${wrapperStyle}"
         >
           ${thumbnail}
@@ -466,7 +466,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     case "right":
       return `
         <div
-          class="topic-hover-card topic-hover-card--right ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--right ${densityClass} ${sizeModeClass}"
           style="${wrapperStyle}"
         >
           ${bodyInner}
@@ -476,7 +476,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     case "bottom":
       return `
         <div
-          class="topic-hover-card topic-hover-card--bottom ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--bottom ${densityClass} ${sizeModeClass}"
           style="${wrapperStyle}"
         >
           ${bodyInner}
@@ -487,7 +487,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     default:
       return `
         <div
-          class="topic-hover-card topic-hover-card--top ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--top ${densityClass} ${sizeModeClass}"
           style="${wrapperStyle}"
         >
           ${thumbnail}
