@@ -25,7 +25,7 @@ density:
   description: Controls hover card density on desktop.
 
 density_mobile:
-  default: cozy
+  default: default
   type: enum
   choices:
     - default
