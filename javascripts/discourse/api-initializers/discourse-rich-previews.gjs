@@ -87,6 +87,8 @@ function buildThumbnailHTML(topic, config, isMobile) {
       isMobile
     ) === "auto_fit_height";
 
+  const isWrapExcerpt = sizeMode === "wrap_excerpt";
+
   return `
     <div class="topic-hover-card__thumb-wrap">
       <img
@@ -391,9 +393,13 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     isMobile
   );
 
+  const isWrapExcerpt = sizeMode === "wrap_excerpt";
+
   const sizeModeClass =
     sizeMode === "auto_fit_height"
       ? "topic-hover-card--thumb-size-auto-fit-height"
+      : sizeMode === "wrap_excerpt"
+      ? "topic-hover-card--thumb-size-wrap-excerpt"
       : "topic-hover-card--thumb-size-manual";
 
   const thumbnailPercent = pick(
@@ -435,11 +441,28 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
       ? buildThumbnailHTML(topic, config, isMobile)
       : "";
 
+  const outerThumbnail = isWrapExcerpt ? "" : thumbnail;
+
   const bodyInner = `
     <div class="topic-hover-card__body">
       ${mobileCloseButton}
       ${buildTitleHTML(topic, config, isMobile)}
-      ${buildExcerptHTML(topic, config, isMobile)}
+
+      ${
+        isWrapExcerpt && thumbnail
+          ? `
+        <div class="topic-hover-card__excerpt-wrap topic-hover-card__excerpt-wrap--${escapeHTML(
+          placement
+        )}">
+          ${thumbnail}
+          ${buildExcerptHTML(topic, config, isMobile)}
+        </div>
+      `
+          : `
+        ${buildExcerptHTML(topic, config, isMobile)}
+      `
+      }
+
       ${buildMetadataHTML(topic, config, isMobile)}
       ${buildBadgesHTML(topic, categories, config, isMobile)}
       ${buildMobileActionsHTML(topic, isMobile)}
@@ -459,7 +482,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
           class="topic-hover-card topic-hover-card--topic topic-hover-card--left ${densityClass} ${sizeModeClass}"
           style="${wrapperStyle}"
         >
-          ${thumbnail}
+          ${outerThumbnail}
           ${bodyInner}
         </div>
       `;
@@ -470,7 +493,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
           style="${wrapperStyle}"
         >
           ${bodyInner}
-          ${thumbnail}
+          ${outerThumbnail}
         </div>
       `;
     case "bottom":
@@ -480,7 +503,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
           style="${wrapperStyle}"
         >
           ${bodyInner}
-          ${thumbnail}
+          ${outerThumbnail}
         </div>
       `;
     case "top":
@@ -490,7 +513,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
           class="topic-hover-card topic-hover-card--topic topic-hover-card--top ${densityClass} ${sizeModeClass}"
           style="${wrapperStyle}"
         >
-          ${thumbnail}
+          ${outerThumbnail}
           ${bodyInner}
         </div>
       `;
