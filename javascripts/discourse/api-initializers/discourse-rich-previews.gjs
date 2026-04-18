@@ -393,7 +393,8 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     isMobile
   );
 
-  const isWrapExcerpt = sizeMode === "wrap_excerpt";
+  const hasImage = !!sanitizeURL(topic.image_url);
+  const isWrapExcerpt = sizeMode === "wrap_excerpt" && hasImage;
 
   const sizeModeClass =
     sizeMode === "auto_fit_height"
@@ -437,32 +438,29 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     : "";
 
   const thumbnail =
-    topic.image_url && showThumbnail
-      ? buildThumbnailHTML(topic, config, isMobile)
-      : "";
+    hasImage && showThumbnail ? buildThumbnailHTML(topic, config, isMobile) : "";
 
   const outerThumbnail = isWrapExcerpt ? "" : thumbnail;
+
+  const excerptHTML = buildExcerptHTML(topic, config, isMobile);
+
+  const wrappedExcerptHTML =
+    isWrapExcerpt && thumbnail && excerptHTML
+      ? `
+        <div class="topic-hover-card__excerpt-wrap topic-hover-card__excerpt-wrap--${escapeHTML(
+          placement
+        )}">
+          ${thumbnail}
+          ${excerptHTML}
+        </div>
+      `
+      : excerptHTML;
 
   const bodyInner = `
     <div class="topic-hover-card__body">
       ${mobileCloseButton}
       ${buildTitleHTML(topic, config, isMobile)}
-
-      ${
-        isWrapExcerpt && thumbnail
-          ? `
-        <div class="topic-hover-card__excerpt-wrap topic-hover-card__excerpt-wrap--${escapeHTML(
-          placement
-        )}">
-          ${thumbnail}
-          ${buildExcerptHTML(topic, config, isMobile)}
-        </div>
-      `
-          : `
-        ${buildExcerptHTML(topic, config, isMobile)}
-      `
-      }
-
+      ${wrappedExcerptHTML}
       ${buildMetadataHTML(topic, config, isMobile)}
       ${buildBadgesHTML(topic, categories, config, isMobile)}
       ${buildMobileActionsHTML(topic, isMobile)}
@@ -470,9 +468,9 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
   `;
 
   const wrapperStyle = `
-    --thc-thumbnail-size-percent:${thumbnailPercent};
-    --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth)};
-    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight)};
+    --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
+    --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth || "10rem")};
+    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};
   `;
 
   switch (placement) {
