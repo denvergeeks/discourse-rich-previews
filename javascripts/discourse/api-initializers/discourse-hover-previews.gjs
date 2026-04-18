@@ -14,7 +14,6 @@ import {
   getCachedValue,
   setCachedValue,
   getJSON,
-  topicIdFromHref,
   linkInSupportedArea,
   normalizedFieldKeyVariants,
   findTruthyFieldMatch,
@@ -25,6 +24,15 @@ import {
   normalizeTag,
   formatNumber,
 } from "../lib/hover-preview-utils";
+
+import { matchPreviewTarget } from "../lib/preview-router";
+import {
+  buildPreviewHTML,
+  buildLoadingPreviewHTML,
+  buildErrorPreviewHTML,
+} from "../lib/preview-renderer";
+import { createTopicProvider } from "../lib/providers/topic-provider";
+import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 
 function skeletonHTML() {
   return `
@@ -633,7 +641,7 @@ export default apiInitializer((api) => {
   let showTimer = null;
   let hideTimer = null;
   let clearSuppressionTimer = null;
-  let currentTopicId = null;
+  let currentPreviewKey = null;
   let currentAbortController = null;
   let currentAnchor = null;
   let isInsideCard = false;
@@ -643,8 +651,22 @@ export default apiInitializer((api) => {
 
   const topicCache = new Map();
   const renderCache = new Map();
+  const previewCache = new Map();
   const inFlightFetches = new Map();
   const cleanupFns = [];
+
+  const topicProvider = createTopicProvider(
+    api,
+    config,
+    topicCache,
+    inFlightFetches
+  );
+
+  const wikipediaProvider = createWikipediaProvider(
+    config,
+    previewCache,
+    inFlightFetches
+  );
 
   function addCleanup(target, type, handler, options) {
     target.addEventListener(type, handler, options);
@@ -756,16 +778,23 @@ export default apiInitializer((api) => {
     requestAnimationFrame(() => positionTooltip(anchorRect));
   }
 
-  function getRenderCacheKey(topicId, isMobile) {
-    return `${topicId}:${isMobile ? "mobile" : "desktop"}`;
+  function getRenderCacheKey(preview, isMobile) {
+    return `${preview.id}:${isMobile ? "mobile" : "desktop"}`;
   }
 
-  function getRenderedCard(topic, isMobile) {
-    const key = getRenderCacheKey(topic.id, isMobile);
+  function getRenderedCard(preview, isMobile) {
+    const key = getRenderCacheKey(preview, isMobile);
     const cached = getCachedValue(renderCache, key);
     if (cached) return cached;
 
-    const html = buildCardHTML(topic, categories, config, isMobile);
+    let html;
+
+    if (preview.type === "topic" && preview.raw) {
+      html = buildCardHTML(preview.raw, categories, config, isMobile);
+    } else {
+      html = buildPreviewHTML(preview, categories, config, isMobile);
+    }
+
     setCachedValue(renderCache, key, html, config.topicCacheMax * 2);
     return html;
   }
@@ -796,7 +825,7 @@ export default apiInitializer((api) => {
 
     later(() => {
       if (!tooltip?.classList.contains("is-visible")) {
-        currentTopicId = null;
+        currentPreviewKey = null;
       }
     }, 300);
   }
@@ -809,13 +838,13 @@ export default apiInitializer((api) => {
     }, DELAY_HIDE);
   }
 
-  function scheduleShow(topicId, anchorRect, anchorEl) {
+  function scheduleShow(target, anchorRect, anchorEl) {
     cancel(showTimer);
     cancel(hideTimer);
 
     showTimer = later(() => {
       currentAnchor = anchorEl || null;
-      showCard(topicId, anchorRect);
+      showCard(target, anchorRect);
     }, config.delayShow);
   }
 
@@ -826,37 +855,26 @@ export default apiInitializer((api) => {
     }, 700);
   }
 
-  async function fetchTopic(topicId, signal) {
-    const store = api.container.lookup("service:store");
-    const storeRecord = store?.peekRecord?.("topic", topicId);
-    if (storeRecord) return storeRecord;
+  async function fetchPreview(target, signal) {
+    if (!target) return null;
 
-    const cached = getCachedValue(topicCache, topicId);
-    if (cached) return cached;
-
-    if (inFlightFetches.has(topicId)) {
-      return inFlightFetches.get(topicId);
+    if (target.type === "topic") {
+      return topicProvider.fetch(target, signal);
     }
 
-    const promise = getJSON(`/t/${topicId}.json`, { signal })
-      .then((data) => {
-        setCachedValue(topicCache, topicId, data, config.topicCacheMax);
-        return data;
-      })
-      .finally(() => {
-        inFlightFetches.delete(topicId);
-      });
+    if (target.type === "wikipedia") {
+      return wikipediaProvider.fetch(target, signal);
+    }
 
-    inFlightFetches.set(topicId, promise);
-    return promise;
+    return null;
   }
 
-  function showCard(topicId, anchorRect) {
+  function showCard(target, anchorRect) {
     ensureTooltip();
     cancel(hideTimer);
 
     if (
-      currentTopicId === topicId &&
+      currentPreviewKey === target.key &&
       tooltip.classList.contains("is-visible")
     ) {
       positionTooltipNextFrame(anchorRect);
@@ -865,43 +883,41 @@ export default apiInitializer((api) => {
 
     abortCurrentRequest();
     currentAbortController = new AbortController();
-    currentTopicId = topicId;
+    currentPreviewKey = target.key;
 
-    const isMobile = viewport.isMobileLayout();
-    const cachedTopic = getCachedValue(topicCache, topicId);
-
-    tooltip.innerHTML = cachedTopic
-      ? getRenderedCard(cachedTopic, isMobile)
-      : skeletonHTML();
+    tooltip.innerHTML = buildLoadingPreviewHTML();
 
     tooltip.classList.add("is-visible");
     positionTooltipNextFrame(anchorRect);
 
-    if (!cachedTopic) {
-      fetchTopic(topicId, currentAbortController.signal)
-        .then((data) => {
-          if (!tooltip || currentTopicId !== topicId) return;
+    fetchPreview(target, currentAbortController.signal)
+      .then((preview) => {
+        if (!tooltip || currentPreviewKey !== target.key) {
+          return;
+        }
 
-          tooltip.innerHTML = getRenderedCard(data, viewport.isMobileLayout());
+        if (!preview) {
+          tooltip.innerHTML = buildErrorPreviewHTML("No preview available.");
           positionTooltipNextFrame(anchorRect);
-        })
-        .catch((error) => {
-          if (error?.name === "AbortError") return;
+          return;
+        }
 
-          logDebug(config, "Could not load topic", { topicId, error });
+        tooltip.innerHTML = getRenderedCard(
+          preview,
+          viewport.isMobileLayout()
+        );
+        positionTooltipNextFrame(anchorRect);
+      })
+      .catch((error) => {
+        if (error?.name === "AbortError") return;
 
-          if (!tooltip || currentTopicId !== topicId) return;
+        logDebug(config, "Could not load preview", { target, error });
 
-          tooltip.innerHTML = `
-            <div class="topic-hover-card topic-hover-card--error">
-              <div class="topic-hover-card__body">
-                Could not load topic.
-              </div>
-            </div>
-          `;
-          positionTooltipNextFrame(anchorRect);
-        });
-    }
+        if (!tooltip || currentPreviewKey !== target.key) return;
+
+        tooltip.innerHTML = buildErrorPreviewHTML("Could not load preview.");
+        positionTooltipNextFrame(anchorRect);
+      });
   }
 
   async function resolveUserFieldIdForAdmins() {
@@ -1062,10 +1078,10 @@ export default apiInitializer((api) => {
     const link = event.target.closest("a[href]");
     if (!link || !linkInSupportedArea(link, config)) return;
 
-    const topicId = topicIdFromHref(link.href);
-    if (!topicId) return;
+    const target = matchPreviewTarget(link, config);
+    if (!target) return;
 
-    scheduleShow(topicId, link.getBoundingClientRect(), link);
+    scheduleShow(target, link.getBoundingClientRect(), link);
   }
 
   function onMouseOut(event) {
@@ -1086,15 +1102,15 @@ export default apiInitializer((api) => {
     const link = event.target.closest("a[href]");
     if (!link || !linkInSupportedArea(link, config)) return;
 
-    const topicId = topicIdFromHref(link.href);
-    if (!topicId) return;
+    const target = matchPreviewTarget(link, config);
+    if (!target) return;
 
     currentAnchor = link;
     event.preventDefault();
     event.stopPropagation();
     suppressNextClick = true;
     resetSuppressedClickSoon();
-    showCard(topicId, link.getBoundingClientRect());
+    showCard(target, link.getBoundingClientRect());
   }
 
   function onDocumentClick(event) {
@@ -1111,7 +1127,7 @@ export default apiInitializer((api) => {
       if (
         link &&
         linkInSupportedArea(link, config) &&
-        topicIdFromHref(link.href)
+        matchPreviewTarget(link, config)
       ) {
         event.preventDefault();
         event.stopPropagation();
@@ -1172,7 +1188,7 @@ export default apiInitializer((api) => {
       cancel(hideTimer);
       cancel(clearSuppressionTimer);
       hideCard();
-      currentTopicId = null;
+      currentPreviewKey = null;
       suppressNextClick = false;
       clearCurrentAnchorDescription();
     });

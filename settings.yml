@@ -284,6 +284,26 @@ enable_on_kanban_boards:
   default: false
   description: Enable hover cards in kanban board views.
 
+hover_previews_enable_wikipedia:
+  default: true
+  type: bool
+  description: Enable previews for Wikipedia article links.
+
+hover_previews_wikipedia_base_url:
+  default: en.wikipedia.org
+  type: string
+  description: Default Wikipedia host used when needed, such as en.wikipedia.org.
+
+wikipedia_preview_show_image:
+  default: true
+  type: bool
+  description: Show the article thumbnail image in Wikipedia previews when available.
+
+wikipedia_preview_use_extract_html:
+  default: true
+  type: bool
+  description: Use the HTML extract returned by Wikipedia for preview text when available.
+
 user_preference_field_name:
   default: disable_topic_hover_cards
   type: string

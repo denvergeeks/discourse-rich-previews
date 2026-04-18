@@ -288,11 +288,31 @@ export function isCookedPostFragmentLink(link) {
 }
 
 export function isEligiblePreviewLink(link, config) {
-  if (!link) return false;
-  if (link.closest(".topic-hover-card, #topic-hover-card-tooltip")) return false;
+  if (!link) {
+    return false;
+  }
+
+  if (link.closest(".topic-hover-card, #topic-hover-card-tooltip")) {
+    return false;
+  }
+
+  const isWikipediaLink = (() => {
+    try {
+      const url = new URL(link.href, window.location.origin);
+      return /(^|\.)wikipedia\.org$/i.test(url.hostname) && url.pathname.startsWith("/wiki/");
+    } catch {
+      return false;
+    }
+  })();
+
+  if (isWikipediaLink) {
+    return settings.hover_previews_enable_wikipedia;
+  }
 
   const parsed = parseTopicUrl(link.href);
-  if (!parsed) return false;
+  if (!parsed) {
+    return false;
+  }
 
   if (inCookedPost(link)) {
     if (isCurrentTopicLink(link)) {
@@ -314,8 +334,13 @@ export function isEligiblePreviewLink(link, config) {
 }
 
 export function linkInSupportedArea(link, config) {
-  if (!(link instanceof Element)) return false;
-  if (!isEligiblePreviewLink(link, config)) return false;
+  if (!(link instanceof Element)) {
+    return false;
+  }
+
+  if (!isEligiblePreviewLink(link, config)) {
+    return false;
+  }
 
   if (config.enableOnKanbanBoards) {
     const isBoardUrl =
@@ -331,15 +356,24 @@ export function linkInSupportedArea(link, config) {
     }
   }
 
-  if (config.enableOnTopicPage && link.closest(".topic-post, .topic-body, .suggested-topics")) {
+  if (
+    config.enableOnTopicPage &&
+    link.closest(".topic-post, .topic-body, .suggested-topics")
+  ) {
     return true;
   }
 
-  if (config.enableOnSearch && link.closest(".search-results, .search-result-topic")) {
+  if (
+    config.enableOnSearch &&
+    link.closest(".search-results, .search-result-topic")
+  ) {
     return true;
   }
 
-  if (config.enableOnUserProfile && link.closest(".user-main, .user-content")) {
+  if (
+    config.enableOnUserProfile &&
+    link.closest(".user-main, .user-content")
+  ) {
     return true;
   }
 
@@ -365,7 +399,10 @@ export function linkInSupportedArea(link, config) {
     return true;
   }
 
-  if (config.enableOnTags && link.closest(".tag-topic-list, .tags-page, .discourse-tag")) {
+  if (
+    config.enableOnTags &&
+    link.closest(".tag-topic-list, .tags-page, .discourse-tag")
+  ) {
     return true;
   }
 
