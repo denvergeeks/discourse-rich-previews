@@ -204,8 +204,23 @@ function buildExcerptHTML(topic, config, isMobile) {
   const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
   if (!finalExcerpt) return "";
 
+  // Estimate whether the excerpt will overflow the wrap-excerpt
+  // height cap. At ~32rem card width, roughly 90 characters fit
+  // per line at excerpt font size. If the excerpt is longer than
+  // one line's worth of characters, it is likely to be truncated
+  // by the max-height cap and the fade is appropriate.
+  // If it fits in a single line, the fade is skipped.
+  const CHARS_PER_LINE = 90;
+  const isLikelyMultiLine = finalExcerpt.length > CHARS_PER_LINE;
+  const overflowClass = isLikelyMultiLine
+    ? " topic-hover-card__excerpt--overflows"
+    : "";
+
   return `
-    <div class="topic-hover-card__excerpt" style="--thc-excerpt-lines:${lines};">
+    <div
+      class="topic-hover-card__excerpt${overflowClass}"
+      style="--thc-excerpt-lines:${escapeHTML(String(lines))};"
+    >
       ${escapeHTML(finalExcerpt)}
     </div>
   `;
