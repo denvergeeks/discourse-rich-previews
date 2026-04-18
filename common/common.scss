@@ -186,7 +186,7 @@
     overflow: hidden;
     border-radius: 0.5rem;
     /*background: rgba(var(--primary-rgb), 0.04); */
-    background: color-mix(in srgb, var(--thc-bg) 96%, transparent);
+    /* background: color-mix(in srgb, var(--thc-bg) 96%, transparent); */
     isolation: isolate;
   }
 
@@ -207,7 +207,8 @@
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
-    filter: blur(14px) saturate(1.05);
+    /* filter: blur(14px) saturate(1.05); */
+    filter: blur(2px) saturate(1.05);
     transform: scale(1.12);
     opacity: 0.72;
     z-index: 0;
@@ -218,7 +219,7 @@
     position: absolute;
     inset: 0;
     /* background: rgba(var(--secondary-rgb), 0.18); */
-    background: color-mix(in srgb, var(--thc-bg) 82%, transparent);
+    /* background: color-mix(in srgb, var(--thc-bg) 82%, transparent); */
   }
 
   .topic-hover-card__thumb {
