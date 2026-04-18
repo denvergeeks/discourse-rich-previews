@@ -210,6 +210,35 @@
   min-width: 0;
 }
 
+
+
+
+
+/* Wikipedia preview tweaks – reuse same layout, just normalize text flow */
+
+.topic-hover-card.topic-hover-card--wikipedia {
+  .topic-hover-card__excerpt {
+    /* Allow HTML extract content to flow correctly */
+    overflow-wrap: anywhere;
+
+    > :first-child {
+      margin-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .topic-hover-card__meta a {
+    word-break: break-word;
+  }
+}
+
+
+
+
+
 .topic-hover-card__meta-item {
   display: inline-flex;
   align-items: center;
@@ -469,3 +498,4 @@
     height: 2.1rem;
   }
 }
+

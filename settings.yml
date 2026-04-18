@@ -36,7 +36,7 @@ density_mobile:
 card_width:
   default: 32rem
   type: string
-  description: Desktop hover card width. Accepts valid CSS width values such as 32rem, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem).
+  description: Desktop hover card width. Accepts valid CSS width values such as 32rem, 25ch, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem).
 
 mobile_width_percent:
   default: 100
