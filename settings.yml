@@ -291,25 +291,30 @@ included_tags:
   type: list
   list_type: compact
   default: ""
-  description: HTML tag names that explicitly allow hover cards when matched. If not empty, links must match one of these tags or included classes.
+  description: HTML tag names whose links should be explicitly allowed to generate hover cards when matched. If not empty, links must match one of these tags or included classes.
 
 included_classes:
   type: list
   list_type: compact
   default: ""
-  description: CSS classes that explicitly allow hover cards when matched. If not empty, links must match one of these classes or included tags.
+  description: CSS classes whose links or ancestors should be explicitly allowed to generate hover cards when matched. If not empty, links must match one of these classes or included tags.
 
 excluded_tags:
   type: list
   list_type: compact
   default: code|pre
-  description: HTML tag names whose links should be excluded from hover cards.
+  description: HTML tag names whose links should be excluded from generating hover cards.
 
 excluded_classes:
   type: list
   list_type: compact
   default: onebox
-  description: CSS classes whose links or ancestors should be excluded from hover cards.
+  description: CSS classes whose links or ancestors should be excluded from generating hover cards.
+
+excerpt_excluded_selectors:
+  default: iframe|pre|code|.onebox|.footnote|.inline-footnote|[data-tip]|.lazyYT|.youtube-onebox
+  type: list
+  description: Optional exclude-list. Hover cards display a simplified version of the topic's body content with some formatting and interactive elements removed. Prevent any unwanted elements appearing in your excerpts by adding their selectors here.
 
 wikipedia_previews_enabled:
   default: true
