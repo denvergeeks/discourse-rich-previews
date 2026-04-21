@@ -1,4 +1,7 @@
-import { parseTopicUrl } from "./rich-preview-utils";
+import {
+  parseTopicUrl,
+  parseRemoteDiscourseTopicUrl,
+} from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
 
 function normalizeWikipediaPageKey(pathname) {
@@ -31,19 +34,37 @@ function matchTopicPreview(link, config) {
     return null;
   }
 
-  const parsed = parseTopicUrl(link.href);
-  const topicId = parsed?.topicId;
-
-  if (!topicId) {
-    return null;
+  const local = parseTopicUrl(link.href);
+  if (local?.topicId) {
+    return {
+      type: "topic",
+      key: `topic:${window.location.origin}:${local.topicId}`,
+      topicId: local.topicId,
+      slug: local.slug || "",
+      postNumber: local.postNumber ?? null,
+      origin: window.location.origin,
+      hostname: window.location.hostname,
+      isRemote: false,
+      link,
+    };
   }
 
-  return {
-    type: "topic",
-    key: `topic:${topicId}`,
-    topicId,
-    link,
-  };
+  const remote = parseRemoteDiscourseTopicUrl(link.href, config);
+  if (remote?.topicId) {
+    return {
+      type: "topic",
+      key: `topic:${remote.origin}:${remote.topicId}`,
+      topicId: remote.topicId,
+      slug: remote.slug || "",
+      postNumber: remote.postNumber ?? null,
+      origin: remote.origin,
+      hostname: remote.hostname,
+      isRemote: true,
+      link,
+    };
+  }
+
+  return null;
 }
 
 function matchWikipediaPreview(link, config) {

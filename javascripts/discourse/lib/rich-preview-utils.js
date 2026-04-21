@@ -195,6 +195,24 @@ export function readConfig(settings) {
     resolveUserFieldIdForAdmins:
       settings.resolve_user_field_id_for_admins !== false,
 
+    excerptExcludedSelectors: normalizeListSetting(
+      settings.excerpt_excluded_selectors
+    ),
+
+    remoteDiscourseHosts: normalizeListSetting(
+      settings.remote_discourse_hosts
+    ).map((host) => String(host || "").trim().toLowerCase()),
+
+    remoteDiscourseTimeoutMs: intSetting(
+      settings.remote_discourse_timeout_ms,
+      3000,
+      250,
+      10000
+    ),
+
+    remoteDiscourseRequireHttps:
+      settings.remote_discourse_require_https !== false,
+
     topicCacheMax: intSetting(settings.topic_cache_max, 100, 10, 500),
   };
 }
@@ -294,22 +312,26 @@ export function setCachedValue(map, key, value, maxSize = 100) {
   return value;
 }
 
-export async function getJSON(url, options = {}) {
-  const response = await fetch(url, {
+export function getJSON(url, options = {}) {
+  const parsedUrl = new URL(url, window.location.origin);
+  const isCrossOrigin = parsedUrl.origin !== window.location.origin;
+
+  return fetch(parsedUrl.toString(), {
     method: "GET",
-    credentials: "same-origin",
+    mode: isCrossOrigin ? "cors" : "same-origin",
+    credentials: isCrossOrigin ? "omit" : "same-origin",
     headers: {
       Accept: "application/json",
       ...options.headers,
     },
     signal: options.signal,
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} for ${parsedUrl.toString()}`);
+    }
+
+    return response.json();
   });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for ${url}`);
-  }
-
-  return response.json();
 }
 
 export function inCookedPost(el) {
@@ -362,6 +384,9 @@ export function parseTopicUrl(href) {
       topicId: Number.parseInt(match[2], 10),
       postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
       url,
+      origin: url.origin,
+      hostname: url.hostname,
+      isRemote: false,
     };
   } catch {
     return null;
@@ -522,12 +547,15 @@ export function isEligiblePreviewLink(link, config) {
     return config?.wikipediaPreviewsEnabled !== false;
   }
 
-  const parsed = parseTopicUrl(link.href);
+  const parsed =
+    parseTopicUrl(link.href) ||
+    parseRemoteDiscourseTopicUrl(link.href, config);
+
   if (!parsed) {
     return false;
   }
 
-  if (inCookedPost(link)) {
+  if (!parsed.isRemote && inCookedPost(link)) {
     if (isCurrentTopicLink(link)) {
       logDebug(config, "Skipping current-topic cooked-post link", {
         href: link.href,
@@ -691,7 +719,21 @@ export function safeAvatarURL(avatarTemplate, size = 24) {
   return sanitizeURL(replaced);
 }
 
-export function sanitizeExcerpt(htmlOrText) {
+export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
+  if (!avatarTemplate || !origin) {
+    return "";
+  }
+
+  const replaced = String(avatarTemplate).replace("{size}", String(size));
+
+  try {
+    return sanitizeURL(new URL(replaced, origin).toString());
+  } catch {
+    return "";
+  }
+}
+
+export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
   const source = String(htmlOrText ?? "").trim();
   if (!source) {
     return "";
@@ -702,15 +744,31 @@ export function sanitizeExcerpt(htmlOrText) {
 
   temp
     .querySelectorAll(
-      "script, style, noscript, img, picture, figure, video, audio, source, iframe, svg, .lightbox-wrapper, .image-wrapper, .d-lazyload, .onebox img"
+      "script, style, noscript, img, picture, figure, video, audio, source, iframe, svg, canvas, form, button, input, textarea, select"
     )
     .forEach((el) => el.remove());
+
+  excludedSelectors.forEach((selector) => {
+    try {
+      temp.querySelectorAll(selector).forEach((el) => el.remove());
+    } catch {
+      // ignore invalid selector
+    }
+  });
 
   temp.querySelectorAll("a").forEach((el) => {
     const text = (el.textContent || "").trim();
     if (!text) {
       el.remove();
     }
+  });
+
+  temp.querySelectorAll("*").forEach((el) => {
+    [...el.attributes].forEach((attr) => {
+      if (attr.name.startsWith("data-")) {
+        el.removeAttribute(attr.name);
+      }
+    });
   });
 
   const text = temp.textContent || temp.innerText || "";
@@ -749,4 +807,145 @@ export function formatNumber(value) {
   }
 
   return new Intl.NumberFormat().format(num);
+}
+
+export function isAllowedRemoteDiscourseHost(hostname, config) {
+  const host = String(hostname || "").trim().toLowerCase();
+  return !!host && (config?.remoteDiscourseHosts || []).includes(host);
+}
+
+export function parseRemoteDiscourseTopicUrl(href, config) {
+  if (!href) {
+    return null;
+  }
+
+  try {
+    const url = new URL(href, window.location.origin);
+
+    if (url.origin === window.location.origin) {
+      return null;
+    }
+
+    if (
+      config?.remoteDiscourseRequireHttps !== false &&
+      url.protocol !== "https:"
+    ) {
+      return null;
+    }
+
+    if (!isAllowedRemoteDiscourseHost(url.hostname, config)) {
+      return null;
+    }
+
+    const path = url.pathname.replace(/\/+$/, "");
+    const match = path.match(/^\/t\/(?:([^/]+)\/)?(\d+)(?:\/(\d+))?$/);
+
+    if (!match) {
+      return null;
+    }
+
+    const topicId = Number.parseInt(match[2], 10);
+
+    return {
+      slug: match[1] || "",
+      topicId,
+      postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
+      url,
+      origin: url.origin,
+      hostname: url.hostname,
+      isRemote: true,
+      jsonUrl: `${url.origin}/t/${topicId}.json`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function parsePreviewTopicUrl(href, config) {
+  return parseTopicUrl(href) || parseRemoteDiscourseTopicUrl(href, config);
+}
+
+function extractFirstImageURLFromCooked(cooked) {
+  if (!cooked) {
+    return "";
+  }
+
+  const temp = document.createElement("div");
+  temp.innerHTML = String(cooked);
+  const img = temp.querySelector("img");
+  return sanitizeURL(img?.getAttribute("src") || "");
+}
+
+export function normalizeRemoteDiscourseTopic(topicJson, remoteInfo, config) {
+  const firstPost = topicJson?.post_stream?.posts?.[0] || {};
+  const imageUrl =
+    sanitizeURL(topicJson?.image_url || "") ||
+    sanitizeURL(topicJson?.topic_image || "") ||
+    extractFirstImageURLFromCooked(firstPost?.cooked);
+
+  const excerptSource =
+    topicJson?.excerpt ||
+    firstPost?.excerpt ||
+    firstPost?.cooked ||
+    "";
+
+  return {
+    id: topicJson?.id,
+    slug: topicJson?.slug || "",
+    title: topicJson?.title || "",
+    fancy_title: topicJson?.fancy_title || topicJson?.title || "",
+    excerpt: sanitizeExcerpt(
+      excerptSource,
+      config.excerptExcludedSelectors
+    ),
+    image_url: imageUrl,
+    created_at: topicJson?.created_at || firstPost?.created_at || "",
+    last_posted_at: topicJson?.last_posted_at || "",
+    views: topicJson?.views || 0,
+    like_count: topicJson?.like_count || 0,
+    posts_count: topicJson?.posts_count || 0,
+    reply_count: Math.max(0, (topicJson?.posts_count || 1) - 1),
+    category_id: topicJson?.category_id || null,
+    url: `${remoteInfo.origin}/t/${topicJson?.slug || topicJson?.id}/${topicJson?.id}`,
+    op_username: firstPost?.username || "",
+    op_avatar_url: safeRemoteAvatarURL(
+      remoteInfo.origin,
+      firstPost?.avatar_template,
+      24
+    ),
+    external_source_host: remoteInfo.hostname,
+    is_remote_discourse_topic: true,
+  };
+}
+
+const remoteTopicCache = new Map();
+
+export async function fetchRemoteDiscourseTopic(remoteInfo, config) {
+  const cacheKey = remoteInfo.jsonUrl;
+
+  if (remoteTopicCache.has(cacheKey)) {
+    return remoteTopicCache.get(cacheKey);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, config.remoteDiscourseTimeoutMs);
+
+  const request = getJSON(remoteInfo.jsonUrl, {
+    signal: controller.signal,
+  })
+    .then((topicJson) =>
+      normalizeRemoteDiscourseTopic(topicJson, remoteInfo, config)
+    )
+    .catch((error) => {
+      remoteTopicCache.delete(cacheKey);
+      throw error;
+    })
+    .finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+  remoteTopicCache.set(cacheKey, request);
+  return request;
 }

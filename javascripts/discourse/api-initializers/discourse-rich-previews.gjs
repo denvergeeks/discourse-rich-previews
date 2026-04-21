@@ -238,7 +238,9 @@ function buildOpHTML(topic, config, isMobile) {
 
   if (!op?.username) return "";
 
-  const avatarURL = safeAvatarURL(op.avatar_template, 24);
+  const avatarUrl =
+    topic.op_avatar_url ||
+    safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
   const avatarImg = avatarURL
     ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
         avatarURL

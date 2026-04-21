@@ -316,6 +316,22 @@ excerpt_excluded_selectors:
   type: list
   description: Optional exclude-list. Hover cards display a simplified version of the topic's body content with some formatting and interactive elements removed. Prevent any unwanted elements appearing in your excerpts by adding their selectors here.
 
+remote_discourse_hosts:
+  type: list
+  list_type: compact
+  default: "noobish.me"
+  description: External Discourse hosts whose public topic links may generate hover cards.
+
+remote_discourse_timeout_ms:
+  type: integer
+  default: 3000
+  description: Timeout in milliseconds for remote Discourse topic preview requests.
+
+remote_discourse_require_https:
+  type: bool
+  default: true
+  description: Only allow remote Discourse hover-card previews from HTTPS hosts.
+
 wikipedia_previews_enabled:
   default: true
   type: bool
@@ -355,22 +371,6 @@ wikipedia_density_mobile:
     - compact
     - dense
   description: Controls Wikipedia preview density on mobile.
-
-remote_discourse_hosts:
-  type: list
-  list_type: compact
-  default: "noobish.me"
-  description: External Discourse hosts whose public topic links may generate hover cards.
-
-remote_discourse_timeout_ms:
-  type: integer
-  default: 3000
-  description: Timeout in milliseconds for remote Discourse topic preview requests.
-
-remote_discourse_require_https:
-  type: bool
-  default: true
-  description: Only allow remote Discourse hover-card previews from HTTPS hosts.
 
 user_preference_field_name:
   default: disable_topic_hover_cards
