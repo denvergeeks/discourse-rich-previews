@@ -68,6 +68,9 @@ export function readConfig(settings) {
     enabled: settings.enabled !== false,
     debugMode: !!settings.debug_mode,
 
+    prefetchEnabled: settings.prefetch_enabled !== false,
+    prefetchViewportMargin: stringSetting(settings.prefetch_viewport_margin, "200px"),
+
     // Per-type mode
     previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
     previewsExternalMode: stringSetting(settings.previews_external_mode, "auto_only"),

@@ -595,6 +595,24 @@ resolve_user_field_id_for_admins:
 
 # ─── Performance ─────────────────────────────────────────────────────────────
 
+prefetch_enabled:
+  default: true
+  type: bool
+  client: true
+  description: >
+    Prefetch preview data for eligible links as they scroll into view.
+    This eliminates the loading delay on first hover for both local
+    and remote topics. Disable if you are concerned about extra
+    network requests on page load.
+
+prefetch_viewport_margin:
+  default: "200px"
+  type: string
+  client: true
+  description: >
+    How far outside the viewport to begin prefetching preview data.
+    200px means links within 200px of the visible area are prefetched.
+    Accepts any valid CSS margin value such as 200px or 10%.
 
 topic_cache_max:
   default: 100

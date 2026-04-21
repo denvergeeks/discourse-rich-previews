@@ -1070,6 +1070,95 @@ export default apiInitializer((api) => {
     suppressNextClick = false;
   }
 
+function setupPrefetch() {
+  if (!config.prefetchEnabled) return;
+
+  const prefetched = new Set();
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+
+        const link = entry.target;
+        const href = link?.href;
+        if (!href || prefetched.has(href)) continue;
+
+        prefetched.add(href);
+        observer.unobserve(link);
+
+        const target = matchPreviewTarget(link, config);
+        if (!target) continue;
+
+        // Fire a background fetch and store in the shared cache
+        // Use a long timeout for prefetch — we are not in a hurry
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          config.proxyTimeoutMs ?? 10000
+        );
+
+        fetchPreview(target, controller.signal)
+          .catch(() => {
+            // Prefetch failures are silent — the hover will retry
+            prefetched.delete(href);
+          })
+          .finally(() => {
+            clearTimeout(timeoutId);
+          });
+      }
+    },
+    {
+      rootMargin: config.prefetchViewportMargin,
+      threshold: 0,
+    }
+  );
+
+  // Observe all currently eligible links
+  function observeLinks(root = document) {
+    root.querySelectorAll("a[href]").forEach((link) => {
+      if (linkInSupportedArea(link, config)) {
+        observer.observe(link);
+      }
+    });
+  }
+
+  // Initial observation
+  observeLinks();
+
+  // Re-observe when new content loads (infinite scroll, dynamic routes)
+  const mutationObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+
+        // Check if the added node itself is an eligible link
+        if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
+          observer.observe(node);
+        }
+
+        // Check links inside the added node
+        node.querySelectorAll?.("a[href]").forEach((link) => {
+          if (linkInSupportedArea(link, config)) {
+            observer.observe(link);
+          }
+        });
+      }
+    }
+  });
+
+  mutationObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Register cleanup
+  cleanupFns.push(() => {
+    observer.disconnect();
+    mutationObserver.disconnect();
+  });
+}  
+
   function bindEvents() {
     ensureTooltip();
 
@@ -1083,6 +1172,9 @@ export default apiInitializer((api) => {
     addCleanup(document, "click", onDocumentClick, true);
     addCleanup(document, "scroll", onScroll, { passive: true, capture: true });
     addCleanup(window, "resize", onResize, { passive: true });
+
+    // Start prefetching eligible links as they enter the viewport
+    setupPrefetch();
   }
 
   (async () => {
