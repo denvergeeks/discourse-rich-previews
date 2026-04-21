@@ -6,6 +6,31 @@ import {
   safeRemoteAvatarURL,
 } from "../rich-preview-utils";
 
+const PROXY_ENDPOINT = "/discourse-proxy-safe";
+
+async function fetchViaProxy(remoteJsonUrl, signal) {
+  const proxyUrl = `${PROXY_ENDPOINT}?url=${encodeURIComponent(remoteJsonUrl)}`;
+
+  const response = await fetch(proxyUrl, {
+    method: "GET",
+    mode: "same-origin",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Proxy error ${response.status} for ${remoteJsonUrl}`
+    );
+  }
+
+  const text = await response.text();
+  return JSON.parse(text);
+}
+
 export function createTopicProvider(api, config, topicCache, inFlightFetches) {
   async function fetchTopic(target, signal) {
     const topicId = target?.topicId;
@@ -40,9 +65,11 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
       ? `${origin}/t/${topicId}.json`
       : `/t/${topicId}.json`;
 
-    const promise = getJSON(jsonUrl, {
-      signal,
-    })
+    const promise = (
+      isRemote
+        ? fetchViaProxy(jsonUrl, signal)
+        : getJSON(jsonUrl, { signal })
+    )
       .then((data) => {
         setCachedValue(topicCache, cacheKey, data, config.topicCacheMax);
         return data;
