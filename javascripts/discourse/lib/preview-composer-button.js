@@ -31,8 +31,8 @@ export function registerPreviewComposerButton(api, config) {
             "rich_preview_wrap_default"
           );
         } else {
-          // Nothing selected — insert a placeholder the user can replace
-          toolbarEvent.addText(`${open}paste link here${close}`);
+          // Nothing selected — insert a Markdown link placeholder
+          toolbarEvent.addText(`${open}[link text](paste URL here)${close}`);
         }
       },
     });

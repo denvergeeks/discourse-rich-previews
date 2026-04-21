@@ -3,4 +3,4 @@ en:
     rich_previews:
       composer_button:
         label: "Preview"
-        title: "Wrap link with rich preview indicator"
+        title: "Wrap a Markdown link with a rich preview indicator: [preview][text](url)[/preview]"
