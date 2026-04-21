@@ -1161,13 +1161,18 @@
   border: 1px solid rgba(var(--primary-rgb), 0.1);
   overflow-x: auto;
 
-  code {
-    font-size: var(--font-down-1);
-    color: var(--primary-medium);
-    white-space: pre;
-    word-break: break-all;
-    font-family: var(--d-font-family--monospace, monospace);
-  }
+}
+
+.rplm-bbcode-pre {
+  font-size: var(--font-down-1);
+  color: var(--primary-medium);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: var(--d-font-family--monospace, monospace);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 // ─── Rich Preview Insert Link Composer Form Modal ─────────────────────────────────────────────────

@@ -276,7 +276,7 @@ export default class RichPreviewLinkModal extends Component {
               {{/if}}
             </div>
             <div class="rplm-bbcode-preview">
-              de>{{this.bbcodePreview}}</code>
+              <pre class="rplm-bbcode-pre">{{this.bbcodePreview}}</pre>
             </div>
           </div>
         {{/if}}
