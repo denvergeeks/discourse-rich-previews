@@ -90,23 +90,6 @@ export default class RichPreviewLinkModal extends Component {
     return TYPE_LABELS[this.detectedType] || null;
   }
 
-  get typeBadgeStyle() {
-    const color = TYPE_COLORS[this.detectedType] || "var(--primary-medium)";
-    return `
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-size: var(--font-down-1);
-      font-weight: 600;
-      background: color-mix(in srgb, ${color} 12%, transparent);
-      color: ${color};
-      border: 1px solid color-mix(in srgb, ${color} 30%, transparent);
-      margin-top: 0.4rem;
-    `;
-  }
-
   get typeDot() {
     const dots = {
       topic: "🟢",
@@ -128,18 +111,13 @@ export default class RichPreviewLinkModal extends Component {
     return this.isValidUrl && this.isSupported;
   }
 
-  get visualPreviewStyle() {
-    const color = TYPE_COLORS[this.detectedType] || "var(--tertiary)";
-    const underlineAlways = this.config?.previewsUnderlineAlways !== false;
-    return `
-      color: inherit;
-      text-decoration-line: underline;
-      text-decoration-style: dotted;
-      text-decoration-thickness: 1.5px;
-      text-underline-offset: 0.18em;
-      text-decoration-color: ${underlineAlways ? color : "transparent"};
-    `;
-  }
+  get cannotInsert() {
+    return !this.isValidUrl || !this.isSupported;
+   }
+
+  get showUnsupportedWarning() {
+    return this.isValidUrl && !this.isSupported;
+   }
 
   get displayText() {
     return this.linkText.trim() || this.url.trim() || "link text";
@@ -233,7 +211,7 @@ export default class RichPreviewLinkModal extends Component {
           <input
             id="rplm-url"
             type="url"
-            class="rplm-input {{if this.urlError 'rplm-input--error'}}"
+            class="rplm-input"
             placeholder="https://..."
             value={{this.url}}
             {{on "input" this.onUrlInput}}
@@ -243,11 +221,12 @@ export default class RichPreviewLinkModal extends Component {
             <p class="rplm-error">{{this.urlError}}</p>
           {{/if}}
           {{#if this.typeLabel}}
-            <div style={{this.typeBadgeStyle}}>
-              {{this.typeDot}} {{this.typeLabel}}
+            <div class="rplm-type-badge rplm-type-badge--{{this.detectedType}}">
+              <span>{{this.typeDot}}</span>
+              <span>{{this.typeLabel}}</span>
             </div>
           {{/if}}
-          {{#if (and this.isValidUrl (not this.isSupported))}}
+          {{#if this.showUnsupportedWarning}}
             <p class="rplm-warning">
               This URL type is not supported for rich previews.
               Only internal topics, external Discourse forums in your
@@ -292,24 +271,19 @@ export default class RichPreviewLinkModal extends Component {
 
             <div class="rplm-visual-preview">
               {{#if this.showIconBefore}}
-                <span class="rplm-icon" aria-hidden="true">
-                  {{this.iconGlyph}}
-                </span>
+                <span class="rplm-icon" aria-hidden="true">{{this.iconGlyph}}</span>
               {{/if}}
               <a
                 href={{this.url}}
                 title={{this.title}}
-                style={{this.visualPreviewStyle}}
+                class="rplm-preview-link rplm-preview-link--{{this.detectedType}}"
                 target="_blank"
                 rel="noopener noreferrer"
-                onclick={{(fn (mut this) null)}}
               >
                 {{this.displayText}}
               </a>
               {{#if this.showIconAfter}}
-                <span class="rplm-icon" aria-hidden="true">
-                  {{this.iconGlyph}}
-                </span>
+                <span class="rplm-icon" aria-hidden="true">{{this.iconGlyph}}</span>
               {{/if}}
             </div>
 
@@ -324,7 +298,7 @@ export default class RichPreviewLinkModal extends Component {
         <DButton
           @action={{this.onInsert}}
           @label="rich_previews.modal.insert"
-          @disabled={{not this.canInsert}}
+          @disabled={{this.cannotInsert}}
           class="btn-primary"
         />
         <DButton

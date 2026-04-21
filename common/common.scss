@@ -1169,3 +1169,64 @@
     font-family: var(--d-font-family--monospace, monospace);
   }
 }
+
+// ─── Rich Preview Insert Link Composer Form Modal ─────────────────────────────────────────────────
+
+.rplm-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: var(--font-down-1);
+  font-weight: 600;
+  margin-top: 0.4rem;
+
+  &--topic {
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--success);
+    border: 1px solid rgba(var(--success-rgb), 0.3);
+  }
+
+  &--external {
+    background: rgba(var(--tertiary-rgb), 0.12);
+    color: var(--tertiary);
+    border: 1px solid rgba(var(--tertiary-rgb), 0.3);
+  }
+
+  &--wikipedia {
+    background: rgba(128, 128, 128, 0.12);
+    color: #808080;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+  }
+
+  &--unsupported {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger);
+    border: 1px solid rgba(var(--danger-rgb), 0.3);
+  }
+}
+
+.rplm-preview-link {
+  word-break: break-all;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+
+  &--topic {
+    text-decoration-color: var(--success);
+  }
+
+  &--external {
+    text-decoration-color: var(--tertiary);
+  }
+
+  &--wikipedia {
+    text-decoration-color: #808080;
+  }
+
+  &--unsupported {
+    text-decoration-color: var(--danger);
+  }
+}
