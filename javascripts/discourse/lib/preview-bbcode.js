@@ -90,7 +90,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
   const openTagLower = `[${tagName}]`.toLowerCase();
   const closeTagLower = `[/${tagName}]`.toLowerCase();
 
-  console.log("[preview-bbcode] applyPreviewWraps running", {
     tagName,
     openTagLower,
     closeTagLower,
@@ -99,12 +98,9 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 
   const containers = root.querySelectorAll("p, li, td, div, blockquote");
 
-  console.log("[preview-bbcode] containers found", containers.length);
-
   containers.forEach((container) => {
     const childNodes = Array.from(container.childNodes);
 
-    console.log("[preview-bbcode] container childNodes", childNodes.map((n) => ({
       type: n.nodeType,
       text: n.textContent?.trim().slice(0, 60),
       tag: n.nodeName,
@@ -118,14 +114,12 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
         node.nodeType === Node.TEXT_NODE &&
         node.textContent.trim().toLowerCase() === openTagLower;
 
-      console.log("[preview-bbcode] checking node", i, {
         nodeType: node.nodeType,
         text: node.textContent?.trim().slice(0, 60),
         isOpenTag,
       });
 
       if (isOpenTag) {
-        console.log("[preview-bbcode] found open tag at index", i);
 
         const wrapNodes = [];
         let closeNode = null;
@@ -137,7 +131,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
             candidate.nodeType === Node.TEXT_NODE &&
             candidate.textContent.trim().toLowerCase() === closeTagLower;
 
-          console.log("[preview-bbcode] scanning for close tag at", j, {
             nodeType: candidate.nodeType,
             text: candidate.textContent?.trim().slice(0, 60),
             isCloseTag,
@@ -152,10 +145,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
           j++;
         }
 
-        console.log("[preview-bbcode] wrapNodes", wrapNodes.length, "closeNode", !!closeNode);
-
         if (closeNode && wrapNodes.length > 0) {
-          console.log("[preview-bbcode] wrapping nodes");
 
           const wrapSpan = document.createElement("span");
           wrapSpan.className = "rich-preview-wrap";
