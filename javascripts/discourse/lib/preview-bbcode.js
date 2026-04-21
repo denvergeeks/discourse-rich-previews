@@ -87,87 +87,39 @@ function stampModifierClasses(wrapEl, config) {
 export function applyPreviewWraps(root, tagName = "preview", config = null) {
   if (!(root instanceof Element)) return;
 
-  const openTagLower = `[${tagName}]`.toLowerCase();
-  const closeTagLower = `[/${tagName}]`.toLowerCase();
+  // Step 1: transform any unprocessed [tag]...[/tag] text nodes
+  const tagRe = buildTagRegex(tagName);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const toReplace = [];
 
-    tagName,
-    openTagLower,
-    closeTagLower,
-    rootHTML: root.innerHTML?.slice(0, 300),
-  });
-
-  const containers = root.querySelectorAll("p, li, td, div, blockquote");
-
-  containers.forEach((container) => {
-    const childNodes = Array.from(container.childNodes);
-
-      type: n.nodeType,
-      text: n.textContent?.trim().slice(0, 60),
-      tag: n.nodeName,
-    })));
-
-    let i = 0;
-    while (i < childNodes.length) {
-      const node = childNodes[i];
-
-      const isOpenTag =
-        node.nodeType === Node.TEXT_NODE &&
-        node.textContent.trim().toLowerCase() === openTagLower;
-
-        nodeType: node.nodeType,
-        text: node.textContent?.trim().slice(0, 60),
-        isOpenTag,
-      });
-
-      if (isOpenTag) {
-
-        const wrapNodes = [];
-        let closeNode = null;
-        let j = i + 1;
-
-        while (j < childNodes.length) {
-          const candidate = childNodes[j];
-          const isCloseTag =
-            candidate.nodeType === Node.TEXT_NODE &&
-            candidate.textContent.trim().toLowerCase() === closeTagLower;
-
-            nodeType: candidate.nodeType,
-            text: candidate.textContent?.trim().slice(0, 60),
-            isCloseTag,
-          });
-
-          if (isCloseTag) {
-            closeNode = candidate;
-            break;
-          }
-
-          wrapNodes.push(candidate);
-          j++;
-        }
-
-        if (closeNode && wrapNodes.length > 0) {
-
-          const wrapSpan = document.createElement("span");
-          wrapSpan.className = "rich-preview-wrap";
-          wrapSpan.setAttribute("data-rich-preview", "true");
-
-          wrapNodes.forEach((n) => wrapSpan.appendChild(n));
-          container.replaceChild(wrapSpan, node);
-          closeNode.remove();
-
-          if (config) {
-            stampModifierClasses(wrapSpan, config);
-          }
-
-          const updated = Array.from(container.childNodes);
-          i = updated.indexOf(wrapSpan) + 1;
-          continue;
-        }
-      }
-
-      i++;
+  let node;
+  while ((node = walker.nextNode())) {
+    if (tagRe.test(node.textContent)) {
+      toReplace.push(node);
+      tagRe.lastIndex = 0;
     }
-  });
+  }
+
+  for (const textNode of toReplace) {
+    const re = buildTagRegex(tagName);
+    const html = textNode.textContent.replace(
+      re,
+      (_, inner) => buildPreviewWrapHTML(inner)
+    );
+
+    const temp = document.createElement("span");
+    temp.innerHTML = html;
+    textNode.replaceWith(...temp.childNodes);
+  }
+
+  // Step 2: stamp modifier classes on all .rich-preview-wrap spans
+  // in this element, including ones that were already in the HTML
+  // from server-side cooking
+  if (config) {
+    root
+      .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
+      .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
+  }
 }
 
 /**
