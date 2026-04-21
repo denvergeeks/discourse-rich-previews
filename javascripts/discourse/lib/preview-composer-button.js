@@ -1,17 +1,13 @@
 /**
  * Registers the composer toolbar button for wrapping links in the
- * configured preview BBCode tag. The tag name is driven by the
- * previews_tag_name setting so it stays in sync with preview-bbcode.js.
+ * configured preview BBCode tag. Opens a modal for the user to
+ * input the URL, link text, and optional title attribute.
  */
 
-/**
- * Called from the api initializer to add the composer toolbar button.
- * Accepts config so the tag name and behavior match the current settings.
- */
+import RichPreviewLinkModal from "../components/rich-preview-link-modal";
+
 export function registerPreviewComposerButton(api, config) {
   const tagName = config?.previewsTagName || "preview";
-  const open = `[${tagName}]`;
-  const close = `[/${tagName}]`;
 
   api.onToolbarCreate((toolbar) => {
     toolbar.addButton({
@@ -22,18 +18,37 @@ export function registerPreviewComposerButton(api, config) {
       title: "rich_previews.composer_button.title",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
+        const initialLinkText = selected?.value?.trim() || "";
 
-        if (selected?.value) {
-          // Text is selected — wrap it in the configured tag
-          toolbarEvent.applySurround(
-            open,
-            close,
-            "rich_preview_wrap_default"
-          );
-        } else {
-          // Nothing selected — insert a Markdown link placeholder
-          toolbarEvent.addText(`${open}[link text](paste URL here)${close}`);
+        // Detect if selected text looks like a URL
+        let initialUrl = "";
+        let initialText = initialLinkText;
+
+        try {
+          new URL(initialLinkText);
+          // Selected text is a URL — use it as the URL, clear link text
+          initialUrl = initialLinkText;
+          initialText = "";
+        } catch {
+          // Selected text is not a URL — use it as link text
         }
+
+        api.container.lookup("service:modal").show(RichPreviewLinkModal, {
+          model: {
+            config,
+            tagName,
+            initialUrl,
+            initialLinkText: initialText,
+            onInsert(bbcode) {
+              // Replace the current selection or insert at cursor
+              if (selected?.value) {
+                toolbarEvent.replaceText(selected.value, bbcode);
+              } else {
+                toolbarEvent.addText(bbcode);
+              }
+            },
+          },
+        });
       },
     });
   });

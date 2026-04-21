@@ -1046,3 +1046,75 @@
     gap: 0.12rem 0.24rem;
   }
 }
+
+// ─── Rich Preview Link Modal ─────────────────────────────────────────────────
+
+.rich-preview-link-modal {
+  .modal-inner-container {
+    width: min(520px, 95vw);
+  }
+}
+
+.rplm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.rplm-label {
+  font-size: var(--font-down-1);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.rplm-required {
+  color: var(--danger);
+  margin-inline-start: 0.15rem;
+}
+
+.rplm-optional {
+  font-weight: 400;
+  color: var(--primary-medium);
+  margin-inline-start: 0.35rem;
+  font-size: var(--font-down-2);
+}
+
+.rplm-input {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 6px;
+  font-size: var(--font-0);
+  background: var(--secondary);
+  color: var(--primary);
+  transition: border-color 120ms ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--tertiary);
+    box-shadow: 0 0 0 2px rgba(var(--tertiary-rgb), 0.15);
+  }
+
+  &--error {
+    border-color: var(--danger);
+  }
+}
+
+.rplm-error {
+  font-size: var(--font-down-1);
+  color: var(--danger);
+  margin: 0;
+}
+
+.rplm-warning {
+  font-size: var(--font-down-1);
+  color: var(--danger);
+  margin: 0.25rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(var(--danger-rgb), 0.08);
+  border: 1px solid rgba(var(--danger-rgb), 0.18);
+}
+
+.rplm
