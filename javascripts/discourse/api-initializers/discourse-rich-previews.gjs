@@ -241,9 +241,9 @@ function buildOpHTML(topic, config, isMobile) {
   const avatarUrl =
     topic.op_avatar_url ||
     safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
-  const avatarImg = avatarURL
+  const avatarImg = avatarUrl
     ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
-        avatarURL
+        avatarUrl
       )}" alt="" loading="lazy" decoding="async" />`
     : "";
 
