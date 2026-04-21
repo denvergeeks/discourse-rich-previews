@@ -99,8 +99,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 
   const containers = root.querySelectorAll("p, li, td, div, blockquote");
 
-  console.log("[preview-bbcode] containers found", containers.length);
-
   containers.forEach((container) => {
     const childNodes = Array.from(container.childNodes);
 
@@ -125,7 +123,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
       });
 
       if (isOpenTag) {
-        console.log("[preview-bbcode] found open tag at index", i);
 
         const wrapNodes = [];
         let closeNode = null;
@@ -152,10 +149,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
           j++;
         }
 
-        console.log("[preview-bbcode] wrapNodes", wrapNodes.length, "closeNode", !!closeNode);
-
         if (closeNode && wrapNodes.length > 0) {
-          console.log("[preview-bbcode] wrapping nodes");
 
           const wrapSpan = document.createElement("span");
           wrapSpan.className = "rich-preview-wrap";
