@@ -90,23 +90,10 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
   const openTagLower = `[${tagName}]`.toLowerCase();
   const closeTagLower = `[/${tagName}]`.toLowerCase();
 
-  console.log("[preview-bbcode] applyPreviewWraps running", {
-    tagName,
-    openTagLower,
-    closeTagLower,
-    rootHTML: root.innerHTML?.slice(0, 300),
-  });
-
   const containers = root.querySelectorAll("p, li, td, div, blockquote");
 
   containers.forEach((container) => {
     const childNodes = Array.from(container.childNodes);
-
-    console.log("[preview-bbcode] container childNodes", childNodes.map((n) => ({
-      type: n.nodeType,
-      text: n.textContent?.trim().slice(0, 60),
-      tag: n.nodeName,
-    })));
 
     let i = 0;
     while (i < childNodes.length) {
@@ -115,12 +102,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
       const isOpenTag =
         node.nodeType === Node.TEXT_NODE &&
         node.textContent.trim().toLowerCase() === openTagLower;
-
-      console.log("[preview-bbcode] checking node", i, {
-        nodeType: node.nodeType,
-        text: node.textContent?.trim().slice(0, 60),
-        isOpenTag,
-      });
 
       if (isOpenTag) {
 
@@ -133,12 +114,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
           const isCloseTag =
             candidate.nodeType === Node.TEXT_NODE &&
             candidate.textContent.trim().toLowerCase() === closeTagLower;
-
-          console.log("[preview-bbcode] scanning for close tag at", j, {
-            nodeType: candidate.nodeType,
-            text: candidate.textContent?.trim().slice(0, 60),
-            isCloseTag,
-          });
 
           if (isCloseTag) {
             closeNode = candidate;
