@@ -1,7 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
-import { service } from "@ember/service";
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
 import { on } from "@ember/modifier";
@@ -13,11 +12,9 @@ import {
 
 function classifyUrl(url, config) {
   if (!url) return null;
-
   try {
     const tempLink = document.createElement("a");
     tempLink.href = url;
-
     if (isWikipediaArticleLink(tempLink)) return "wikipedia";
     if (parseTopicUrl(url)) return "topic";
     if (parseRemoteDiscourseTopicUrl(url, config)) return "external";
@@ -29,14 +26,11 @@ function classifyUrl(url, config) {
 
 function buildBBCode(url, linkText, title, tagName) {
   if (!url) return "";
-
   const displayText = linkText?.trim() || url;
   const tag = tagName || "preview";
-
   const mdLink = title?.trim()
     ? `[${displayText}](${url} "${title.trim()}")`
     : `[${displayText}](${url})`;
-
   return `[${tag}]${mdLink}[/${tag}]`;
 }
 
@@ -47,16 +41,20 @@ const TYPE_LABELS = {
   unsupported: "Not supported",
 };
 
-const TYPE_COLORS = {
-  topic: "var(--success)",
-  external: "var(--tertiary)",
-  wikipedia: "#808080",
-  unsupported: "var(--danger)",
+const TYPE_DOTS = {
+  topic: "🟢",
+  external: "🔵",
+  wikipedia: "⚪",
+  unsupported: "🔴",
+};
+
+const ICON_GLYPHS = {
+  topic: "⤴",
+  external: "🌐",
+  wikipedia: "📖",
 };
 
 export default class RichPreviewLinkModal extends Component {
-  @service router;
-
   @tracked url = this.args.model?.initialUrl || "";
   @tracked linkText = this.args.model?.initialLinkText || "";
   @tracked title = "";
@@ -84,67 +82,44 @@ export default class RichPreviewLinkModal extends Component {
     }
   }
 
-  get typeLabel() {
-    if (!this.url.trim()) return null;
-    if (!this.isValidUrl) return null;
-    return TYPE_LABELS[this.detectedType] || null;
-  }
-
-  get typeDot() {
-    const dots = {
-      topic: "🟢",
-      external: "🔵",
-      wikipedia: "⚪",
-      unsupported: "🔴",
-    };
-    return dots[this.detectedType] || "";
-  }
-
   get isSupported() {
     return (
-      this.detectedType &&
+      this.isValidUrl &&
+      this.detectedType !== null &&
       this.detectedType !== "unsupported"
     );
   }
 
-  get canInsert() {
-    return this.isValidUrl && this.isSupported;
-  }
-
   get cannotInsert() {
     return !this.isValidUrl || !this.isSupported;
-   }
+  }
 
   get showUnsupportedWarning() {
     return this.isValidUrl && !this.isSupported;
-   }
-
-  get displayText() {
-    return this.linkText.trim() || this.url.trim() || "link text";
   }
 
-  get bbcodePreview() {
-    return buildBBCode(
-      this.url.trim(),
-      this.linkText,
-      this.title,
-      this.tagName
-    );
+  get typeLabel() {
+    if (!this.isValidUrl) return "";
+    return TYPE_LABELS[this.detectedType] || "";
+  }
+
+  get typeDot() {
+    if (!this.isValidUrl) return "";
+    return TYPE_DOTS[this.detectedType] || "";
+  }
+
+  get typeBadgeClass() {
+    return `rplm-type-badge rplm-type-badge--${this.detectedType || "unsupported"}`;
   }
 
   get iconGlyph() {
-    const icons = {
-      topic: "⤴",
-      external: "🌐",
-      wikipedia: "📖",
-    };
-    return icons[this.detectedType] || "";
+    return ICON_GLYPHS[this.detectedType] || "";
   }
 
   get showIconAfter() {
     return (
       this.config?.previewsShowIcon &&
-      this.config?.previewsIconPosition === "after" &&
+      this.config?.previewsIconPosition !== "before" &&
       this.isSupported
     );
   }
@@ -152,9 +127,25 @@ export default class RichPreviewLinkModal extends Component {
   get showIconBefore() {
     return (
       this.config?.previewsShowIcon &&
-      this.config?.previewsIconPosition !== "after" &&
+      this.config?.previewsIconPosition === "before" &&
       this.isSupported
     );
+  }
+
+  get displayText() {
+    return this.linkText.trim() || this.url.trim() || "link text";
+  }
+
+  get previewLinkClass() {
+    return `rplm-preview-link rplm-preview-link--${this.detectedType || "unsupported"}`;
+  }
+
+  get bbcodePreview() {
+    return buildBBCode(this.url.trim(), this.linkText, this.title, this.tagName);
+  }
+
+  get showPreview() {
+    return !!this.url.trim();
   }
 
   @action
@@ -175,18 +166,16 @@ export default class RichPreviewLinkModal extends Component {
 
   @action
   onInsert() {
-    if (!this.canInsert) {
+    if (this.cannotInsert) {
       this.urlError = "Please enter a supported URL before inserting.";
       return;
     }
-
     const bbcode = buildBBCode(
       this.url.trim(),
       this.linkText,
       this.title,
       this.tagName
     );
-
     this.args.model?.onInsert?.(bbcode);
     this.args.closeModal();
   }
@@ -203,11 +192,9 @@ export default class RichPreviewLinkModal extends Component {
       class="rich-preview-link-modal"
     >
       <:body>
+
         <div class="rplm-field">
-          abel class="rplm-label" for="rplm-url">
-            URL
-            <span class="rplm-required">*</span>
-          </label>
+          <label class="rplm-label" for="rplm-url">URL</label>
           <input
             id="rplm-url"
             type="url"
@@ -221,25 +208,24 @@ export default class RichPreviewLinkModal extends Component {
             <p class="rplm-error">{{this.urlError}}</p>
           {{/if}}
           {{#if this.typeLabel}}
-            <div class="rplm-type-badge rplm-type-badge--{{this.detectedType}}">
-              <span>{{this.typeDot}}</span>
-              <span>{{this.typeLabel}}</span>
+            <div class={{this.typeBadgeClass}}>
+              {{this.typeDot}} {{this.typeLabel}}
             </div>
           {{/if}}
           {{#if this.showUnsupportedWarning}}
             <p class="rplm-warning">
-              This URL type is not supported for rich previews.
-              Only internal topics, external Discourse forums in your
-              allowlist, and Wikipedia links are supported.
+              This URL is not supported. Only internal topics,
+              external Discourse forums in your allowlist, and
+              Wikipedia links are supported.
             </p>
           {{/if}}
         </div>
 
         <div class="rplm-field">
-          abel class="rplm-label" for="rplm-linktext">
+          <label class="rplm-label" for="rplm-linktext">
             Link text
-            <span class="rplm-optional">(optional — defaults to URL)</span>
           </label>
+          <p class="rplm-hint">Optional. Defaults to the URL if left blank.</p>
           <input
             id="rplm-linktext"
             type="text"
@@ -251,10 +237,10 @@ export default class RichPreviewLinkModal extends Component {
         </div>
 
         <div class="rplm-field">
-          abel class="rplm-label" for="rplm-title">
+          <label class="rplm-label" for="rplm-title">
             Title attribute
-            <span class="rplm-optional">(optional — shown on hover, helps SEO)</span>
           </label>
+          <p class="rplm-hint">Optional. Shown on hover and helps SEO.</p>
           <input
             id="rplm-title"
             type="text"
@@ -265,35 +251,37 @@ export default class RichPreviewLinkModal extends Component {
           />
         </div>
 
-        {{#if this.url}}
+        {{#if this.showPreview}}
           <div class="rplm-preview-section">
             <p class="rplm-preview-label">Preview</p>
-
             <div class="rplm-visual-preview">
               {{#if this.showIconBefore}}
-                <span class="rplm-icon" aria-hidden="true">{{this.iconGlyph}}</span>
+                <span class="rplm-icon" aria-hidden="true">
+                  {{this.iconGlyph}}
+                </span>
               {{/if}}
               <a
                 href={{this.url}}
                 title={{this.title}}
-                class="rplm-preview-link rplm-preview-link--{{this.detectedType}}"
+                class={{this.previewLinkClass}}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 {{this.displayText}}
               </a>
               {{#if this.showIconAfter}}
-                <span class="rplm-icon" aria-hidden="true">{{this.iconGlyph}}</span>
+                <span class="rplm-icon" aria-hidden="true">
+                  {{this.iconGlyph}}
+                </span>
               {{/if}}
             </div>
-
             <div class="rplm-bbcode-preview">
               de>{{this.bbcodePreview}}</code>
             </div>
           </div>
         {{/if}}
-      </:body>
 
+      </:body>
       <:footer>
         <DButton
           @action={{this.onInsert}}
