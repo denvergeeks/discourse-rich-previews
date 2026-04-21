@@ -7,7 +7,7 @@
 
 import {
   classifyLink,
-} from "./rich-preview-utils";
+} from "../rich-preview-utils";
 
 /**
  * Builds a regex that matches [tagName]...[/tagName] case-insensitively.
