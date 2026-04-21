@@ -23,6 +23,8 @@ import {
   sanitizeExcerpt,
   normalizeTag,
   formatNumber,
+  composerButtonShouldShow,
+  classifyLink,
 } from "../lib/rich-preview-utils";
 
 import { matchPreviewTarget } from "../lib/preview-router";
@@ -33,6 +35,8 @@ import {
 } from "../lib/preview-renderer";
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
+import { registerPreviewBBCode } from "../lib/preview-bbcode";
+import { registerPreviewComposerButton } from "../lib/preview-composer-button";
 
 function discourseIcon(name) {
   try {
@@ -133,11 +137,7 @@ function buildTagsHTML(topic, config, isMobile) {
   if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
   if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
 
-//  logDebug(config, "Raw topic tags", topic.tags);
-
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
-
-//  logDebug(config, "Normalized tags", tags);
 
   if (!tags.length) return "";
 
@@ -203,12 +203,6 @@ function buildExcerptHTML(topic, config, isMobile) {
   const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
   if (!finalExcerpt) return "";
 
-  // Estimate whether the excerpt will overflow the wrap-excerpt
-  // height cap. At ~32rem card width, roughly 90 characters fit
-  // per line at excerpt font size. If the excerpt is longer than
-  // one line's worth of characters, it is likely to be truncated
-  // by the max-height cap and the fade is appropriate.
-  // If it fits in a single line, the fade is skipped.
   const CHARS_PER_LINE = 90;
   const isLikelyMultiLine = finalExcerpt.length > CHARS_PER_LINE;
   const overflowClass = isLikelyMultiLine
@@ -536,6 +530,16 @@ export default apiInitializer((api) => {
   const config = readConfig(settings);
 
   if (!config.enabled) return;
+
+  // Register BBCode tag for [preview]...[/preview] regardless of mode
+  // so existing wrapped posts render correctly even if composer button
+  // is hidden. The eligibility check handles whether a card actually shows.
+  registerPreviewBBCode(api, config);
+
+  // Show composer button only when at least one type has composer enabled
+  if (composerButtonShouldShow(config)) {
+    registerPreviewComposerButton(api, config);
+  }
 
   const categories = getSiteCategories(api);
   const currentUser = api.getCurrentUser?.() || null;
@@ -1113,11 +1117,12 @@ export default apiInitializer((api) => {
       thumbnailSizeModeMobile: config.thumbnailSizeModeMobile,
       thumbnailSizePercentDesktop: config.thumbnailSizePercentDesktop,
       thumbnailSizePercentMobile: config.thumbnailSizePercentMobile,
-      wikipediaPreviewsEnabled: config.wikipediaPreviewsEnabled,
+      previewsTopicMode: config.previewsTopicMode,
+      previewsExternalMode: config.previewsExternalMode,
+      previewsWikipediaMode: config.previewsWikipediaMode,
       wikipediaPreviewsBaseUrl: config.wikipediaPreviewsBaseUrl,
     });
   })().catch((error) => {
-    // eslint-disable-next-line no-console
     console.error("[discourse-rich-previews] Fatal init error:", error);
     runCleanup();
   });

@@ -43,6 +43,7 @@
   }
 }
 
+
 .topic-hover-card {
   --thc-thumbnail-size-percent: 15;
   --thc-auto-thumb-max-width: 10rem;
@@ -63,6 +64,7 @@
   }
 }
 
+
 .topic-hover-card__body {
   position: relative;
   display: flex;
@@ -72,26 +74,28 @@
   padding: 0.95rem 1rem;
 }
 
+
 .topic-hover-card__thumb-wrap {
   flex: 0 0 auto;
   min-width: 0;
   overflow: hidden;
-  /* background: var(--primary-low); */
 }
+
 
 .topic-hover-card__thumb {
   display: block;
   width: 100%;
   height: auto;
   object-fit: cover;
-  /* background: var(--primary-low); */
 }
+
 
 .topic-hover-card__thumb--auto-fit {
   height: 100%;
   width: 100%;
   object-fit: cover;
 }
+
 
 .topic-hover-card--left,
 .topic-hover-card--right {
@@ -125,6 +129,7 @@
   }
 }
 
+
 .topic-hover-card--top,
 .topic-hover-card--bottom {
   flex-direction: column;
@@ -146,9 +151,11 @@
   }
 }
 
+
 .topic-hover-card--bottom {
   flex-direction: column-reverse;
 }
+
 
 .topic-hover-card--left.topic-hover-card--thumb-size-auto-fit-height,
 .topic-hover-card--right.topic-hover-card--thumb-size-auto-fit-height {
@@ -164,6 +171,7 @@
     object-fit: cover;
   }
 }
+
 
 .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt {
   .topic-hover-card__excerpt-wrap {
@@ -185,8 +193,6 @@
     margin: 0.1rem 0.8rem 0.35rem 0;
     overflow: hidden;
     border-radius: 0.5rem;
-    /*background: rgba(var(--primary-rgb), 0.04); */
-    /* background: color-mix(in srgb, var(--thc-bg) 96%, transparent); */
     isolation: isolate;
   }
 
@@ -207,7 +213,6 @@
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
-    /* filter: blur(14px) saturate(1.05); */
     filter: blur(5px) saturate(1.05);
     transform: scale(1.25);
     opacity: 0.72;
@@ -218,8 +223,6 @@
     content: "";
     position: absolute;
     inset: 0;
-    /* background: rgba(var(--secondary-rgb), 0.18); */
-    /* background: color-mix(in srgb, var(--thc-bg) 82%, transparent); */
   }
 
   .topic-hover-card__thumb {
@@ -239,7 +242,8 @@
     max-height: calc(1.38em * var(--thc-wrap-lines, 5) + 0.4em);
   }
 
-  .topic-hover-card__excerpt::after {
+  .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
+    .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
     content: "";
     position: absolute;
     inset-inline: 0;
@@ -253,6 +257,7 @@
     );
   }
 }
+
 
 .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt.topic-hover-card--density-default {
   --thc-wrap-lines: 5;
@@ -270,6 +275,22 @@
   --thc-wrap-lines: 3;
 }
 
+.topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
+  .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1.4em;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--thc-bg)
+  );
+}
+
+
 .topic-hover-card__title {
   margin: 0;
   color: var(--thc-text);
@@ -278,6 +299,7 @@
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
+
 
 .topic-hover-card__excerpt {
   color: var(--thc-muted);
@@ -289,6 +311,7 @@
   -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
 }
+
 
 .topic-hover-card__meta {
   display: flex;
@@ -302,14 +325,10 @@
 }
 
 
-
-
-
-/* Wikipedia preview tweaks – reuse same layout, just normalize text flow */
+/* Wikipedia preview tweaks */
 
 .topic-hover-card.topic-hover-card--wikipedia {
   .topic-hover-card__excerpt {
-    /* Allow HTML extract content to flow correctly */
     overflow-wrap: anywhere;
 
     > :first-child {
@@ -341,7 +360,6 @@
     color: var(--primary);
   }
 }
-
 
 
 .topic-hover-card__meta-item {
@@ -443,6 +461,9 @@
   }
 }
 
+
+
+
 .topic-hover-card__actions--mobile {
   position: sticky;
   bottom: 0;
@@ -456,14 +477,17 @@
   z-index: 2;
 }
 
+
 .topic-hover-card__open-topic {
   text-decoration: none !important;
 }
+
 
 .topic-hover-card__close {
   background: var(--primary-low);
   color: var(--primary);
 }
+
 
 .topic-hover-card__mobile-x {
   position: absolute;
@@ -488,10 +512,12 @@
   }
 }
 
+
 .topic-hover-card--loading .topic-hover-card__body,
 .topic-hover-card--error .topic-hover-card__body {
   padding: 1rem;
 }
+
 
 .topic-hover-card__skeleton {
   border-radius: 999px;
@@ -530,6 +556,92 @@
   }
 }
 
+
+// ─── Manual [preview] wrap indicators ───────────────────────────────────────
+
+// Base wrap container — inline so it does not break text flow
+.rich-preview-wrap {
+  display: inline;
+
+  // All links inside a wrap get the indicator treatment
+  a {
+    --rp-color: var(--tertiary);
+
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.18em;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 120ms ease;
+  }
+}
+
+// Always-visible underline variant
+.rich-preview-wrap--underline-always a {
+  text-decoration-color: var(--rp-color);
+}
+
+// Hover-only underline
+.rich-preview-wrap--underline-hover a:hover {
+  text-decoration-color: var(--rp-color);
+}
+
+// Per-type color overrides
+.rich-preview-wrap--topic a {
+  --rp-color: var(--tertiary);
+}
+
+.rich-preview-wrap--external a {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--wikipedia a {
+  --rp-color: #808080;
+}
+
+// Icon shown after link text (default position)
+.rich-preview-wrap--icon-after a::after {
+  content: var(--rp-icon, "");
+  display: inline-block;
+  margin-inline-start: 0.22em;
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+// Icon shown before link text
+.rich-preview-wrap--icon-before a::before {
+  content: var(--rp-icon, "");
+  display: inline-block;
+  margin-inline-end: 0.22em;
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+// Per-type icon glyphs
+// These use Unicode characters that are universally available
+// and visually distinct enough to convey type at a glance.
+// Topic → internal link symbol
+// External → globe
+// Wikipedia → book
+.rich-preview-wrap--topic {
+  --rp-icon: "⤴";
+}
+
+.rich-preview-wrap--external {
+  --rp-icon: "🌐";
+}
+
+.rich-preview-wrap--wikipedia {
+  --rp-icon: "📖";
+}
+
+
+// ─── Mobile media query ───────────────────────────────────────────────────────
+
 @media (max-width: 767px) {
   #discourse-rich-preview-tooltip {
     inset-inline: 8px auto;
@@ -546,7 +658,6 @@
       margin: 0.05rem 0.65rem 0.3rem 0 !important;
       overflow: hidden;
       border-radius: 0.45rem;
-      /* background: rgba(var(--primary-rgb), 0.04); */
       background: color-mix(in srgb, var(--thc-bg) 96%, transparent);
       isolation: isolate;
     }
@@ -578,7 +689,6 @@
       content: "";
       position: absolute;
       inset: 0;
-      /* background: rgba(var(--secondary-rgb), 0.2); */
       background: color-mix(in srgb, var(--thc-bg) 80%, transparent);
     }
 
@@ -610,7 +720,8 @@
       max-height: calc(1.32em * var(--thc-wrap-lines-mobile, 4) + 0.4em);
     }
 
-    .topic-hover-card__excerpt::after {
+    .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
+      .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
       content: "";
       position: absolute;
       inset-inline: 0;
@@ -623,6 +734,21 @@
         var(--thc-bg)
       );
     }
+  }
+
+  .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt
+    .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1.3em;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--thc-bg)
+    );
   }
 
   .topic-hover-card--topic.topic-hover-card--thumb-size-wrap-excerpt.topic-hover-card--density-default {
@@ -713,6 +839,8 @@
     height: 2.1rem;
   }
 }
+
+// ─── Desktop density ─────────────────────────────────────────────────────────
 
 @media (min-width: 768px) {
   .topic-hover-card--topic.topic-hover-card--density-default .topic-hover-card__body {

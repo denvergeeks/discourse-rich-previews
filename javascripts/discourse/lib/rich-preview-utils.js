@@ -3,6 +3,7 @@ export const VIEWPORT_MARGIN = 8;
 export const TOOLTIP_ID = "discourse-rich-preview-tooltip";
 export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
 
+
 function intSetting(value, fallback, min = null, max = null) {
   const n = Number.parseInt(value, 10);
   if (!Number.isFinite(n)) {
@@ -22,6 +23,7 @@ function intSetting(value, fallback, min = null, max = null) {
   return result;
 }
 
+
 function stringSetting(value, fallback = "") {
   if (value === null || value === undefined) {
     return fallback;
@@ -30,6 +32,7 @@ function stringSetting(value, fallback = "") {
   const str = String(value).trim();
   return str.length ? str : fallback;
 }
+
 
 function cssEscape(value) {
   const str = String(value ?? "");
@@ -40,6 +43,7 @@ function cssEscape(value) {
 
   return str.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
+
 
 function normalizeListSetting(value) {
   if (Array.isArray(value)) {
@@ -58,10 +62,28 @@ function normalizeListSetting(value) {
   return [];
 }
 
+
 export function readConfig(settings) {
   return {
     enabled: settings.enabled !== false,
     debugMode: !!settings.debug_mode,
+
+    // Per-type mode
+    previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
+    previewsExternalMode: stringSetting(settings.previews_external_mode, "auto_only"),
+    previewsWikipediaMode: stringSetting(settings.previews_wikipedia_mode, "auto_only"),
+
+    // Tag name
+    previewsTagName: stringSetting(settings.previews_tag_name, "preview"),
+
+    // Visual indicators
+    previewsShowIcon: settings.previews_show_icon !== false,
+    previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
+    previewsShowUnderline: settings.previews_show_underline !== false,
+    previewsUnderlineAlways: settings.previews_underline_always !== false,
+    previewsColorTopic: stringSetting(settings.previews_color_topic, "var(--tertiary)"),
+    previewsColorRemote: stringSetting(settings.previews_color_remote, "var(--success)"),
+    previewsColorWikipedia: stringSetting(settings.previews_color_wikipedia, "#808080"),
 
     delayShow: intSetting(settings.delay_show, 300, 0, 2000),
     cardWidth: stringSetting(settings.card_width, "32rem"),
@@ -177,8 +199,6 @@ export function readConfig(settings) {
     excludedTags: normalizeListSetting(settings.excluded_tags),
     excludedClasses: normalizeListSetting(settings.excluded_classes),
 
-    wikipediaPreviewsEnabled:
-      settings.wikipedia_previews_enabled !== false,
     wikipediaPreviewsBaseUrl: stringSetting(
       settings.wikipedia_previews_base_url,
       "en.wikipedia.org"
@@ -217,6 +237,7 @@ export function readConfig(settings) {
   };
 }
 
+
 export function logDebug(config, message, data = null) {
   if (!config?.debugMode) {
     return;
@@ -229,9 +250,11 @@ export function logDebug(config, message, data = null) {
   }
 }
 
+
 export function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
+
 
 export function escapeHTML(value) {
   return String(value ?? "")
@@ -241,6 +264,7 @@ export function escapeHTML(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
+
 
 export function sanitizeURL(url) {
   if (!url) {
@@ -259,6 +283,7 @@ export function sanitizeURL(url) {
   return "";
 }
 
+
 export function isElementVisible(el) {
   if (!(el instanceof Element)) {
     return false;
@@ -267,6 +292,7 @@ export function isElementVisible(el) {
   const rect = el.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
 }
+
 
 export function createViewportState() {
   return {
@@ -282,6 +308,7 @@ export function createViewportState() {
   };
 }
 
+
 export function getCachedValue(map, key) {
   if (!map?.has(key)) {
     return null;
@@ -292,6 +319,7 @@ export function getCachedValue(map, key) {
   map.set(key, value);
   return value;
 }
+
 
 export function setCachedValue(map, key, value, maxSize = 100) {
   if (!map) {
@@ -311,6 +339,7 @@ export function setCachedValue(map, key, value, maxSize = 100) {
 
   return value;
 }
+
 
 export function getJSON(url, options = {}) {
   const parsedUrl = new URL(url, window.location.origin);
@@ -334,9 +363,11 @@ export function getJSON(url, options = {}) {
   });
 }
 
+
 export function inCookedPost(el) {
   return !!el?.closest?.(".cooked");
 }
+
 
 export function isCookedPostFragmentLink(link) {
   if (!(link instanceof HTMLAnchorElement)) {
@@ -359,6 +390,7 @@ export function isCookedPostFragmentLink(link) {
     return false;
   }
 }
+
 
 export function parseTopicUrl(href) {
   if (!href) {
@@ -393,6 +425,7 @@ export function parseTopicUrl(href) {
   }
 }
 
+
 export function currentTopicIdFromPage() {
   const bodyTopicId = document.body?.dataset?.topicId;
   if (bodyTopicId && /^\d+$/.test(bodyTopicId)) {
@@ -409,6 +442,7 @@ export function currentTopicIdFromPage() {
   return topicLink?.topicId ?? null;
 }
 
+
 export function isCurrentTopicLink(link) {
   const parsed = parseTopicUrl(link?.href);
   const currentTopicId = currentTopicIdFromPage();
@@ -420,9 +454,13 @@ export function isCurrentTopicLink(link) {
   );
 }
 
+
+
+
 export function topicIdFromHref(href) {
   return parseTopicUrl(href)?.topicId ?? null;
 }
+
 
 function matchesTagList(link, tags) {
   if (!link || !Array.isArray(tags) || !tags.length) {
@@ -432,6 +470,7 @@ function matchesTagList(link, tags) {
   const selector = tags.join(", ");
   return selector ? link.closest(selector) : null;
 }
+
 
 function matchesClassList(link, classes) {
   if (!link || !Array.isArray(classes) || !classes.length) {
@@ -454,6 +493,7 @@ function matchesClassList(link, classes) {
   return null;
 }
 
+
 function matchesIncludedRules(link, config) {
   const includedTags = Array.isArray(config?.includedTags)
     ? config.includedTags
@@ -471,6 +511,7 @@ function matchesIncludedRules(link, config) {
     matchesClassList(link, includedClasses)
   );
 }
+
 
 function matchesExcludedRules(link, config) {
   const excludedTags = Array.isArray(config?.excludedTags)
@@ -499,6 +540,7 @@ function matchesExcludedRules(link, config) {
   return null;
 }
 
+
 export function isWikipediaArticleLink(link) {
   try {
     const url = new URL(link.href, window.location.origin);
@@ -511,6 +553,82 @@ export function isWikipediaArticleLink(link) {
   }
 }
 
+
+// ─── Per-type mode helpers ───────────────────────────────────────────────────
+
+/**
+ * Returns true if auto-detection is active for this link type.
+ */
+export function autoPreviewEnabled(type, config) {
+  const mode = {
+    topic: config?.previewsTopicMode,
+    external: config?.previewsExternalMode,
+    wikipedia: config?.previewsWikipediaMode,
+  }[type];
+
+  return mode === "auto_only" || mode === "auto_and_composer";
+}
+
+/**
+ * Returns true if composer/manual wrapping is active for this link type.
+ */
+export function composerPreviewEnabled(type, config) {
+  const mode = {
+    topic: config?.previewsTopicMode,
+    external: config?.previewsExternalMode,
+    wikipedia: config?.previewsWikipediaMode,
+  }[type];
+
+  return mode === "composer_only" || mode === "auto_and_composer";
+}
+
+/**
+ * Returns true if previews are enabled at all for this link type.
+ */
+export function previewTypeEnabled(type, config) {
+  const mode = {
+    topic: config?.previewsTopicMode,
+    external: config?.previewsExternalMode,
+    wikipedia: config?.previewsWikipediaMode,
+  }[type];
+
+  return mode !== "disabled";
+}
+
+/**
+ * Returns true if the composer button should be shown.
+ * True when at least one type has composer_only or auto_and_composer.
+ */
+export function composerButtonShouldShow(config) {
+  return (
+    composerPreviewEnabled("topic", config) ||
+    composerPreviewEnabled("external", config) ||
+    composerPreviewEnabled("wikipedia", config)
+  );
+}
+
+/**
+ * Returns true if the link is manually wrapped in the preview tag.
+ */
+export function isManuallyWrapped(link) {
+  return !!link?.closest?.(
+    ".rich-preview-wrap[data-rich-preview='true']"
+  );
+}
+
+/**
+ * Classifies a link as "topic", "external", "wikipedia", or null.
+ */
+export function classifyLink(link, config) {
+  if (isWikipediaArticleLink(link)) return "wikipedia";
+  if (parseTopicUrl(link?.href)) return "topic";
+  if (parseRemoteDiscourseTopicUrl(link?.href, config)) return "external";
+  return null;
+}
+
+
+// ─── Eligibility ─────────────────────────────────────────────────────────────
+
 export function isEligiblePreviewLink(link, config) {
   if (!(link instanceof HTMLAnchorElement)) {
     return false;
@@ -520,6 +638,24 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
+  // Classify the link type so we can check the right mode setting
+  const type = classifyLink(link, config);
+  if (!type) return false;
+
+  // If this type is disabled entirely, skip it
+  if (!previewTypeEnabled(type, config)) return false;
+
+  const manually = isManuallyWrapped(link);
+
+  // If manually wrapped, check composer is enabled for this type
+  if (manually) {
+    return composerPreviewEnabled(type, config);
+  }
+
+  // If not manually wrapped, check auto is enabled for this type
+  if (!autoPreviewEnabled(type, config)) return false;
+
+  // Apply include/exclude rules only for auto-detected links
   if (!matchesIncludedRules(link, config)) {
     logDebug(config, "Skipping link due to include rules", {
       href: link.href,
@@ -543,19 +679,8 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
-  if (isWikipediaArticleLink(link)) {
-    return config?.wikipediaPreviewsEnabled !== false;
-  }
-
-  const parsed =
-    parseTopicUrl(link.href) ||
-    parseRemoteDiscourseTopicUrl(link.href, config);
-
-  if (!parsed) {
-    return false;
-  }
-
-  if (!parsed.isRemote && inCookedPost(link)) {
+  // Fragment/current-topic checks for local topic links only
+  if (type === "topic" && inCookedPost(link)) {
     if (isCurrentTopicLink(link)) {
       logDebug(config, "Skipping current-topic cooked-post link", {
         href: link.href,
@@ -574,6 +699,7 @@ export function isEligiblePreviewLink(link, config) {
   return true;
 }
 
+
 export function linkInSupportedArea(link, config) {
   if (!(link instanceof Element)) {
     return false;
@@ -581,6 +707,12 @@ export function linkInSupportedArea(link, config) {
 
   if (!isEligiblePreviewLink(link, config)) {
     return false;
+  }
+
+  // Manually wrapped links bypass area checks entirely —
+  // the author explicitly opted this link in regardless of page context
+  if (isManuallyWrapped(link)) {
+    return true;
   }
 
   if (config.enableOnKanbanBoards) {
@@ -654,6 +786,7 @@ export function linkInSupportedArea(link, config) {
   return false;
 }
 
+
 export function normalizedFieldKeyVariants(rawValue) {
   const raw = String(rawValue ?? "").trim();
   if (!raw) {
@@ -675,6 +808,7 @@ export function normalizedFieldKeyVariants(rawValue) {
   return [...variants];
 }
 
+
 function isTruthyUserFieldValue(value) {
   if (value === true || value === 1) {
     return true;
@@ -686,6 +820,7 @@ function isTruthyUserFieldValue(value) {
 
   return ["true", "t", "1", "yes", "y", "on"].includes(normalized);
 }
+
 
 export function findTruthyFieldMatch(source, candidates) {
   if (!source || !candidates?.length) {
@@ -706,9 +841,11 @@ export function findTruthyFieldMatch(source, candidates) {
   return null;
 }
 
+
 export function currentUserIsStaffLike(user) {
   return !!(user?.admin || user?.moderator || user?.staff);
 }
+
 
 export function safeAvatarURL(avatarTemplate, size = 24) {
   if (!avatarTemplate) {
@@ -718,6 +855,7 @@ export function safeAvatarURL(avatarTemplate, size = 24) {
   const replaced = String(avatarTemplate).replace("{size}", String(size));
   return sanitizeURL(replaced);
 }
+
 
 export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
   if (!avatarTemplate || !origin) {
@@ -732,6 +870,7 @@ export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
     return "";
   }
 }
+
 
 export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
   const source = String(htmlOrText ?? "").trim();
@@ -775,6 +914,7 @@ export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
   return text.replace(/\s+/g, " ").trim();
 }
 
+
 export function normalizeTag(tag) {
   if (!tag) {
     return "";
@@ -785,7 +925,6 @@ export function normalizeTag(tag) {
   }
 
   if (typeof tag === "object") {
-    // adjust fields to match whatever your topic JSON actually uses
     const value =
       tag.name ||
       tag.text ||
@@ -800,6 +939,7 @@ export function normalizeTag(tag) {
   return String(tag).trim();
 }
 
+
 export function formatNumber(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) {
@@ -809,10 +949,12 @@ export function formatNumber(value) {
   return new Intl.NumberFormat().format(num);
 }
 
+
 export function isAllowedRemoteDiscourseHost(hostname, config) {
   const host = String(hostname || "").trim().toLowerCase();
   return !!host && (config?.remoteDiscourseHosts || []).includes(host);
 }
+
 
 export function parseRemoteDiscourseTopicUrl(href, config) {
   if (!href) {
@@ -860,6 +1002,7 @@ export function parseRemoteDiscourseTopicUrl(href, config) {
     return null;
   }
 }
+
 
 export function parsePreviewTopicUrl(href, config) {
   return parseTopicUrl(href) || parseRemoteDiscourseTopicUrl(href, config);

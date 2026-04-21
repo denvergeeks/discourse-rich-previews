@@ -1,14 +1,18 @@
-import { iconHTML } from "discourse-common/lib/icon-library";
-
-const PREVIEW_WRAP_OPEN = "[preview]";
-const PREVIEW_WRAP_CLOSE = "[/preview]";
+/**
+ * Registers the composer toolbar button for wrapping links in the
+ * configured preview BBCode tag. The tag name is driven by the
+ * previews_tag_name setting so it stays in sync with preview-bbcode.js.
+ */
 
 /**
- * Registers the [preview] composer toolbar button.
- * Wraps selected text in [preview]...[/preview].
- * If no text is selected and the cursor is on a URL, wraps the URL.
+ * Called from the api initializer to add the composer toolbar button.
+ * Accepts config so the tag name and behavior match the current settings.
  */
-export function registerPreviewComposerButton(api) {
+export function registerPreviewComposerButton(api, config) {
+  const tagName = config?.previewsTagName || "preview";
+  const open = `[${tagName}]`;
+  const close = `[/${tagName}]`;
+
   api.onToolbarCreate((toolbar) => {
     toolbar.addButton({
       id: "rich-preview-wrap",
@@ -20,17 +24,15 @@ export function registerPreviewComposerButton(api) {
         const selected = toolbarEvent.selected;
 
         if (selected?.value) {
-          // Text is selected — wrap it
+          // Text is selected — wrap it in the configured tag
           toolbarEvent.applySurround(
-            PREVIEW_WRAP_OPEN,
-            PREVIEW_WRAP_CLOSE,
+            open,
+            close,
             "rich_preview_wrap_default"
           );
         } else {
-          // Nothing selected — insert placeholder
-          toolbarEvent.addText(
-            `${PREVIEW_WRAP_OPEN}paste link here${PREVIEW_WRAP_CLOSE}`
-          );
+          // Nothing selected — insert a placeholder the user can replace
+          toolbarEvent.addText(`${open}paste link here${close}`);
         }
       },
     });

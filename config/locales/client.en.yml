@@ -1,1 +1,6 @@
-hoo
+en:
+  js:
+    rich_previews:
+      composer_button:
+        label: "Preview"
+        title: "Wrap link with rich preview indicator"

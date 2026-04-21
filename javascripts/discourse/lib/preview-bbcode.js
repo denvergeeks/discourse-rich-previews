@@ -1,20 +1,140 @@
 /**
- * Registers the [preview]...[/preview] BBCode tag with Discourse's
- * markdown-it pipeline and decorates cooked elements so the theme
- * component can apply hover cards and visual indicators to wrapped links.
+ * Registers the [preview]...[/preview] BBCode tag (or whatever tag name
+ * is configured via previews_tag_name) with Discourse's markdown-it
+ * pipeline and decorates cooked elements so the theme component can
+ * apply hover cards and visual indicators to wrapped links.
  */
 
-const PREVIEW_TAG_RE = /\[preview\]([\s\S]*?)\[\/preview\]/gi;
+import {
+  classifyLink,
+} from "../rich-preview-utils";
+
+/**
+ * Builds a regex that matches [tagName]...[/tagName] case-insensitively.
+ * A new regex instance is returned each time to avoid lastIndex state issues.
+ */
+function buildTagRegex(tagName) {
+  const escaped = tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(
+    `\\[${escaped}\\]([\\s\\S]*?)\\[\\/${escaped}\\]`,
+    "gi"
+  );
+}
+
+/**
+ * Builds the rendered HTML for a wrapped link.
+ * The span gets data-rich-preview="true" so the theme component
+ * can find it and apply hover cards regardless of page-level settings.
+ */
+function buildPreviewWrapHTML(inner) {
+  return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
+}
+
+/**
+ * Stamps modifier classes onto a .rich-preview-wrap span based on:
+ * - the type of link inside it (topic, external, wikipedia)
+ * - the current config settings for icons and underlines
+ */
+function stampModifierClasses(wrapEl, config) {
+  if (!(wrapEl instanceof Element)) return;
+
+  // Detect link type from the first <a> inside the wrap
+  const link = wrapEl.querySelector("a[href]");
+  const type = link ? classifyLink(link, config) : null;
+
+  // Type modifier
+  if (type) {
+    wrapEl.classList.add(`rich-preview-wrap--${type}`);
+  }
+
+  // Underline modifiers
+  if (config?.previewsShowUnderline) {
+    if (config?.previewsUnderlineAlways) {
+      wrapEl.classList.add("rich-preview-wrap--underline-always");
+    } else {
+      wrapEl.classList.add("rich-preview-wrap--underline-hover");
+    }
+  }
+
+  // Icon modifiers
+  if (config?.previewsShowIcon && type) {
+    const position = config?.previewsIconPosition || "after";
+    wrapEl.classList.add(`rich-preview-wrap--icon-${position}`);
+  }
+
+  // Apply per-type custom colors from settings as inline CSS variables
+  // so admins can override the defaults without touching SCSS
+  if (type && link) {
+    const colorMap = {
+      topic: config?.previewsColorTopic,
+      external: config?.previewsColorRemote,
+      wikipedia: config?.previewsColorWikipedia,
+    };
+
+    const color = colorMap[type];
+    if (color) {
+      wrapEl.style.setProperty("--rp-color", color);
+    }
+  }
+}
+
+/**
+ * Scans a cooked element for literal [tagName]...[/tagName] text nodes
+ * that were not processed by the markdown pipeline (e.g. posts cooked
+ * before this tag was registered) and wraps them in the correct HTML.
+ * Then stamps modifier classes on all .rich-preview-wrap spans found.
+ */
+export function applyPreviewWraps(root, tagName = "preview", config = null) {
+  if (!(root instanceof Element)) return;
+
+  // Step 1: transform any unprocessed [tag]...[/tag] text nodes
+  const tagRe = buildTagRegex(tagName);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const toReplace = [];
+
+  let node;
+  while ((node = walker.nextNode())) {
+    if (tagRe.test(node.textContent)) {
+      toReplace.push(node);
+      tagRe.lastIndex = 0;
+    }
+  }
+
+  for (const textNode of toReplace) {
+    const re = buildTagRegex(tagName);
+    const html = textNode.textContent.replace(
+      re,
+      (_, inner) => buildPreviewWrapHTML(inner)
+    );
+
+    const temp = document.createElement("span");
+    temp.innerHTML = html;
+    textNode.replaceWith(...temp.childNodes);
+  }
+
+  // Step 2: stamp modifier classes on all .rich-preview-wrap spans
+  // in this element, including ones that were already in the HTML
+  // from server-side cooking
+  if (config) {
+    root
+      .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
+      .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
+  }
+}
 
 /**
  * Called from the api initializer to wire up the BBCode tag.
+ * Accepts config so the tag name and visual indicators are driven
+ * by the component settings.
  */
-export function registerPreviewBBCode(api) {
+export function registerPreviewBBCode(api, config) {
+  const tagName = config?.previewsTagName || "preview";
+
   // 1. Register with the markdown-it BBCode plugin so the tag
   //    is processed server-side during cooking and client-side
   //    in the composer preview.
   if (api.registerBBCodePreview) {
-    api.registerBBCodePreview("preview", {
+    api.registerBBCodePreview(tagName, {
       replace(state, tagInfo, content) {
         const token = state.push("html_inline", "", 0);
         token.content = buildPreviewWrapHTML(content);
@@ -24,56 +144,16 @@ export function registerPreviewBBCode(api) {
   }
 
   // 2. Decorate already-cooked elements (topic page, user profile,
-  //    anywhere cooked HTML appears) so stored posts with [preview]
-  //    tags that were cooked before this plugin existed still work.
+  //    anywhere cooked HTML appears) so stored posts with the tag
+  //    that were cooked before this component was installed still
+  //    work, and so modifier classes are applied on every render.
   api.decorateCookedElement(
     (element) => {
-      applyPreviewWraps(element);
+      applyPreviewWraps(element, tagName, config);
     },
     {
       id: "rich-preview-bbcode-decorator",
       onlyStream: false,
     }
   );
-}
-
-/**
- * Scans a cooked element for literal [preview]...[/preview] text
- * that was not processed by the markdown pipeline (e.g. posts cooked
- * before the tag was registered) and wraps them in the correct HTML.
- */
-export function applyPreviewWraps(root) {
-  if (!(root instanceof Element)) return;
-
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-  const toReplace = [];
-
-  let node;
-  while ((node = walker.nextNode())) {
-    if (PREVIEW_TAG_RE.test(node.textContent)) {
-      toReplace.push(node);
-      PREVIEW_TAG_RE.lastIndex = 0;
-    }
-  }
-
-  for (const textNode of toReplace) {
-    const html = textNode.textContent.replace(
-      PREVIEW_TAG_RE,
-      (_, inner) => buildPreviewWrapHTML(inner)
-    );
-    PREVIEW_TAG_RE.lastIndex = 0;
-
-    const temp = document.createElement("span");
-    temp.innerHTML = html;
-    textNode.replaceWith(...temp.childNodes);
-  }
-}
-
-/**
- * Builds the rendered HTML for a [preview] wrapped link.
- * The span gets data-rich-preview="true" so the theme component
- * can find it and apply hover cards regardless of page-level settings.
- */
-function buildPreviewWrapHTML(inner) {
-  return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
 }
