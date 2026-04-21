@@ -920,6 +920,45 @@ export function normalizeRemoteDiscourseTopic(topicJson, remoteInfo, config) {
 
 const remoteTopicCache = new Map();
 
+const PROXY_ENDPOINT = "/discourse-proxy-safe";
+
+function proxyIsAvailable() {
+  return (
+    typeof window !== "undefined" &&
+    window.location?.origin &&
+    true // proxy plugin is assumed present if this component is active
+  );
+}
+
+function buildProxyUrl(remoteJsonUrl) {
+  return `${PROXY_ENDPOINT}?url=${encodeURIComponent(remoteJsonUrl)}`;
+}
+
+async function fetchViaProxy(remoteJsonUrl, signal) {
+  const proxyUrl = buildProxyUrl(remoteJsonUrl);
+
+  const response = await fetch(proxyUrl, {
+    method: "GET",
+    mode: "same-origin",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Proxy error ${response.status} for ${remoteJsonUrl}`
+    );
+  }
+
+  // The proxy returns the raw remote body as a JSON string.
+  // Parse it once to get the actual topic object.
+  const text = await response.text();
+  return JSON.parse(text);
+}
+
 export async function fetchRemoteDiscourseTopic(remoteInfo, config) {
   const cacheKey = remoteInfo.jsonUrl;
 
@@ -932,9 +971,11 @@ export async function fetchRemoteDiscourseTopic(remoteInfo, config) {
     controller.abort();
   }, config.remoteDiscourseTimeoutMs);
 
-  const request = getJSON(remoteInfo.jsonUrl, {
-    signal: controller.signal,
-  })
+  const request = (
+    proxyIsAvailable()
+      ? fetchViaProxy(remoteInfo.jsonUrl, controller.signal)
+      : getJSON(remoteInfo.jsonUrl, { signal: controller.signal })
+  )
     .then((topicJson) =>
       normalizeRemoteDiscourseTopic(topicJson, remoteInfo, config)
     )
