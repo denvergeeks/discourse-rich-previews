@@ -153,68 +153,150 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
   const containers = root.querySelectorAll("p, li, td, div, blockquote");
 
   containers.forEach((container) => {
-    const childNodes = Array.from(container.childNodes);
+    let childNodes = Array.from(container.childNodes);
 
     let i = 0;
     while (i < childNodes.length) {
       const node = childNodes[i];
 
-      const isOpenTag =
-        node.nodeType === Node.TEXT_NODE &&
-        node.textContent.trim().toLowerCase() === openTagLower;
-
-      if (isOpenTag) {
-
-        const wrapNodes = [];
-        let closeNode = null;
-        let j = i + 1;
-
-        while (j < childNodes.length) {
-          const candidate = childNodes[j];
-          const isCloseTag =
-            candidate.nodeType === Node.TEXT_NODE &&
-            candidate.textContent.trim().toLowerCase() === closeTagLower;
-
-          if (isCloseTag) {
-            closeNode = candidate;
-            break;
-          }
-
-          wrapNodes.push(candidate);
-          j++;
-        }
-
-        if (closeNode && wrapNodes.length > 0) {
-
-          const wrapSpan = document.createElement("span");
-          wrapSpan.className = "rich-preview-wrap";
-          wrapSpan.setAttribute("data-rich-preview", "true");
-
-          wrapNodes.forEach((n) => wrapSpan.appendChild(n));
-          container.replaceChild(wrapSpan, node);
-          closeNode.remove();
-
-          if (config) {
-            stampModifierClasses(wrapSpan, config);
-          }
-
-          // Final pass: stamp modifier classes on all wrap spans
-          if (config) {
-            root
-              .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
-              .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
-
-            // Also stamp auto-detected plain links
-            stampAutoLinkIndicators(root, config);
-          }
-
-          const updated = Array.from(container.childNodes);
-          i = updated.indexOf(wrapSpan) + 1;
-          continue;
-        }
+      if (node.nodeType !== Node.TEXT_NODE) {
+        i++;
+        continue;
       }
 
-      i++;
+      const text = node.textContent;
+      const lowerText = text.toLowerCase();
+
+      // Check if this text node contains [preview] anywhere inside it
+      const openIdx = lowerText.indexOf(openTagLower);
+      if (openIdx === -1) {
+        i++;
+        continue;
+      }
+
+      // Split this text node into: before-text + open-tag-text + after-text
+      // Then look forward for the close tag
+
+      // Text before the open tag
+      const beforeText = text.slice(0, openIdx);
+      // Text after the open tag on the same node
+      const afterOpenText = text.slice(openIdx + openTagLower.length);
+
+      // Now scan forward from the next sibling looking for [/preview]
+      // The close tag could be:
+      // 1. In the afterOpenText on the same node (whole tag in one text node)
+      // 2. In a later sibling text node
+
+      // First check if close tag is in the remainder of this same text node
+      const closeInSameNode = afterOpenText.toLowerCase().indexOf(closeTagLower);
+
+      if (closeInSameNode !== -1) {
+        // Entire [preview]...[/preview] is within this one text node
+        const inner = afterOpenText.slice(0, closeInSameNode);
+        const afterClose = afterOpenText.slice(closeInSameNode + closeTagLower.length);
+
+        const wrapSpan = document.createElement("span");
+        wrapSpan.className = "rich-preview-wrap";
+        wrapSpan.setAttribute("data-rich-preview", "true");
+        wrapSpan.textContent = inner;
+
+        const fragment = document.createDocumentFragment();
+        if (beforeText) fragment.appendChild(document.createTextNode(beforeText));
+        fragment.appendChild(wrapSpan);
+        if (afterClose) fragment.appendChild(document.createTextNode(afterClose));
+
+        container.replaceChild(fragment, node);
+
+        if (config) stampModifierClasses(wrapSpan, config);
+
+        childNodes = Array.from(container.childNodes);
+        i = childNodes.indexOf(wrapSpan) + 1;
+        continue;
+      }
+
+      // Close tag is in a later sibling — collect nodes until we find it
+      const wrapNodes = [];
+      let closeNode = null;
+      let closeNodeOffset = -1;
+      let j = i + 1;
+
+      // Handle any remaining text after [preview] on the same node
+      // by creating a temporary text node for it
+      let afterOpenNode = null;
+      if (afterOpenText) {
+        afterOpenNode = document.createTextNode(afterOpenText);
+      }
+
+      while (j < childNodes.length) {
+        const candidate = childNodes[j];
+
+        if (candidate.nodeType === Node.TEXT_NODE) {
+          const candidateLower = candidate.textContent.toLowerCase();
+          const closeIdx = candidateLower.indexOf(closeTagLower);
+
+          if (closeIdx !== -1) {
+            closeNode = candidate;
+            closeNodeOffset = closeIdx;
+            break;
+          }
+        }
+
+        wrapNodes.push(candidate);
+        j++;
+      }
+
+      if (!closeNode) {
+        i++;
+        continue;
+      }
+
+      // Build the wrap span
+      const wrapSpan = document.createElement("span");
+      wrapSpan.className = "rich-preview-wrap";
+      wrapSpan.setAttribute("data-rich-preview", "true");
+
+      // Add the text after [preview] on the open-tag node (if any)
+      if (afterOpenNode) {
+        wrapSpan.appendChild(afterOpenNode);
+      }
+
+      // Add all collected sibling nodes
+      wrapNodes.forEach((n) => wrapSpan.appendChild(n));
+
+      // Handle text before and after [/preview] in the close node
+      const closeNodeText = closeNode.textContent;
+      const textBeforeClose = closeNodeText.slice(0, closeNodeOffset);
+      const textAfterClose = closeNodeText.slice(
+        closeNodeOffset + closeTagLower.length
+      );
+
+      if (textBeforeClose) {
+        wrapSpan.appendChild(document.createTextNode(textBeforeClose));
+      }
+
+      // Build the replacement fragment
+      const fragment = document.createDocumentFragment();
+
+      if (beforeText) {
+        fragment.appendChild(document.createTextNode(beforeText));
+      }
+
+      fragment.appendChild(wrapSpan);
+
+      if (textAfterClose) {
+        fragment.appendChild(document.createTextNode(textAfterClose));
+      }
+
+      // Replace the open-tag text node with the fragment
+      container.replaceChild(fragment, node);
+
+      // Remove the close tag text node
+      closeNode.remove();
+
+      if (config) stampModifierClasses(wrapSpan, config);
+
+      childNodes = Array.from(container.childNodes);
+      i = childNodes.indexOf(wrapSpan) + 1;
     }
   });
 }
