@@ -829,7 +829,7 @@ export default apiInitializer((api) => {
           positionTooltipNextFrame(anchorRect);
           return;
         }
-
+console.debug("[discourse-rich-previews] preview object", preview);
         tooltip.innerHTML = getRenderedCard(
           preview,
           viewport.isMobileLayout()
