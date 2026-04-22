@@ -79,6 +79,9 @@ export function readConfig(settings) {
     // Tag name
     previewsTagName: stringSetting(settings.previews_tag_name, "preview"),
 
+    // Composer button
+    composerButtonGroup: stringSetting(settings.composer_button_group, "insertions"),
+
     // Visual indicators
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),

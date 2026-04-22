@@ -3,6 +3,20 @@ enabled:
   type: bool
   description: Enable the Rich Previews theme component.
 
+composer_button_group:
+  default: "insertions"
+  type: enum
+  choices:
+    - fontStyles
+    - insertions
+    - extras
+  client: true
+  description: >
+    Controls which group in the composer toolbar the rich preview
+    button appears in. fontStyles places it with bold/italic,
+    insertions places it with the link and image buttons,
+    extras places it at the end of the toolbar.
+
 
 # ─── Per-type preview mode ───────────────────────────────────────────────────
 

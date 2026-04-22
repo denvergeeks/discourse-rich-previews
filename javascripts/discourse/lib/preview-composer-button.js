@@ -15,9 +15,10 @@ export function registerPreviewComposerButton(api, config) {
   api.onToolbarCreate((toolbar) => {
     toolbar.addButton({
       id: "rich-preview-wrap",
-      group: "insertions",
+      group: config?.composerButtonGroup || "insertions",
       icon: "eye",
-      title: "Insert a rich preview link",
+      translatedTitle: "Preview Link (Ctrl P)",
+      shortcut: "P",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
         const initialLinkText = selected?.value?.trim() || "";
