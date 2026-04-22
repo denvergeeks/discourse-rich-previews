@@ -38,16 +38,13 @@ function buildPreviewWrapHTML(inner) {
 function stampModifierClasses(wrapEl, config) {
   if (!(wrapEl instanceof Element)) return;
 
-  // Detect link type from the first <a> inside the wrap
   const link = wrapEl.querySelector("a[href]");
   const type = link ? classifyLink(link, config) : null;
 
-  // Type modifier
   if (type) {
     wrapEl.classList.add(`rich-preview-wrap--${type}`);
   }
 
-  // Underline modifiers
   if (config?.previewsShowUnderline) {
     if (config?.previewsUnderlineAlways) {
       wrapEl.classList.add("rich-preview-wrap--underline-always");
@@ -56,28 +53,12 @@ function stampModifierClasses(wrapEl, config) {
     }
   }
 
-  // Icon modifiers
   if (config?.previewsShowIcon && type) {
     const position = config?.previewsIconPosition || "after";
     wrapEl.classList.add(`rich-preview-wrap--icon-${position}`);
   }
 
-  // Apply per-type custom colors from settings as inline CSS variables
-  // so admins can override the defaults without touching SCSS
   if (type && link) {
-
-  // Set icon glyph as CSS variable so ::before/::after can use it
-    const iconMap = {
-      topic: config?.previewsIconTopic || "🔗",
-      external: config?.previewsIconExternal || "🌐",
-      wikipedia: config?.previewsIconWikipedia || "📖",
-    };
-
-    const icon = type ? iconMap[type] : null;
-    if (icon) {
-      wrapEl.style.setProperty("--rp-icon", `"${icon}"`);
-    }
-
     const colorMap = {
       topic: config?.previewsColorTopic,
       external: config?.previewsColorRemote,
@@ -88,6 +69,8 @@ function stampModifierClasses(wrapEl, config) {
     if (color) {
       wrapEl.style.setProperty("--rp-color", color);
     }
+
+    wrapEl.style.removeProperty("--rp-icon");
   }
 }
 
@@ -101,10 +84,7 @@ function stampAutoLinkIndicators(root, config) {
   if (!config.previewsShowIcon && !config.previewsShowUnderline) return;
 
   root.querySelectorAll("a[href]").forEach((link) => {
-    // Skip links already inside a rich-preview-wrap
     if (link.closest(".rich-preview-wrap")) return;
-
-    // Skip links that already have the attribute stamped
     if (link.hasAttribute("data-rich-preview-type")) return;
 
     const type = classifyLink(link, config);
@@ -112,7 +92,6 @@ function stampAutoLinkIndicators(root, config) {
 
     link.setAttribute("data-rich-preview-type", type);
 
-    // Apply color as inline CSS variable so admin settings work
     const colorMap = {
       topic: config.previewsColorTopic,
       external: config.previewsColorRemote,
@@ -124,17 +103,7 @@ function stampAutoLinkIndicators(root, config) {
       link.style.setProperty("--rp-color", color);
     }
 
-    const iconMap = {
-      topic: config?.previewsIconTopic || "🔗",
-      external: config?.previewsIconExternal || "🌐",
-      wikipedia: config?.previewsIconWikipedia || "📖",
-    };
-
-    const icon = iconMap[type];
-    if (icon) {
-      link.style.setProperty("--rp-icon", `"${icon}"`);
-    }
-
+    link.style.removeProperty("--rp-icon");
   });
 }
 
