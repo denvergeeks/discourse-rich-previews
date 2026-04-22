@@ -1,6 +1,7 @@
 import {
   parseTopicUrl,
   parseRemoteDiscourseTopicUrl,
+  providerEnabled,
 } from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
 
@@ -35,7 +36,7 @@ function matchTopicPreview(link, config) {
   }
 
   const local = parseTopicUrl(link.href);
-  if (local?.topicId) {
+  if (local?.topicId && providerEnabled(config, "topic")) {
     return {
       type: "topic",
       key: `topic:${window.location.origin}:${local.topicId}`,
@@ -45,12 +46,13 @@ function matchTopicPreview(link, config) {
       origin: window.location.origin,
       hostname: window.location.hostname,
       isRemote: false,
+      glyphProviderKey: "topic",
       link,
     };
   }
 
   const remote = parseRemoteDiscourseTopicUrl(link.href, config);
-  if (remote?.topicId) {
+  if (remote?.topicId && providerEnabled(config, "remote_topic")) {
     return {
       type: "topic",
       key: `topic:${remote.origin}:${remote.topicId}`,
@@ -60,6 +62,7 @@ function matchTopicPreview(link, config) {
       origin: remote.origin,
       hostname: remote.hostname,
       isRemote: true,
+      glyphProviderKey: "remote_topic",
       link,
     };
   }
@@ -68,7 +71,7 @@ function matchTopicPreview(link, config) {
 }
 
 function matchWikipediaPreview(link, config) {
-  if (!config?.enabled) {
+  if (!config?.enabled || !providerEnabled(config, "wikipedia")) {
     return null;
   }
 
@@ -90,6 +93,7 @@ function matchWikipediaPreview(link, config) {
       key: `wikipedia:${host}:${pageKey}`,
       host,
       pageKey,
+      glyphProviderKey: "wikipedia",
       link,
     };
   } catch {

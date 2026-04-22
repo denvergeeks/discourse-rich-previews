@@ -299,6 +299,16 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
       i = childNodes.indexOf(wrapSpan) + 1;
     }
   });
+
+  // Stamp modifier classes on all .rich-preview-wrap spans
+  if (config) {
+    root
+      .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
+      .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
+
+    // Stamp indicators on plain auto-detected links
+    stampAutoLinkIndicators(root, config);
+  }
 }
 
 /**
@@ -308,19 +318,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
  */
 export function registerPreviewBBCode(api, config) {
   const tagName = config?.previewsTagName || "preview";
-
-  // 1. Register with the markdown-it BBCode plugin so the tag
-  //    is processed server-side during cooking and client-side
-  //    in the composer preview.
-  if (api.registerBBCodePreview) {
-    api.registerBBCodePreview(tagName, {
-      replace(state, tagInfo, content) {
-        const token = state.push("html_inline", "", 0);
-        token.content = buildPreviewWrapHTML(content);
-        return true;
-      },
-    });
-  }
 
   // 2. Decorate already-cooked elements (topic page, user profile,
   //    anywhere cooked HTML appears) so stored posts with the tag

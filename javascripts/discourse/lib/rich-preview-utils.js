@@ -1,8 +1,9 @@
+const { iconHTML } = require("discourse-common/lib/icon-library");
+
 export const DELAY_HIDE = 120;
 export const VIEWPORT_MARGIN = 8;
 export const TOOLTIP_ID = "discourse-rich-preview-tooltip";
 export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
-
 
 function intSetting(value, fallback, min = null, max = null) {
   const n = Number.parseInt(value, 10);
@@ -23,7 +24,6 @@ function intSetting(value, fallback, min = null, max = null) {
   return result;
 }
 
-
 function stringSetting(value, fallback = "") {
   if (value === null || value === undefined) {
     return fallback;
@@ -32,7 +32,6 @@ function stringSetting(value, fallback = "") {
   const str = String(value).trim();
   return str.length ? str : fallback;
 }
-
 
 function cssEscape(value) {
   const str = String(value ?? "");
@@ -43,7 +42,6 @@ function cssEscape(value) {
 
   return str.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
-
 
 function normalizeListSetting(value) {
   if (Array.isArray(value)) {
@@ -62,6 +60,107 @@ function normalizeListSetting(value) {
   return [];
 }
 
+function normalizeProviderKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizePipeList(value) {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  return String(value)
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizePreviewProviders(rawProviders = []) {
+  const defaults = {
+    topic: {
+      key: "topic",
+      enabled: true,
+      label: "Local topic",
+      glyph_mode: "icon",
+      icon: "comment",
+      emoji: "💬",
+      color: "var(--tertiary)",
+      remote_hosts: [],
+      require_https: true,
+      timeout_ms: 3000,
+    },
+    remote_topic: {
+      key: "remote_topic",
+      enabled: true,
+      label: "Remote Discourse topic",
+      glyph_mode: "icon",
+      icon: "up-right-from-square",
+      emoji: "🌐",
+      color: "var(--success)",
+      remote_hosts: [],
+      require_https: true,
+      timeout_ms: 3000,
+    },
+    wikipedia: {
+      key: "wikipedia",
+      enabled: true,
+      label: "Wikipedia",
+      glyph_mode: "icon",
+      icon: "wikipedia-w",
+      emoji: "📚",
+      color: "#808080",
+      remote_hosts: [],
+      require_https: true,
+      timeout_ms: 3000,
+    },
+  };
+
+  const map = { ...defaults };
+
+  (rawProviders || []).forEach((provider) => {
+    const key = normalizeProviderKey(provider?.key);
+    if (!key) {
+      return;
+    }
+
+    map[key] = {
+      ...defaults[key],
+      ...provider,
+      key,
+      enabled: provider?.enabled !== false,
+      label: String(provider?.label || defaults[key]?.label || key).trim(),
+      glyph_mode: String(
+        provider?.glyph_mode || defaults[key]?.glyph_mode || "none"
+      )
+        .trim()
+        .toLowerCase(),
+      icon: String(provider?.icon || defaults[key]?.icon || "").trim(),
+      emoji: String(provider?.emoji || defaults[key]?.emoji || "").trim(),
+      color: String(provider?.color || defaults[key]?.color || "").trim(),
+      remote_hosts: normalizePipeList(provider?.remote_hosts).map((host) =>
+        host.toLowerCase()
+      ),
+      require_https: provider?.require_https !== false,
+      timeout_ms: Math.max(
+        250,
+        Math.min(
+          Number.parseInt(provider?.timeout_ms, 10) ||
+            defaults[key]?.timeout_ms ||
+            3000,
+          10000
+        )
+      ),
+    };
+  });
+
+  return map;
+}
 
 export function readConfig(settings) {
   return {
@@ -69,36 +168,49 @@ export function readConfig(settings) {
     debugMode: !!settings.debug_mode,
 
     prefetchEnabled: settings.prefetch_enabled !== false,
-    prefetchViewportMargin: stringSetting(settings.prefetch_viewport_margin, "200px"),
+    prefetchViewportMargin: stringSetting(
+      settings.prefetch_viewport_margin,
+      "200px"
+    ),
 
-    // Per-type mode
     previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
-    previewsExternalMode: stringSetting(settings.previews_external_mode, "auto_only"),
-    previewsWikipediaMode: stringSetting(settings.previews_wikipedia_mode, "auto_only"),
+    previewsExternalMode: stringSetting(
+      settings.previews_external_mode,
+      "auto_only"
+    ),
+    previewsWikipediaMode: stringSetting(
+      settings.previews_wikipedia_mode,
+      "auto_only"
+    ),
 
-    // Tag name
     previewsTagName: stringSetting(settings.previews_tag_name, "preview"),
 
-    // Composer button
-    composerButtonGroup: stringSetting(settings.composer_button_group, "insertions"),
-
-    // Visual indicators
-    previewsShowIcon: settings.previews_show_icon !== false,
-    previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
-
-    previewsIconTopic: stringSetting(settings.previews_icon_topic, "🔗"),
-    previewsIconExternal: stringSetting(settings.previews_icon_external, "🌐"),
-    previewsIconWikipedia: stringSetting(settings.previews_icon_wikipedia, "📖"),
+    composerButtonGroup: stringSetting(
+      settings.composer_button_group,
+      "insertions"
+    ),
 
     previewsShowUnderline: settings.previews_show_underline !== false,
     previewsUnderlineAlways: settings.previews_underline_always !== false,
-    previewsColorTopic: stringSetting(settings.previews_color_topic, "var(--tertiary)"),
-    previewsColorRemote: stringSetting(settings.previews_color_remote, "var(--success)"),
-    previewsColorWikipedia: stringSetting(settings.previews_color_wikipedia, "#808080"),
+
+    previewsShowIcon: settings.previews_show_icon !== false,
+    previewsIconPosition: stringSetting(
+      settings.previews_icon_position,
+      "after"
+    ),
+
+    previewProviders: normalizePreviewProviders(
+      settings.preview_providers
+    ),
 
     delayShow: intSetting(settings.delay_show, 300, 0, 2000),
     cardWidth: stringSetting(settings.card_width, "32rem"),
-    mobileWidthPercent: intSetting(settings.mobile_width_percent, 100, 70, 100),
+    mobileWidthPercent: intSetting(
+      settings.mobile_width_percent,
+      100,
+      70,
+      100
+    ),
     mobileEnabled: settings.mobile_enabled !== false,
 
     densityDesktop: stringSetting(settings.density, "default"),
@@ -230,23 +342,20 @@ export function readConfig(settings) {
       settings.excerpt_excluded_selectors
     ),
 
-    remoteDiscourseHosts: normalizeListSetting(
-      settings.remote_discourse_hosts
-    ).map((host) => String(host || "").trim().toLowerCase()),
-
-    remoteDiscourseTimeoutMs: intSetting(
-      settings.remote_discourse_timeout_ms,
-      3000,
-      250,
-      10000
-    ),
-
-    remoteDiscourseRequireHttps:
-      settings.remote_discourse_require_https !== false,
-
     topicCacheMax: intSetting(settings.topic_cache_max, 100, 10, 500),
   };
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 export function logDebug(config, message, data = null) {
@@ -261,11 +370,9 @@ export function logDebug(config, message, data = null) {
   }
 }
 
-
 export function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
-
 
 export function escapeHTML(value) {
   return String(value ?? "")
@@ -275,7 +382,6 @@ export function escapeHTML(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
-
 
 export function sanitizeURL(url) {
   if (!url) {
@@ -294,7 +400,6 @@ export function sanitizeURL(url) {
   return "";
 }
 
-
 export function isElementVisible(el) {
   if (!(el instanceof Element)) {
     return false;
@@ -303,7 +408,6 @@ export function isElementVisible(el) {
   const rect = el.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
 }
-
 
 export function createViewportState() {
   return {
@@ -319,7 +423,6 @@ export function createViewportState() {
   };
 }
 
-
 export function getCachedValue(map, key) {
   if (!map?.has(key)) {
     return null;
@@ -330,7 +433,6 @@ export function getCachedValue(map, key) {
   map.set(key, value);
   return value;
 }
-
 
 export function setCachedValue(map, key, value, maxSize = 100) {
   if (!map) {
@@ -351,6 +453,116 @@ export function setCachedValue(map, key, value, maxSize = 100) {
   return value;
 }
 
+export function getPreviewProvider(config, key) {
+  return config?.previewProviders?.[key] || null;
+}
+
+export function providerEnabled(config, key) {
+  return getPreviewProvider(config, key)?.enabled !== false;
+}
+
+export function getRemoteTopicProvider(config) {
+  return getPreviewProvider(config, "remote_topic");
+}
+
+export function getWikipediaProvider(config) {
+  return getPreviewProvider(config, "wikipedia");
+}
+
+export function getTopicProviderConfig(config) {
+  return getPreviewProvider(config, "topic");
+}
+
+export function providerKeyForTarget(target, preview = null) {
+  if (target?.type === "wikipedia" || preview?.type === "wikipedia") {
+    return "wikipedia";
+  }
+
+  if (
+    target?.type === "topic" &&
+    (target?.isRemote || preview?.raw?.is_remote_discourse_topic)
+  ) {
+    return "remote_topic";
+  }
+
+  if (target?.type === "topic" || preview?.type === "topic") {
+    return "topic";
+  }
+
+  return null;
+}
+
+export function renderProviderGlyph(providerKey, config) {
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false) {
+    return "";
+  }
+
+  if (provider.glyph_mode === "none") {
+    return "";
+  }
+
+  if (provider.glyph_mode === "emoji") {
+    const emoji = String(provider.emoji || "").trim();
+    if (!emoji) {
+      return "";
+    }
+
+    return `<span class="thc-link-glyph thc-link-glyph--emoji" aria-hidden="true">${escapeHTML(emoji)}</span>`;
+  }
+
+  const iconName = String(provider.icon || "").trim();
+  if (!iconName) {
+    return "";
+  }
+
+  return iconHTML(iconName, {
+    class: "thc-link-glyph thc-link-glyph--icon",
+    "aria-hidden": true,
+  });
+}
+
+export function isAllowedRemoteDiscourseHost(hostname, config) {
+  const host = String(hostname || "").trim().toLowerCase();
+  const remoteProvider = getRemoteTopicProvider(config);
+  const allowedHosts = remoteProvider?.remote_hosts || [];
+
+  return !!host && allowedHosts.includes(host);
+}
+
+export function remoteDiscourseRequireHttps(config) {
+  const remoteProvider = getRemoteTopicProvider(config);
+  return remoteProvider?.require_https !== false;
+}
+
+export function remoteDiscourseTimeoutMs(config) {
+  const remoteProvider = getRemoteTopicProvider(config);
+  return remoteProvider?.timeout_ms || 3000;
+}
+
+export function safeAvatarURL(avatarTemplate, size = 24) {
+  if (!avatarTemplate) {
+    return "";
+  }
+
+  const replaced = String(avatarTemplate).replace("{size}", String(size));
+  return sanitizeURL(replaced);
+}
+
+export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
+  if (!avatarTemplate || !origin) {
+    return "";
+  }
+
+  const replaced = String(avatarTemplate).replace("{size}", String(size));
+
+  try {
+    return sanitizeURL(new URL(replaced, origin).toString());
+  } catch {
+    return "";
+  }
+}
 
 export function getJSON(url, options = {}) {
   const parsedUrl = new URL(url, window.location.origin);
@@ -374,11 +586,9 @@ export function getJSON(url, options = {}) {
   });
 }
 
-
 export function inCookedPost(el) {
   return !!el?.closest?.(".cooked");
 }
-
 
 export function isCookedPostFragmentLink(link) {
   if (!(link instanceof HTMLAnchorElement)) {
@@ -401,7 +611,6 @@ export function isCookedPostFragmentLink(link) {
     return false;
   }
 }
-
 
 export function parseTopicUrl(href) {
   if (!href) {
@@ -436,6 +645,53 @@ export function parseTopicUrl(href) {
   }
 }
 
+export function parseRemoteDiscourseTopicUrl(href, config) {
+  if (!href) {
+    return null;
+  }
+
+  try {
+    const url = new URL(href, window.location.origin);
+
+    if (url.origin === window.location.origin) {
+      return null;
+    }
+
+    if (remoteDiscourseRequireHttps(config) && url.protocol !== "https:") {
+      return null;
+    }
+
+    if (!isAllowedRemoteDiscourseHost(url.hostname, config)) {
+      return null;
+    }
+
+    const path = url.pathname.replace(/\/+$/, "");
+    const match = path.match(/^\/t\/(?:([^/]+)\/)?(\d+)(?:\/(\d+))?$/);
+
+    if (!match) {
+      return null;
+    }
+
+    const topicId = Number.parseInt(match[2], 10);
+
+    return {
+      slug: match[1] || "",
+      topicId,
+      postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
+      url,
+      origin: url.origin,
+      hostname: url.hostname,
+      isRemote: true,
+      jsonUrl: `${url.origin}/t/${topicId}.json`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function parsePreviewTopicUrl(href, config) {
+  return parseTopicUrl(href) || parseRemoteDiscourseTopicUrl(href, config);
+}
 
 export function currentTopicIdFromPage() {
   const bodyTopicId = document.body?.dataset?.topicId;
@@ -453,7 +709,6 @@ export function currentTopicIdFromPage() {
   return topicLink?.topicId ?? null;
 }
 
-
 export function isCurrentTopicLink(link) {
   const parsed = parseTopicUrl(link?.href);
   const currentTopicId = currentTopicIdFromPage();
@@ -465,12 +720,39 @@ export function isCurrentTopicLink(link) {
   );
 }
 
-
-
-
 export function topicIdFromHref(href) {
   return parseTopicUrl(href)?.topicId ?? null;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function matchesTagList(link, tags) {
@@ -638,6 +920,19 @@ export function classifyLink(link, config) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ─── Eligibility ─────────────────────────────────────────────────────────────
 
 export function isEligiblePreviewLink(link, config) {
@@ -709,6 +1004,31 @@ export function isEligiblePreviewLink(link, config) {
 
   return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 export function linkInSupportedArea(link, config) {
