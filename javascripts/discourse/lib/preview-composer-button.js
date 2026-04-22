@@ -29,7 +29,7 @@ export function registerPreviewComposerButton(api, config) {
     toolbar.addButton({
       id: "rich-preview-wrap",
       group: config?.composerButtonGroup || "insertions",
-      icon: "eye",
+      icon: "tooltip-icon",
       shortcut: "P",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
