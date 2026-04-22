@@ -24,6 +24,14 @@ preview_providers:
       remote_hosts: "noobish.me"
       require_https: true
       timeout_ms: 3000
+    - key: external
+      enabled: true
+      label: External link
+      glyph_mode: icon
+      icon: up-right-from-square
+      emoji: "🔗"
+      require_https: true
+      timeout_ms: 3000
     - key: wikipedia
       enabled: true
       label: Wikipedia
@@ -41,7 +49,9 @@ preview_providers:
         choices:
           - topic
           - remote_topic
+          - external
           - wikipedia
+
         description: Internal provider key.
 
       enabled:

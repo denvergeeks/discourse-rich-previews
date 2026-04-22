@@ -4,6 +4,7 @@ import {
   providerEnabled,
 } from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
+import { matchesExternalTarget } from "./providers/external-provider";
 
 function normalizeWikipediaPageKey(pathname) {
   return decodeURIComponent(pathname.replace(/^\/wiki\//, ""))
@@ -25,6 +26,11 @@ export function matchPreviewTarget(link, config) {
   const topicTarget = matchTopicPreview(link, config);
   if (topicTarget) {
     return topicTarget;
+  }
+
+  const externalTarget = matchExternalPreview(link, config);
+  if (externalTarget) {
+    return externalTarget;
   }
 
   return null;
@@ -94,6 +100,31 @@ function matchWikipediaPreview(link, config) {
       host,
       pageKey,
       glyphProviderKey: "wikipedia",
+      link,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function matchExternalPreview(link, config) {
+  if (!config?.enabled || !providerEnabled(config, "external")) {
+    return null;
+  }
+
+  if (!matchesExternalTarget(link, config)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(link.href, window.location.origin);
+
+    return {
+      type: "external",
+      key: `external:${url.toString()}`,
+      url: url.toString(),
+      hostname: url.hostname,
+      glyphProviderKey: "external",
       link,
     };
   } catch {

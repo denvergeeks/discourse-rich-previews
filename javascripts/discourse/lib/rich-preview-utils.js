@@ -1,4 +1,5 @@
-const { iconHTML } = require("discourse-common/lib/icon-library");
+import { iconHTML } from "discourse/lib/icon-library";
+import { matchesExternalTarget } from "./providers/external-provider";
 
 export const DELAY_HIDE = 120;
 export const VIEWPORT_MARGIN = 8;
@@ -104,6 +105,17 @@ function normalizePreviewProviders(rawProviders = []) {
       emoji: "🌐",
       color: "var(--success)",
       remote_hosts: [],
+      require_https: true,
+      timeout_ms: 3000,
+    },
+    external: {
+      key: "external",
+      enabled: true,
+      label: "External link",
+      glyph_mode: "icon",
+      icon: "up-right-from-square",
+      emoji: "🔗",
+      color: "var(--primary)",
       require_https: true,
       timeout_ms: 3000,
     },
@@ -887,6 +899,10 @@ export function classifyLink(link, config) {
   }
 
   if (parseRemoteDiscourseTopicUrl(link?.href, config)) {
+    return "external";
+  }
+
+  if (matchesExternalTarget(link, config)) {
     return "external";
   }
 

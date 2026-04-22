@@ -35,6 +35,7 @@ import {
 } from "../lib/preview-renderer";
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
+import { createExternalProvider } from "../lib/providers/external-provider";
 import { registerPreviewBBCode } from "../lib/preview-bbcode";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
 
@@ -577,6 +578,12 @@ export default apiInitializer((api) => {
     inFlightFetches
   );
 
+  const externalProvider = createExternalProvider(
+    config,
+    previewCache,
+    inFlightFetches
+  );
+
   function addCleanup(target, type, handler, options) {
     target.addEventListener(type, handler, options);
     cleanupFns.push(() => target.removeEventListener(type, handler, options));
@@ -773,6 +780,10 @@ export default apiInitializer((api) => {
 
     if (target.type === "wikipedia") {
       return wikipediaProvider.fetch(target, signal);
+    }
+
+    if (target.type === "external") {
+      return externalProvider.fetch(target, signal);
     }
 
     return null;

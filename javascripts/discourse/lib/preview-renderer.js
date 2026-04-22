@@ -8,6 +8,8 @@ export function buildPreviewHTML(preview, categories, config, isMobile = false) 
   switch (preview.type) {
     case "wikipedia":
       return buildWikipediaPreviewHTML(preview, config, isMobile);
+    case "external":
+      return buildExternalPreviewHTML(preview, config, isMobile);
     case "topic":
       return buildTopicFallbackHTML(preview, config, isMobile);
     default:
@@ -260,6 +262,166 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
           ${bodyInner}
         </div>
       `;
+  }
+}
+
+function buildExternalPreviewHTML(preview, config, isMobile) {
+  const placement = pick(
+    config,
+    "thumbnailPlacementDesktop",
+    "thumbnailPlacementMobile",
+    isMobile
+  );
+
+  const density = pick(
+    config,
+    "wikipediaDensityDesktop",
+    "wikipediaDensityMobile",
+    isMobile
+  );
+  const densityClass = `topic-hover-card--density-${density || "default"}`;
+
+  const sizeMode = pick(
+    config,
+    "thumbnailSizeModeDesktop",
+    "thumbnailSizeModeMobile",
+    isMobile
+  );
+
+  const sizeModeClass =
+    sizeMode === "auto_fit_height"
+      ? "topic-hover-card--thumb-size-auto-fit-height"
+      : "topic-hover-card--thumb-size-manual";
+
+  const thumbnailPercent = pick(
+    config,
+    "thumbnailSizePercentDesktop",
+    "thumbnailSizePercentMobile",
+    isMobile
+  );
+
+  const autoFitMaxWidth = pick(
+    config,
+    "thumbnailAutoFitMaxWidthDesktop",
+    "thumbnailAutoFitMaxWidthMobile",
+    isMobile
+  );
+
+  const topBottomHeight = pick(
+    config,
+    "thumbnailHeightTopBottomDesktop",
+    "thumbnailHeightTopBottomMobile",
+    isMobile
+  );
+
+  const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
+  const showExcerpt = pick(
+    config,
+    "showExcerptDesktop",
+    "showExcerptMobile",
+    isMobile
+  );
+
+  const safeUrl = sanitizeURL(preview.url) || "#";
+  const siteLabel = escapeHTML(
+    preview?.raw?.site_name || preview?.raw?.hostname || "site"
+  );
+
+  const wrapperStyle = `
+    --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
+    --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth || "10rem")};
+    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};
+  `;
+
+  const mobileCloseButton = isMobile
+    ? `
+      <button
+        class="topic-hover-card__mobile-x"
+        type="button"
+        aria-label="Close preview"
+        data-thc-close
+      >
+        &times;
+      </button>
+    `
+    : "";
+
+  const thumbnail = preview.image_url
+    ? buildSharedThumbnailHTML(preview.image_url, config, isMobile)
+    : "";
+
+  const excerptHTML =
+    showExcerpt && preview.excerpt
+      ? `
+      <div class="topic-hover-card__excerpt">
+        ${escapeHTML(preview.excerpt || "")}
+      </div>
+    `
+      : "";
+
+  const titleHTML = showTitle
+    ? `
+      <h3 class="topic-hover-card__title">
+        ${escapeHTML(preview.title || "Preview")}
+      </h3>
+    `
+    : "";
+
+  const mobileActionsHTML = isMobile
+    ? `
+      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
+        <a
+          class="btn btn-primary topic-hover-card__open-topic"
+          href="${escapeHTML(safeUrl)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-thc-open-topic
+        >
+          Open link
+        </a>
+        <button
+          class="btn btn-default topic-hover-card__close"
+          type="button"
+          data-thc-close
+        >
+          Close
+        </button>
+      </div>
+    `
+    : "";
+
+  const bodyInner = `
+    <div class="topic-hover-card__body">
+      ${mobileCloseButton}
+      ${titleHTML}
+      ${excerptHTML}
+
+      <div class="topic-hover-card__meta">
+        <span class="topic-hover-card__meta-item">
+          <a
+            href="${escapeHTML(safeUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Read more on ${siteLabel}
+          </a>
+        </span>
+      </div>
+
+      ${mobileActionsHTML}
+    </div>
+  `;
+
+  switch (placement) {
+    case "left":
+      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--left ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${thumbnail}${bodyInner}</div>`;
+    case "right":
+      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--right ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${bodyInner}${thumbnail}</div>`;
+    case "bottom":
+      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--bottom ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${bodyInner}${thumbnail}</div>`;
+    case "top":
+    default:
+      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--top ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${thumbnail}${bodyInner}</div>`;
   }
 }
 
