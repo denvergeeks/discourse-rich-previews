@@ -144,7 +144,7 @@ async function fetchWikipediaPreview(host, title, config, signal) {
       config?.wikipediaPreviewsUseExtractHtml !== false
         ? summary?.extract_html || null
         : null,
-    image_url:
+    imageurl:
       config?.wikipediaPreviewsShowImage !== false
         ? summary?.thumbnail?.source || null
         : null,
