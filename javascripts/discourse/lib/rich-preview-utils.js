@@ -185,7 +185,14 @@ export function readConfig(settings) {
       "200px"
     ),
 
-    previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
+    previewsTopicMode: stringSetting(
+      settings.previews_topic_mode,
+      "auto_only"
+    ),
+    previewsRemoteTopicMode: stringSetting(
+      settings.previews_remote_topic_mode,
+      "auto_only"
+    ),
     previewsExternalMode: stringSetting(
       settings.previews_external_mode,
       "auto_only"
@@ -832,63 +839,98 @@ export function isWikipediaArticleLink(link) {
 
 // ─── Per-type provider helpers ───────────────────────────────────────────────────
 
-/**
- * Returns true if auto-detection is active for this link type.
- * In the provider-based setup, enabled providers are auto-detectable.
- */
-export function autoPreviewEnabled(type, config) {
-  return previewTypeEnabled(type, config);
+export function previewModeEnabled(mode, usage) {
+  switch (mode) {
+    case "disabled":
+      return false;
+    case "auto_only":
+      return usage === "auto";
+    case "composer_only":
+      return usage === "composer";
+    case "auto_and_composer":
+      return true;
+    default:
+      return usage === "auto";
+  }
 }
 
-/**
- * Returns true if composer/manual wrapping is active for this link type.
- * In the provider-based setup, enabled providers are composer-available.
- */
-export function composerPreviewEnabled(type, config) {
-  return previewTypeEnabled(type, config);
+export function previewModeForProvider(providerKey, config) {
+  switch (providerKey) {
+    case "topic":
+      return config?.previewsTopicMode || "auto_only";
+    case "remote_topic":
+      return config?.previewsRemoteTopicMode || "auto_only";
+    case "external":
+      return config?.previewsExternalMode || "auto_only";
+    case "wikipedia":
+      return config?.previewsWikipediaMode || "auto_only";
+    default:
+      return "disabled";
+  }
 }
 
-/**
- * Returns true if previews are enabled at all for this link type.
- */
-export function previewTypeEnabled(type, config) {
-  const providerKey = {
-    topic: "topic",
-    external: "remote_topic",
-    wikipedia: "wikipedia",
-  }[type];
+export function previewProviderKeyForLink(link, config) {
+  if (isWikipediaArticleLink(link)) {
+    return "wikipedia";
+  }
 
-  if (!providerKey) {
+  if (parseTopicUrl(link?.href)) {
+    return "topic";
+  }
+
+  if (parseRemoteDiscourseTopicUrl(link?.href, config)) {
+    return "remote_topic";
+  }
+
+  if (matchesExternalTarget(link, config)) {
+    return "external";
+  }
+
+  return null;
+}
+
+export function autoPreviewEnabled(providerKey, config) {
+  if (!providerEnabled(config, providerKey)) {
     return false;
   }
 
-  return providerEnabled(config, providerKey);
+  return previewModeEnabled(previewModeForProvider(providerKey, config), "auto");
 }
 
-/**
- * Returns true if the composer button should be shown.
- * Show it when at least one provider is enabled.
- */
-export function composerButtonShouldShow(config) {
-  return (
-    providerEnabled(config, "topic") ||
-    providerEnabled(config, "remote_topic") ||
-    providerEnabled(config, "wikipedia")
+export function composerPreviewEnabled(providerKey, config) {
+  if (!providerEnabled(config, providerKey)) {
+    return false;
+  }
+
+  return previewModeEnabled(
+    previewModeForProvider(providerKey, config),
+    "composer"
   );
 }
 
-/**
- * Returns true if the link is manually wrapped in the preview tag.
- */
+export function previewTypeEnabled(providerKey, config) {
+  if (!providerEnabled(config, providerKey)) {
+    return false;
+  }
+
+  return previewModeForProvider(providerKey, config) !== "disabled";
+}
+
+export function composerButtonShouldShow(config) {
+  return (
+    previewTypeEnabled("topic", config) ||
+    previewTypeEnabled("remote_topic", config) ||
+    previewTypeEnabled("external", config) ||
+    previewTypeEnabled("wikipedia", config)
+  );
+}
+
 export function isManuallyWrapped(link) {
   return !!link?.closest?.(
     ".rich-preview-wrap[data-rich-preview='true']"
   );
 }
 
-/**
- * Classifies a link as "topic", "external", "wikipedia", or null.
- */
 export function classifyLink(link, config) {
   if (isWikipediaArticleLink(link)) {
     return "wikipedia";
@@ -899,7 +941,7 @@ export function classifyLink(link, config) {
   }
 
   if (parseRemoteDiscourseTopicUrl(link?.href, config)) {
-    return "external";
+    return "remote_topic";
   }
 
   if (matchesExternalTarget(link, config)) {
@@ -920,27 +962,29 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
-  // Classify the link type so we can check the right mode setting
-  const type = classifyLink(link, config);
-  if (!type) return false;
+  const providerKey = previewProviderKeyForLink(link, config);
+  if (!providerKey) {
+    return false;
+  }
 
-  // If this type is disabled entirely, skip it
-  if (!previewTypeEnabled(type, config)) return false;
+  if (!previewTypeEnabled(providerKey, config)) {
+    return false;
+  }
 
   const manually = isManuallyWrapped(link);
 
-  // If manually wrapped, check composer is enabled for this type
   if (manually) {
-    return composerPreviewEnabled(type, config);
+    return composerPreviewEnabled(providerKey, config);
   }
 
-  // If not manually wrapped, check auto is enabled for this type
-  if (!autoPreviewEnabled(type, config)) return false;
+  if (!autoPreviewEnabled(providerKey, config)) {
+    return false;
+  }
 
-  // Apply include/exclude rules only for auto-detected links
   if (!matchesIncludedRules(link, config)) {
     logDebug(config, "Skipping link due to include rules", {
       href: link.href,
+      providerKey,
     });
     return false;
   }
@@ -951,21 +995,23 @@ export function isEligiblePreviewLink(link, config) {
       logDebug(config, "Skipping link due to excluded tag", {
         href: link.href,
         tagName: excluded.match?.tagName,
+        providerKey,
       });
     } else {
       logDebug(config, "Skipping link due to excluded class", {
         href: link.href,
         className: excluded.match?.className,
+        providerKey,
       });
     }
     return false;
   }
 
-  // Fragment/current-topic checks for local topic links only
-  if (type === "topic" && inCookedPost(link)) {
+  if (providerKey === "topic" && inCookedPost(link)) {
     if (isCurrentTopicLink(link)) {
       logDebug(config, "Skipping current-topic cooked-post link", {
         href: link.href,
+        providerKey,
       });
       return false;
     }
@@ -973,6 +1019,7 @@ export function isEligiblePreviewLink(link, config) {
     if (isCookedPostFragmentLink(link)) {
       logDebug(config, "Skipping cooked-post fragment link", {
         href: link.href,
+        providerKey,
       });
       return false;
     }

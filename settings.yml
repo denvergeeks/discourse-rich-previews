@@ -1,3 +1,22 @@
+enabled:
+  default: true
+  type: bool
+  description: Enable the Rich Previews theme component.
+
+composer_button_group:
+  default: "insertions"
+  type: enum
+  choices:
+    - fontStyles
+    - insertions
+    - extras
+  client: true
+  description: >
+    Controls which group in the composer toolbar the rich preview
+    button appears in. fontStyles places it with bold/italic,
+    insertions places it with the link and image buttons,
+    extras places it at the end of the toolbar.
+
 svg_icons:
   type: list
   list_type: compact
@@ -21,7 +40,7 @@ preview_providers:
       glyph_mode: icon
       icon: up-right-from-square
       emoji: "🌐"
-      remote_hosts: "noobish.me"
+      remote_hosts: "meta.discourse.org"
       require_https: true
       timeout_ms: 3000
     - key: external
@@ -51,7 +70,6 @@ preview_providers:
           - remote_topic
           - external
           - wikipedia
-
         description: Internal provider key.
 
       enabled:
@@ -94,3 +112,566 @@ preview_providers:
         type: integer
         default: 3000
         description: Request timeout for this provider in milliseconds.
+
+# ─── Per-type preview mode ───────────────────────────────────────────────────
+
+previews_topic_mode:
+  default: "auto_only"
+  type: enum
+  choices:
+    - auto_only
+    - composer_only
+    - auto_and_composer
+    - disabled
+  client: true
+  description: >
+    Controls how hover card previews work for internal topic links.
+    auto_only: cards appear automatically on eligible links.
+    composer_only: cards only appear on links wrapped with [tag].
+    auto_and_composer: both auto detection and manual wrapping work.
+    disabled: no local topic previews at all.
+
+previews_remote_topic_mode:
+  default: "auto_only"
+  type: enum
+  choices:
+    - auto_only
+    - composer_only
+    - auto_and_composer
+    - disabled
+  client: true
+  description: >
+    Controls how hover card previews work for remote Discourse topic links.
+    auto_only: cards appear automatically on eligible links.
+    composer_only: cards only appear on links wrapped with [tag].
+    auto_and_composer: both auto detection and manual wrapping work.
+    disabled: no remote Discourse topic previews at all.
+
+previews_external_mode:
+  default: "auto_only"
+  type: enum
+  choices:
+    - auto_only
+    - composer_only
+    - auto_and_composer
+    - disabled
+  client: true
+  description: >
+    Controls how hover card previews work for generic external links.
+    auto_only: cards appear automatically on eligible links.
+    composer_only: cards only appear on links wrapped with [tag].
+    auto_and_composer: both auto detection and manual wrapping work.
+    disabled: no generic external previews at all.
+
+previews_wikipedia_mode:
+  default: "auto_only"
+  type: enum
+  choices:
+    - auto_only
+    - composer_only
+    - auto_and_composer
+    - disabled
+  client: true
+  description: >
+    Controls how hover card previews work for Wikipedia links.
+    auto_only: cards appear automatically on eligible links.
+    composer_only: cards only appear on links wrapped with [tag].
+    auto_and_composer: both auto detection and manual wrapping work.
+    disabled: no Wikipedia previews at all.
+
+# ─── BBCode tag name ─────────────────────────────────────────────────────────
+
+previews_tag_name:
+  default: "preview"
+  client: true
+  description: >
+    The BBCode tag name used for manually wrapping links.
+    Default is [preview]...[/preview].
+    WARNING: Changing this after posts have been written with the
+    old tag name will break those existing wrapped links until
+    those posts are re-saved.
+
+# ─── Visual indicators (apply to all previews, auto and manual) ──────────────
+
+previews_show_icon:
+  default: true
+  client: true
+  description: >
+    Show a small icon next to preview links indicating their type.
+    Applies to both auto-detected and manually wrapped links.
+
+previews_icon_position:
+  default: "after"
+  type: enum
+  choices:
+    - before
+    - after
+  client: true
+  description: >
+    Position of the link type icon relative to the link text.
+
+previews_icon_topic:
+  default: "🔗"
+  type: string
+  client: true
+  description: >
+    Icon shown next to internal topic preview links.
+    Accepts any single Unicode character or emoji.
+    Default is 🔗.
+
+previews_icon_external:
+  default: "🌐"
+  type: string
+  client: true
+  description: >
+    Icon shown next to external preview links.
+    Accepts any single Unicode character or emoji.
+    Default is 🌐.
+
+previews_icon_wikipedia:
+  default: "📖"
+  type: string
+  client: true
+  description: >
+    Icon shown next to Wikipedia preview links.
+    Accepts any single Unicode character or emoji.
+    Default is 📖.
+
+previews_show_underline:
+  default: true
+  client: true
+  description: >
+    Show a colored dotted underline on preview links.
+    Applies to both auto-detected and manually wrapped links.
+
+previews_underline_always:
+  default: true
+  client: true
+  description: >
+    When enabled, the dotted underline is always visible.
+    When disabled, it only appears on hover.
+
+previews_color_topic:
+  default: "var(--tertiary)"
+  client: true
+  description: >
+    Underline and icon color for internal topic preview links.
+
+previews_color_remote:
+  default: "var(--success)"
+  client: true
+  description: >
+    Underline and icon color for remote Discourse topic preview links.
+
+previews_color_wikipedia:
+  default: "#808080"
+  client: true
+  description: >
+    Underline and icon color for Wikipedia preview links.
+
+# ─── General ─────────────────────────────────────────────────────────────────
+
+delay_show:
+  default: 300
+  type: integer
+  min: 0
+  max: 2000
+  description: Delay in milliseconds before the hover card appears.
+
+mobile_enabled:
+  default: false
+  type: bool
+  description: Enable tap-to-preview behavior on touch devices.
+
+density:
+  default: default
+  type: enum
+  choices:
+    - default
+    - cozy
+    - compact
+    - dense
+  description: Controls hover card density on desktop.
+
+density_mobile:
+  default: default
+  type: enum
+  choices:
+    - default
+    - cozy
+    - compact
+    - dense
+  description: Controls hover card density on mobile.
+
+card_width:
+  default: 32rem
+  type: string
+  description: Desktop hover card width. Accepts valid CSS width values such as 32rem, 25ch, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem).
+
+mobile_width_percent:
+  default: 100
+  type: integer
+  min: 70
+  max: 100
+  description: Mobile hover card width as a percentage of the viewport width.
+
+# ─── Thumbnail ───────────────────────────────────────────────────────────────
+
+show_thumbnail:
+  default: true
+  type: bool
+  description: Show the topic thumbnail image on desktop.
+
+thumbnail_placement:
+  default: left
+  type: enum
+  choices:
+    - top
+    - right
+    - bottom
+    - left
+  description: Thumbnail placement on desktop.
+
+thumbnail_size_mode:
+  default: auto_fit_height
+  type: enum
+  choices:
+    - manual
+    - auto_fit_height
+    - wrap_excerpt
+  description: Auto-fit-height matches image height to card height. Manual mode uses the configured width percentage. Wrap_excerpt floats the thumbnail so the excerpt text can wrap around it.
+
+thumbnail_auto_fit_max_width:
+  default: 10rem
+  type: string
+  description: Used only in auto-fit-height mode. Accepts valid CSS width values such as 8rem, 160px, or 12vw.
+
+thumbnail_size_percent:
+  default: 15
+  type: integer
+  min: 5
+  max: 50
+  description: Used only in manual mode. Sets the thumbnail width as a percentage of the hover card width.
+
+show_thumbnail_mobile:
+  default: true
+  type: bool
+  description: Show the topic thumbnail image on mobile.
+
+thumbnail_placement_mobile:
+  default: top
+  type: enum
+  choices:
+    - top
+    - right
+    - bottom
+    - left
+  description: Thumbnail placement on mobile.
+
+thumbnail_size_mode_mobile:
+  default: manual
+  type: enum
+  choices:
+    - manual
+    - auto_fit_height
+  description: On mobile, auto-fit-height matches image height to card height. Manual mode uses the configured width percentage.
+
+thumbnail_auto_fit_max_width_mobile:
+  default: 8rem
+  type: string
+  description: Used only in mobile auto-fit-height mode. Accepts valid CSS width values such as 7rem, 140px, or 30vw.
+
+thumbnail_size_percent_mobile:
+  default: 33
+  type: integer
+  min: 15
+  max: 60
+  description: Used only in mobile manual mode. Sets the thumbnail width as a percentage of the hover card width.
+
+thumbnail_height_top_bottom:
+  default: auto
+  type: string
+  description: Used when the thumbnail is placed on top or bottom on desktop. Accepts valid CSS height values such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem).
+
+thumbnail_height_top_bottom_mobile:
+  default: auto
+  type: string
+  description: Used when the thumbnail is placed on top or bottom on mobile. Accepts valid CSS height values such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem).
+
+# ─── Content ─────────────────────────────────────────────────────────────────
+
+show_title:
+  default: true
+  type: bool
+  description: Show the topic title on desktop.
+
+show_title_mobile:
+  default: true
+  type: bool
+  description: Show the topic title on mobile.
+
+show_excerpt:
+  default: true
+  type: bool
+  description: Show a text excerpt on desktop.
+
+excerpt_length:
+  default: 3
+  type: integer
+  min: 1
+  max: 12
+  description: Number of excerpt lines to show on desktop.
+
+show_excerpt_mobile:
+  default: true
+  type: bool
+  description: Show a text excerpt on mobile.
+
+excerpt_length_mobile:
+  default: 3
+  type: integer
+  min: 1
+  max: 12
+  description: Number of excerpt lines to show on mobile.
+
+show_category:
+  default: true
+  type: bool
+  description: Show the topic category badge on desktop when category data is available.
+
+show_category_mobile:
+  default: true
+  type: bool
+  description: Show the topic category badge on mobile when category data is available.
+
+show_tags:
+  default: true
+  type: bool
+  description: Show topic tags on desktop when tag data is available.
+
+show_tags_mobile:
+  default: true
+  type: bool
+  description: Show topic tags on mobile when tag data is available.
+
+show_op:
+  default: true
+  type: bool
+  description: Show the original poster avatar and username on desktop.
+
+show_op_mobile:
+  default: true
+  type: bool
+  description: Show the original poster avatar and username on mobile.
+
+show_publish_date:
+  default: true
+  type: bool
+  description: Show the topic creation date on desktop.
+
+show_publish_date_mobile:
+  default: true
+  type: bool
+  description: Show the topic creation date on mobile.
+
+show_views:
+  default: true
+  type: bool
+  description: Show the topic view count on desktop.
+
+show_views_mobile:
+  default: true
+  type: bool
+  description: Show the topic view count on mobile.
+
+show_reply_count:
+  default: true
+  type: bool
+  description: Show the topic reply count on desktop.
+
+show_reply_count_mobile:
+  default: true
+  type: bool
+  description: Show the topic reply count on mobile.
+
+show_likes:
+  default: true
+  type: bool
+  description: Show the topic like count on desktop.
+
+show_likes_mobile:
+  default: true
+  type: bool
+  description: Show the topic like count on mobile.
+
+show_activity:
+  default: true
+  type: bool
+  description: Show the last activity date on desktop.
+
+show_activity_mobile:
+  default: true
+  type: bool
+  description: Show the last activity date on mobile.
+
+# ─── Where to enable ─────────────────────────────────────────────────────────
+
+enable_on_topic_list:
+  default: true
+  type: bool
+  description: Enable hover cards in standard topic list views.
+
+enable_on_latest:
+  default: true
+  type: bool
+  description: Enable hover cards in latest-topic list contexts.
+
+enable_on_categories:
+  default: true
+  type: bool
+  description: Enable hover cards in category list and category homepage topic-list contexts.
+
+enable_on_tags:
+  default: true
+  type: bool
+  description: Enable hover cards in tag-related views.
+
+enable_on_search:
+  default: true
+  type: bool
+  description: Enable hover cards in search result views.
+
+enable_on_topic_page:
+  default: true
+  type: bool
+  description: Enable hover cards for internal topic links on topic pages, including posts and suggested topics.
+
+enable_on_user_profile:
+  default: true
+  type: bool
+  description: Enable hover cards in user profile content areas.
+
+enable_on_other:
+  default: false
+  type: bool
+  description: Enable hover cards in other cooked content areas not covered by the main view settings.
+
+enable_on_kanban_boards:
+  type: bool
+  default: false
+  description: Enable hover cards in kanban board views.
+
+# ─── Filtering ───────────────────────────────────────────────────────────────
+
+included_tags:
+  type: list
+  list_type: compact
+  default: ""
+  description: HTML tag names whose links should be explicitly allowed to generate hover cards when matched. If not empty, links must match one of these tags or included classes.
+
+included_classes:
+  type: list
+  list_type: compact
+  default: ""
+  description: CSS classes whose links or ancestors should be explicitly allowed to generate hover cards when matched. If not empty, links must match one of these classes or included tags.
+
+excluded_tags:
+  type: list
+  list_type: compact
+  default: code|pre
+  description: HTML tag names whose links should be excluded from generating hover cards.
+
+excluded_classes:
+  type: list
+  list_type: compact
+  default: onebox
+  description: CSS classes whose links or ancestors should be excluded from generating hover cards.
+
+excerpt_excluded_selectors:
+  default: iframe|pre|code|.onebox|.footnote|.inline-footnote|[data-tip]|.lazyYT|.youtube-onebox
+  type: list
+  description: Optional exclude-list. Hover cards display a simplified version of the topic's body content with some formatting and interactive elements removed. Prevent any unwanted elements appearing in your excerpts by adding their selectors here.
+
+# ─── Wikipedia ───────────────────────────────────────────────────────────────
+
+wikipedia_previews_base_url:
+  default: en.wikipedia.org
+  type: string
+  description: Default Wikipedia host used when needed, such as en.wikipedia.org.
+
+wikipedia_previews_show_image:
+  default: true
+  type: bool
+  description: Show the article thumbnail image in Wikipedia previews when available.
+
+wikipedia_previews_use_extract_html:
+  default: true
+  type: bool
+  description: Use the HTML extract returned by Wikipedia for preview text when available.
+
+wikipedia_density:
+  default: cozy
+  type: enum
+  choices:
+    - default
+    - cozy
+    - compact
+    - dense
+  description: Controls Wikipedia preview density on desktop.
+
+wikipedia_density_mobile:
+  default: compact
+  type: enum
+  choices:
+    - default
+    - cozy
+    - compact
+    - dense
+  description: Controls Wikipedia preview density on mobile.
+
+# ─── User preferences ────────────────────────────────────────────────────────
+
+user_preference_field_name:
+  default: disable_topic_hover_cards
+  type: string
+  description: Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X format.
+
+resolve_user_field_id_for_admins:
+  default: true
+  type: bool
+  description: When enabled, staff can configure the preference field by name or user_field_X and the component will resolve the numeric user-field ID from the admin endpoint.
+
+# ─── Performance ─────────────────────────────────────────────────────────────
+
+prefetch_enabled:
+  default: true
+  type: bool
+  client: true
+  description: >
+    Prefetch preview data for eligible links as they scroll into view.
+    This eliminates the loading delay on first hover for both local
+    and remote topics. Disable if you are concerned about extra
+    network requests on page load.
+
+prefetch_viewport_margin:
+  default: "200px"
+  type: string
+  client: true
+  description: >
+    How far outside the viewport to begin prefetching preview data.
+    200px means links within 200px of the visible area are prefetched.
+    Accepts any valid CSS margin value such as 200px or 10%.
+
+topic_cache_max:
+  default: 100
+  type: integer
+  min: 10
+  max: 500
+  description: Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session.
+
+# ─── Debug ───────────────────────────────────────────────────────────────────
+
+debug_mode:
+  default: false
+  type: bool
+  description: Log hover-card detection and user-field resolution details to the browser console for debugging.

@@ -61,6 +61,7 @@ function stampModifierClasses(wrapEl, config) {
   if (type && link) {
     const colorMap = {
       topic: config?.previewsColorTopic,
+      remote_topic: config?.previewsColorRemote,
       external: config?.previewsColorRemote,
       wikipedia: config?.previewsColorWikipedia,
     };
@@ -94,6 +95,7 @@ function stampAutoLinkIndicators(root, config) {
 
     const colorMap = {
       topic: config.previewsColorTopic,
+      remote_topic: config.previewsColorRemote,
       external: config.previewsColorRemote,
       wikipedia: config.previewsColorWikipedia,
     };
