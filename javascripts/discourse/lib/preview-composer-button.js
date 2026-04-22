@@ -4,6 +4,8 @@
  * input the URL, link text, and optional title attribute.
  */
 
+import RichPreviewLinkModal from "../components/rich-preview-link-modal";
+
 export function registerPreviewComposerButton(api, config) {
   const tagName = config?.previewsTagName || "preview";
   const open = `[${tagName}]`;
