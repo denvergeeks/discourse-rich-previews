@@ -553,6 +553,7 @@ export default apiInitializer((api) => {
   let currentAbortController = null;
   let currentAnchor = null;
   let isInsideCard = false;
+  let mouseIsOverAnchor = false;
   let suppressNextClick = false;
   let resolvedUserFieldId = null;
   let resolvedUserFieldIdPromise = null;
@@ -803,6 +804,13 @@ export default apiInitializer((api) => {
           return;
         }
 
+        // If the mouse left before the fetch completed, do not show
+        if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode()) {
+          tooltip.classList.remove("is-visible");
+          currentPreviewKey = null;
+          return;
+        }        
+
         if (!preview) {
           tooltip.innerHTML = buildErrorPreviewHTML("No preview available.");
           positionTooltipNextFrame(anchorRect);
@@ -944,6 +952,7 @@ export default apiInitializer((api) => {
 
   function onTooltipMouseEnter() {
     isInsideCard = true;
+    mouseIsOverAnchor = false;
     cancel(hideTimer);
   }
 
@@ -992,6 +1001,7 @@ export default apiInitializer((api) => {
     const target = matchPreviewTarget(link, config);
     if (!target) return;
 
+    mouseIsOverAnchor = true;
     scheduleShow(target, link.getBoundingClientRect(), link);
   }
 
@@ -1002,6 +1012,8 @@ export default apiInitializer((api) => {
     const link = event.target.closest("a[href]");
     if (!link || !linkInSupportedArea(link, config)) return;
 
+    mouseIsOverAnchor = false;
+    cancel(showTimer);
     scheduleHide();
   }
 
@@ -1193,6 +1205,7 @@ function setupPrefetch() {
       hideCard();
       currentPreviewKey = null;
       suppressNextClick = false;
+      mouseIsOverAnchor = false;
       clearCurrentAnchorDescription();
     });
 
