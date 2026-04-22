@@ -9,6 +9,7 @@ import {
   parseRemoteDiscourseTopicUrl,
   isWikipediaArticleLink,
 } from "../lib/rich-preview-utils";
+import { themePrefix } from "discourse/lib/theme-settings-store";
 
 function classifyUrl(url, config) {
   if (!url) return null;
@@ -285,7 +286,7 @@ export default class RichPreviewLinkModal extends Component {
       <:footer>
         <DButton
           @action={{this.onInsert}}
-          @label="rich_previews.modal.insert"
+          @label={{themePrefix "modal.insert"}}
           @disabled={{this.cannotInsert}}
           class="btn-primary"
         />
