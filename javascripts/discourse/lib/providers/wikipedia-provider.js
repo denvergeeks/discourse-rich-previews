@@ -146,7 +146,9 @@ async function fetchWikipediaPreview(host, title, config, signal) {
         : null,
     imageurl:
       config?.wikipediaPreviewsShowImage !== false
-        ? summary?.thumbnail?.source || null
+        ? summary?.originalimage?.source ||
+          summary?.thumbnail?.source ||
+          null
         : null,
     url:
       summary?.content_urls?.desktop?.page ||
