@@ -79,6 +79,41 @@ function stampModifierClasses(wrapEl, config) {
 }
 
 /**
+ * Stamps data-rich-preview-type onto plain eligible <a> tags
+ * so CSS can apply visual indicators to auto-detected links
+ * the same way it does for manually wrapped links.
+ */
+function stampAutoLinkIndicators(root, config) {
+  if (!root || !config) return;
+  if (!config.previewsShowIcon && !config.previewsShowUnderline) return;
+
+  root.querySelectorAll("a[href]").forEach((link) => {
+    // Skip links already inside a rich-preview-wrap
+    if (link.closest(".rich-preview-wrap")) return;
+
+    // Skip links that already have the attribute stamped
+    if (link.hasAttribute("data-rich-preview-type")) return;
+
+    const type = classifyLink(link, config);
+    if (!type || type === "unsupported") return;
+
+    link.setAttribute("data-rich-preview-type", type);
+
+    // Apply color as inline CSS variable so admin settings work
+    const colorMap = {
+      topic: config.previewsColorTopic,
+      external: config.previewsColorRemote,
+      wikipedia: config.previewsColorWikipedia,
+    };
+
+    const color = colorMap[type];
+    if (color) {
+      link.style.setProperty("--rp-color", color);
+    }
+  });
+}
+
+/**
  * Scans a cooked element for literal [tagName]...[/tagName] text nodes
  * that were not processed by the markdown pipeline (e.g. posts cooked
  * before this tag was registered) and wraps them in the correct HTML.
@@ -136,6 +171,16 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 
           if (config) {
             stampModifierClasses(wrapSpan, config);
+          }
+
+          // Final pass: stamp modifier classes on all wrap spans
+          if (config) {
+            root
+              .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
+              .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
+
+            // Also stamp auto-detected plain links
+            stampAutoLinkIndicators(root, config);
           }
 
           const updated = Array.from(container.childNodes);

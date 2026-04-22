@@ -576,6 +576,46 @@
   }
 }
 
+// ─── Auto-detected link visual indicators ────────────────────────────────────
+
+a[data-rich-preview-type] {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 120ms ease;
+}
+
+// Always-visible underline
+.previews-underline-always a[data-rich-preview-type] {
+  text-decoration-color: var(--rp-color, var(--tertiary));
+}
+
+// Hover-only underline
+.previews-underline-hover a[data-rich-preview-type]:hover {
+  text-decoration-color: var(--rp-color, var(--tertiary));
+}
+
+// Icon after link text
+.previews-icon-after a[data-rich-preview-type="topic"]::after { content: " ⤴"; }
+.previews-icon-after a[data-rich-preview-type="external"]::after { content: " 🌐"; }
+.previews-icon-after a[data-rich-preview-type="wikipedia"]::after { content: " 📖"; }
+
+// Icon before link text
+.previews-icon-before a[data-rich-preview-type="topic"]::before { content: "⤴ "; }
+.previews-icon-before a[data-rich-preview-type="external"]::before { content: "🌐 "; }
+.previews-icon-before a[data-rich-preview-type="wikipedia"]::before { content: "📖 "; }
+
+// Common icon styling
+a[data-rich-preview-type]::before,
+a[data-rich-preview-type]::after {
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
 // Always-visible underline variant
 .rich-preview-wrap--underline-always a {
   text-decoration-color: var(--rp-color);

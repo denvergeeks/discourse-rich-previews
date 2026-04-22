@@ -1189,6 +1189,26 @@ function setupPrefetch() {
     setupPrefetch();
   }
 
+  // Stamp body classes so CSS can apply indicators globally
+  function applyBodyClasses() {
+    const body = document.body;
+
+    if (config.previewsShowUnderline) {
+      if (config.previewsUnderlineAlways) {
+        body.classList.add("previews-underline-always");
+      } else {
+        body.classList.add("previews-underline-hover");
+      }
+    }
+
+    if (config.previewsShowIcon) {
+      const pos = config.previewsIconPosition === "before"
+        ? "before"
+        : "after";
+      body.classList.add(`previews-icon-${pos}`);
+    }
+  }
+
   (async () => {
     const disabledForUser = await hoverCardsDisabledForUser();
     if (disabledForUser) {
@@ -1197,6 +1217,7 @@ function setupPrefetch() {
     }
 
     bindEvents();
+    applyBodyClasses();
 
     api.onPageChange(() => {
       cancel(showTimer);
@@ -1207,6 +1228,9 @@ function setupPrefetch() {
       suppressNextClick = false;
       mouseIsOverAnchor = false;
       clearCurrentAnchorDescription();
+
+      // Re-apply body classes in case they were removed
+      applyBodyClasses();
     });
 
     logDebug(config, "Hover cards initialized", {
