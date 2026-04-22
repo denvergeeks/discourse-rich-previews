@@ -20,7 +20,7 @@ export function registerPreviewComposerButton(api, config) {
     I18n.translations[locale].js ??= {};
     I18n.translations[locale].js.composer ??= {};
     I18n.translations[locale].js.composer["rich-preview-wrap_title"] =
-      "Preview Link (Ctrl+P)";
+      "Preview Link";
   } catch {
     // no-op if I18n is not available
   }
