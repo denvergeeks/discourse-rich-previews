@@ -12,12 +12,24 @@ export function registerPreviewComposerButton(api, config) {
   const open = `[${tagName}]`;
   const close = `[/${tagName}]`;
 
+  // Discourse builds the toolbar tooltip key as composer.{id}_title
+  // so we inject it directly into the global I18n namespace
+  try {
+    const locale = I18n.currentLocale();
+    I18n.translations[locale] ??= {};
+    I18n.translations[locale].js ??= {};
+    I18n.translations[locale].js.composer ??= {};
+    I18n.translations[locale].js.composer["rich-preview-wrap_title"] =
+      "Preview Link (Ctrl+P)";
+  } catch {
+    // no-op if I18n is not available
+  }
+
   api.onToolbarCreate((toolbar) => {
     toolbar.addButton({
       id: "rich-preview-wrap",
       group: config?.composerButtonGroup || "insertions",
       icon: "eye",
-      translatedTitle: "Preview Link (Ctrl P)",
       shortcut: "P",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
