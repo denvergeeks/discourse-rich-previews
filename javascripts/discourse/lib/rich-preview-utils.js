@@ -550,6 +550,7 @@ export function safeAvatarURL(avatarTemplate, size = 24) {
   return sanitizeURL(replaced);
 }
 
+
 export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
   if (!avatarTemplate || !origin) {
     return "";
@@ -725,36 +726,6 @@ export function topicIdFromHref(href) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function matchesTagList(link, tags) {
   if (!link || !Array.isArray(tags) || !tags.length) {
     return null;
@@ -920,19 +891,6 @@ export function classifyLink(link, config) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ─── Eligibility ─────────────────────────────────────────────────────────────
 
 export function isEligiblePreviewLink(link, config) {
@@ -1004,31 +962,6 @@ export function isEligiblePreviewLink(link, config) {
 
   return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 export function linkInSupportedArea(link, config) {
@@ -1175,31 +1108,6 @@ export function findTruthyFieldMatch(source, candidates) {
 
 export function currentUserIsStaffLike(user) {
   return !!(user?.admin || user?.moderator || user?.staff);
-}
-
-
-export function safeAvatarURL(avatarTemplate, size = 24) {
-  if (!avatarTemplate) {
-    return "";
-  }
-
-  const replaced = String(avatarTemplate).replace("{size}", String(size));
-  return sanitizeURL(replaced);
-}
-
-
-export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
-  if (!avatarTemplate || !origin) {
-    return "";
-  }
-
-  const replaced = String(avatarTemplate).replace("{size}", String(size));
-
-  try {
-    return sanitizeURL(new URL(replaced, origin).toString());
-  } catch {
-    return "";
-  }
 }
 
 
