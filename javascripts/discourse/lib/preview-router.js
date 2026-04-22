@@ -14,37 +14,26 @@ function normalizeWikipediaPageKey(pathname) {
 }
 
 export function matchPreviewTarget(link, config) {
-  if (!(link instanceof HTMLAnchorElement)) {
+  if (!(link instanceof HTMLAnchorElement) || !config?.enabled) {
     return null;
   }
 
-  const wikipediaTarget = matchWikipediaPreview(link, config);
-  if (wikipediaTarget) {
-    return wikipediaTarget;
-  }
-
-  const topicTarget = matchTopicPreview(link, config);
-  if (topicTarget) {
-    return topicTarget;
-  }
-
-  const externalTarget = matchExternalPreview(link, config);
-  if (externalTarget) {
-    return externalTarget;
-  }
-
-  return null;
+  return (
+    matchWikipediaPreview(link, config) ||
+    matchTopicPreview(link, config) ||
+    matchExternalPreview(link, config) ||
+    null
+  );
 }
 
 function matchTopicPreview(link, config) {
-  if (!config?.enabled) {
-    return null;
-  }
-
   const local = parseTopicUrl(link.href);
+
   if (local?.topicId && providerEnabled(config, "topic")) {
     return {
       type: "topic",
+      providerKey: "topic",
+      glyphProviderKey: "topic",
       key: `topic:${window.location.origin}:${local.topicId}`,
       topicId: local.topicId,
       slug: local.slug || "",
@@ -52,15 +41,17 @@ function matchTopicPreview(link, config) {
       origin: window.location.origin,
       hostname: window.location.hostname,
       isRemote: false,
-      glyphProviderKey: "topic",
       link,
     };
   }
 
   const remote = parseRemoteDiscourseTopicUrl(link.href, config);
+
   if (remote?.topicId && providerEnabled(config, "remote_topic")) {
     return {
       type: "topic",
+      providerKey: "remote_topic",
+      glyphProviderKey: "remote_topic",
       key: `topic:${remote.origin}:${remote.topicId}`,
       topicId: remote.topicId,
       slug: remote.slug || "",
@@ -68,7 +59,7 @@ function matchTopicPreview(link, config) {
       origin: remote.origin,
       hostname: remote.hostname,
       isRemote: true,
-      glyphProviderKey: "remote_topic",
+      jsonUrl: remote.jsonUrl,
       link,
     };
   }
@@ -77,7 +68,7 @@ function matchTopicPreview(link, config) {
 }
 
 function matchWikipediaPreview(link, config) {
-  if (!config?.enabled || !providerEnabled(config, "wikipedia")) {
+  if (!providerEnabled(config, "wikipedia")) {
     return null;
   }
 
@@ -96,10 +87,12 @@ function matchWikipediaPreview(link, config) {
 
     return {
       type: "wikipedia",
+      providerKey: "wikipedia",
+      glyphProviderKey: "wikipedia",
       key: `wikipedia:${host}:${pageKey}`,
       host,
       pageKey,
-      glyphProviderKey: "wikipedia",
+      url: url.toString(),
       link,
     };
   } catch {
@@ -108,7 +101,7 @@ function matchWikipediaPreview(link, config) {
 }
 
 function matchExternalPreview(link, config) {
-  if (!config?.enabled || !providerEnabled(config, "external")) {
+  if (!providerEnabled(config, "external")) {
     return null;
   }
 
@@ -121,10 +114,13 @@ function matchExternalPreview(link, config) {
 
     return {
       type: "external",
+      providerKey: "external",
+      glyphProviderKey: "external",
       key: `external:${url.toString()}`,
       url: url.toString(),
-      hostname: url.hostname,
-      glyphProviderKey: "external",
+      origin: url.origin,
+      hostname: url.hostname.toLowerCase(),
+      protocol: url.protocol,
       link,
     };
   } catch {

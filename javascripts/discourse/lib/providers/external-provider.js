@@ -1,42 +1,164 @@
 import {
-  getCachedValue,
-  setCachedValue,
-  logDebug,
+  getPreviewProvider,
   sanitizeExcerpt,
   sanitizeURL,
 } from "../rich-preview-utils";
 
-const PROXY_ENDPOINT = "/discourse-proxy-safe";
-
-function getExternalProvider(config) {
-  return config?.previewProviders?.external || null;
+function textValue(value) {
+  return String(value ?? "").trim();
 }
 
-function externalProviderEnabled(config) {
-  return getExternalProvider(config)?.enabled !== false;
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    const normalized = textValue(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return "";
+}
+
+function externalProviderConfig(config) {
+  return getPreviewProvider(config, "external") || {};
 }
 
 function externalRequireHttps(config) {
-  return getExternalProvider(config)?.require_https !== false;
+  return externalProviderConfig(config)?.require_https !== false;
 }
 
-function isDiscourseTopicPathname(pathname) {
-  return /^\/t\/(?:[^/]+\/)?\d+(?:\/\d+)?\/?$/.test(pathname || "");
+function externalTimeoutMs(config) {
+  return externalProviderConfig(config)?.timeout_ms || 3000;
+}
+
+function normalizedHostname(url) {
+  try {
+    return new URL(url, window.location.origin).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function buildProxyUrl(target) {
+  const url = new URL("/discourse-proxy-safe", window.location.origin);
+  url.searchParams.set("url", target.url);
+  return url.toString();
+}
+
+function normalizeImageUrl(rawUrl, baseUrl) {
+  const safe = sanitizeURL(rawUrl);
+  if (safe) {
+    return safe;
+  }
+
+  if (!rawUrl || !baseUrl) {
+    return "";
+  }
+
+  try {
+    return sanitizeURL(new URL(rawUrl, baseUrl).toString());
+  } catch {
+    return "";
+  }
+}
+
+function parseExternalHTML(html, target) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  const meta = (selector) =>
+    doc.querySelector(selector)?.getAttribute("content")?.trim() || "";
+
+  return {
+    title:
+      meta('meta[property="og:title"]') ||
+      meta('meta[name="twitter:title"]') ||
+      doc.querySelector("title")?.textContent?.trim() ||
+      "",
+    description:
+      meta('meta[property="og:description"]') ||
+      meta('meta[name="twitter:description"]') ||
+      meta('meta[name="description"]') ||
+      "",
+    siteName:
+      meta('meta[property="og:site_name"]') ||
+      normalizedHostname(target.url),
+    image:
+      meta('meta[property="og:image"]') ||
+      meta('meta[name="twitter:image"]') ||
+      "",
+  };
+}
+
+function normalizeExternalPreview(target, payload, config) {
+  const title = firstNonEmpty(
+    payload?.title,
+    payload?.ogTitle,
+    payload?.twitterTitle,
+    target?.hostname
+  );
+
+  const siteName = firstNonEmpty(
+    payload?.siteName,
+    payload?.ogSiteName,
+    payload?.publisher,
+    target?.hostname
+  );
+
+  const excerpt = sanitizeExcerpt(
+    firstNonEmpty(
+      payload?.description,
+      payload?.excerpt,
+      payload?.ogDescription,
+      payload?.twitterDescription,
+      payload?.metaDescription
+    ),
+    config?.excerptExcludedSelectors || []
+  );
+
+  const imageUrl = firstNonEmpty(
+    normalizeImageUrl(payload?.imageUrl, target?.url),
+    normalizeImageUrl(payload?.image, target?.url),
+    normalizeImageUrl(payload?.ogImage, target?.url),
+    normalizeImageUrl(payload?.twitterImage, target?.url),
+    normalizeImageUrl(payload?.thumbnail, target?.url)
+  );
+
+  return {
+    type: "external",
+    providerKey: "external",
+    key: target.key,
+    url: target.url,
+    displayUrl: target.url,
+    hostname: target.hostname || normalizedHostname(target.url),
+    siteName,
+    title,
+    excerpt,
+    description: excerpt,
+    imageUrl,
+    thumbnail: imageUrl,
+    fetchedAt: Date.now(),
+    raw: payload || {},
+  };
 }
 
 export function matchesExternalTarget(link, config) {
-  if (!externalProviderEnabled(config)) {
+  if (!(link instanceof HTMLAnchorElement)) {
     return false;
   }
 
-  if (!(link instanceof HTMLAnchorElement)) {
+  const href = link.getAttribute("href") || "";
+  if (!href || href.startsWith("#")) {
     return false;
   }
 
   try {
     const url = new URL(link.href, window.location.origin);
 
-    if (!/^https?:$/.test(url.protocol)) {
+    if (url.origin === window.location.origin) {
+      return false;
+    }
+
+    if (!/^https?:$/i.test(url.protocol)) {
       return false;
     }
 
@@ -44,18 +166,11 @@ export function matchesExternalTarget(link, config) {
       return false;
     }
 
-    if (url.origin === window.location.origin) {
+    if (/(^|\.)wikipedia\.org$/i.test(url.hostname)) {
       return false;
     }
 
-    if (
-      /(^|\\.)wikipedia\\.org$/i.test(url.hostname) &&
-      url.pathname.startsWith("/wiki/")
-    ) {
-      return false;
-    }
-
-    if (isDiscourseTopicPathname(url.pathname)) {
+    if (/^\/t\//.test(url.pathname) || /^\/t\//.test(href)) {
       return false;
     }
 
@@ -65,127 +180,57 @@ export function matchesExternalTarget(link, config) {
   }
 }
 
-function extractMeta(doc, key, attr = "property") {
-  return (
-    doc.querySelector(`meta[${attr}="${key}"]`)?.getAttribute("content") || ""
-  ).trim();
-}
-
-function extractTitle(doc) {
-  return (
-    extractMeta(doc, "og:title") ||
-    extractMeta(doc, "twitter:title", "name") ||
-    doc.querySelector("title")?.textContent ||
-    ""
-  ).trim();
-}
-
-function extractDescription(doc) {
-  return sanitizeExcerpt(
-    extractMeta(doc, "og:description") ||
-      extractMeta(doc, "twitter:description", "name") ||
-      extractMeta(doc, "description", "name") ||
-      ""
-  );
-}
-
-function extractImage(doc, baseUrl) {
-  const raw =
-    extractMeta(doc, "og:image") ||
-    extractMeta(doc, "twitter:image", "name") ||
-    "";
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return sanitizeURL(new URL(raw, baseUrl).toString()) || null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchViaProxy(targetUrl, signal) {
-  const proxyUrl = `${PROXY_ENDPOINT}?url=${encodeURIComponent(targetUrl)}`;
-  const response = await fetch(proxyUrl, {
-    method: "GET",
-    mode: "same-origin",
-    credentials: "same-origin",
-    headers: {
-      Accept: "text/html,application/xhtml+xml",
-    },
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Proxy error ${response.status} for ${targetUrl}`);
-  }
-
-  return response.text();
-}
-
-function parseExternalPreview(html, targetUrl) {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const title = extractTitle(doc);
-  const excerpt = extractDescription(doc);
-  const image_url = extractImage(doc, targetUrl);
-
-  if (!title && !excerpt && !image_url) {
-    return null;
-  }
-
+export function createExternalProvider(config) {
   return {
-    type: "external",
-    id: `external:${targetUrl}`,
-    title: title || targetUrl,
-    excerpt,
-    html: null,
-    image_url,
-    url: targetUrl,
-    raw: {
-      site_name:
-        extractMeta(doc, "og:site_name") ||
-        new URL(targetUrl).hostname.replace(/^www\\./, ""),
-      hostname: new URL(targetUrl).hostname,
+    key: "external",
+
+    matches(link) {
+      return matchesExternalTarget(link, config);
     },
-  };
-}
 
-export function createExternalProvider(config, previewCache, inFlightFetches) {
-  return {
-    async fetch(target, signal) {
-      const url = target?.url;
-      if (!url) return null;
-
-      const cacheKey = `external:${url}`;
-      const cached = getCachedValue(previewCache, cacheKey);
-      if (cached) return cached;
-
-      if (inFlightFetches.has(cacheKey)) {
-        return inFlightFetches.get(cacheKey);
+    async fetch(target, { signal } = {}) {
+      if (!target?.url) {
+        throw new Error("Missing external preview target URL.");
       }
 
-      const promise = fetchViaProxy(url, signal)
-        .then((html) => parseExternalPreview(html, url))
-        .then((preview) => {
-          if (preview) {
-            setCachedValue(
-              previewCache,
-              cacheKey,
-              preview,
-              config?.topicCacheMax || 100
-            );
-            logDebug(config, "External preview fetched", preview);
-          }
-          return preview;
-        })
-        .finally(() => {
-          inFlightFetches.delete(cacheKey);
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        externalTimeoutMs(config)
+      );
+
+      const abortHandler = () => controller.abort();
+      signal?.addEventListener?.("abort", abortHandler, { once: true });
+
+      try {
+        const response = await fetch(buildProxyUrl(target), {
+          method: "GET",
+          credentials: "same-origin",
+          headers: {
+            Accept: "application/json, text/plain;q=0.9, text/html;q=0.8",
+          },
+          signal: controller.signal,
         });
 
-      inFlightFetches.set(cacheKey, promise);
-      return promise;
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} for ${target.url}`);
+        }
+
+        const contentType = response.headers.get("content-type") || "";
+        let payload;
+
+        if (contentType.includes("application/json")) {
+          payload = await response.json();
+        } else {
+          const html = await response.text();
+          payload = parseExternalHTML(html, target);
+        }
+
+        return normalizeExternalPreview(target, payload, config);
+      } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener?.("abort", abortHandler);
+      }
     },
   };
 }

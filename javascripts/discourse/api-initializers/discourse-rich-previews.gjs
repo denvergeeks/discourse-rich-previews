@@ -24,7 +24,6 @@ import {
   normalizeTag,
   formatNumber,
   composerButtonShouldShow,
-  classifyLink,
 } from "../lib/rich-preview-utils";
 
 import { matchPreviewTarget } from "../lib/preview-router";
@@ -532,12 +531,8 @@ export default apiInitializer((api) => {
 
   if (!config.enabled) return;
 
-  // Register BBCode tag for [preview]...[/preview] regardless of mode
-  // so existing wrapped posts render correctly even if composer button
-  // is hidden. The eligibility check handles whether a card actually shows.
   registerPreviewBBCode(api, config);
 
-  // Show composer button only when at least one type has composer enabled
   if (composerButtonShouldShow(config)) {
     registerPreviewComposerButton(api, config);
   }
@@ -583,6 +578,20 @@ export default apiInitializer((api) => {
     previewCache,
     inFlightFetches
   );
+
+  function providerForTarget(target) {
+    switch (target?.providerKey) {
+      case "topic":
+      case "remote_topic":
+        return topicProvider;
+      case "wikipedia":
+        return wikipediaProvider;
+      case "external":
+        return externalProvider;
+      default:
+        return null;
+    }
+  }
 
   function addCleanup(target, type, handler, options) {
     target.addEventListener(type, handler, options);
@@ -695,7 +704,8 @@ export default apiInitializer((api) => {
   }
 
   function getRenderCacheKey(preview, isMobile) {
-    return `${preview.type}:${preview.id}:${isMobile ? "mobile" : "desktop"}`;
+    const id = preview.id ?? preview.key ?? preview.url ?? preview.title ?? "";
+    return `${preview.type}:${id}:${isMobile ? "mobile" : "desktop"}`;
   }
 
   function getRenderedCard(preview, isMobile) {
@@ -774,19 +784,12 @@ export default apiInitializer((api) => {
   async function fetchPreview(target, signal) {
     if (!target) return null;
 
-    if (target.type === "topic") {
-      return topicProvider.fetch(target, signal);
+    const provider = providerForTarget(target);
+    if (!provider) {
+      throw new Error(`No provider for target ${target.key || "unknown"}`);
     }
 
-    if (target.type === "wikipedia") {
-      return wikipediaProvider.fetch(target, signal);
-    }
-
-    if (target.type === "external") {
-      return externalProvider.fetch(target, signal);
-    }
-
-    return null;
+    return provider.fetch(target, signal);
   }
 
   function showCard(target, anchorRect) {
@@ -815,12 +818,11 @@ export default apiInitializer((api) => {
           return;
         }
 
-        // If the mouse left before the fetch completed, do not show
         if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode()) {
           tooltip.classList.remove("is-visible");
           currentPreviewKey = null;
           return;
-        }        
+        }
 
         if (!preview) {
           tooltip.innerHTML = buildErrorPreviewHTML("No preview available.");
@@ -1093,94 +1095,85 @@ export default apiInitializer((api) => {
     suppressNextClick = false;
   }
 
-function setupPrefetch() {
-  if (!config.prefetchEnabled) return;
+  function setupPrefetch() {
+    if (!config.prefetchEnabled) return;
 
-  const prefetched = new Set();
+    const prefetched = new Set();
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
 
-        const link = entry.target;
-        const href = link?.href;
-        if (!href || prefetched.has(href)) continue;
+          const link = entry.target;
+          const href = link?.href;
+          if (!href || prefetched.has(href)) continue;
 
-        prefetched.add(href);
-        observer.unobserve(link);
+          prefetched.add(href);
+          observer.unobserve(link);
 
-        const target = matchPreviewTarget(link, config);
-        if (!target) continue;
+          const target = matchPreviewTarget(link, config);
+          if (!target) continue;
 
-        // Fire a background fetch and store in the shared cache
-        // Use a long timeout for prefetch — we are not in a hurry
-        const controller = new AbortController();
-        const timeoutId = setTimeout(
-          () => controller.abort(),
-          config.proxyTimeoutMs ?? 10000
-        );
+          const controller = new AbortController();
+          const timeoutId = setTimeout(
+            () => controller.abort(),
+            config.proxyTimeoutMs ?? 10000
+          );
 
-        fetchPreview(target, controller.signal)
-          .catch(() => {
-            // Prefetch failures are silent — the hover will retry
-            prefetched.delete(href);
-          })
-          .finally(() => {
-            clearTimeout(timeoutId);
-          });
+          fetchPreview(target, controller.signal)
+            .catch(() => {
+              prefetched.delete(href);
+            })
+            .finally(() => {
+              clearTimeout(timeoutId);
+            });
+        }
+      },
+      {
+        rootMargin: config.prefetchViewportMargin,
+        threshold: 0,
       }
-    },
-    {
-      rootMargin: config.prefetchViewportMargin,
-      threshold: 0,
-    }
-  );
+    );
 
-  // Observe all currently eligible links
-  function observeLinks(root = document) {
-    root.querySelectorAll("a[href]").forEach((link) => {
-      if (linkInSupportedArea(link, config)) {
-        observer.observe(link);
+    function observeLinks(root = document) {
+      root.querySelectorAll("a[href]").forEach((link) => {
+        if (linkInSupportedArea(link, config)) {
+          observer.observe(link);
+        }
+      });
+    }
+
+    observeLinks();
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof Element)) continue;
+
+          if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
+            observer.observe(node);
+          }
+
+          node.querySelectorAll?.("a[href]").forEach((link) => {
+            if (linkInSupportedArea(link, config)) {
+              observer.observe(link);
+            }
+          });
+        }
       }
     });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    cleanupFns.push(() => {
+      observer.disconnect();
+      mutationObserver.disconnect();
+    });
   }
-
-  // Initial observation
-  observeLinks();
-
-  // Re-observe when new content loads (infinite scroll, dynamic routes)
-  const mutationObserver = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (!(node instanceof Element)) continue;
-
-        // Check if the added node itself is an eligible link
-        if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
-          observer.observe(node);
-        }
-
-        // Check links inside the added node
-        node.querySelectorAll?.("a[href]").forEach((link) => {
-          if (linkInSupportedArea(link, config)) {
-            observer.observe(link);
-          }
-        });
-      }
-    }
-  });
-
-  mutationObserver.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
-
-  // Register cleanup
-  cleanupFns.push(() => {
-    observer.disconnect();
-    mutationObserver.disconnect();
-  });
-}  
 
   function bindEvents() {
     ensureTooltip();
@@ -1196,11 +1189,9 @@ function setupPrefetch() {
     addCleanup(document, "scroll", onScroll, { passive: true, capture: true });
     addCleanup(window, "resize", onResize, { passive: true });
 
-    // Start prefetching eligible links as they enter the viewport
     setupPrefetch();
   }
 
-  // Stamp body classes so CSS can apply indicators globally
   function applyBodyClasses() {
     const body = document.body;
 
@@ -1239,8 +1230,6 @@ function setupPrefetch() {
       suppressNextClick = false;
       mouseIsOverAnchor = false;
       clearCurrentAnchorDescription();
-
-      // Re-apply body classes in case they were removed
       applyBodyClasses();
     });
 

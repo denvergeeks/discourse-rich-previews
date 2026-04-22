@@ -8,6 +8,7 @@ export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
 
 function intSetting(value, fallback, min = null, max = null) {
   const n = Number.parseInt(value, 10);
+
   if (!Number.isFinite(n)) {
     return fallback;
   }
@@ -46,9 +47,7 @@ function cssEscape(value) {
 
 function normalizeListSetting(value) {
   if (Array.isArray(value)) {
-    return value
-      .map((v) => String(v).trim().toLowerCase())
-      .filter(Boolean);
+    return value.map((v) => String(v).trim().toLowerCase()).filter(Boolean);
   }
 
   if (typeof value === "string") {
@@ -62,9 +61,7 @@ function normalizeListSetting(value) {
 }
 
 function normalizeProviderKey(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
+  return String(value || "").trim().toLowerCase();
 }
 
 function normalizePipeList(value) {
@@ -116,6 +113,7 @@ function normalizePreviewProviders(rawProviders = []) {
       icon: "up-right-from-square",
       emoji: "🔗",
       color: "var(--primary)",
+      remote_hosts: [],
       require_https: true,
       timeout_ms: 3000,
     },
@@ -137,6 +135,7 @@ function normalizePreviewProviders(rawProviders = []) {
 
   (rawProviders || []).forEach((provider) => {
     const key = normalizeProviderKey(provider?.key);
+
     if (!key) {
       return;
     }
@@ -185,14 +184,7 @@ export function readConfig(settings) {
       "200px"
     ),
 
-    previewsTopicMode: stringSetting(
-      settings.previews_topic_mode,
-      "auto_only"
-    ),
-    previewsRemoteTopicMode: stringSetting(
-      settings.previews_remote_topic_mode,
-      "auto_only"
-    ),
+    previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
     previewsExternalMode: stringSetting(
       settings.previews_external_mode,
       "auto_only"
@@ -203,7 +195,6 @@ export function readConfig(settings) {
     ),
 
     previewsTagName: stringSetting(settings.previews_tag_name, "preview"),
-
     composerButtonGroup: stringSetting(
       settings.composer_button_group,
       "insertions"
@@ -214,13 +205,20 @@ export function readConfig(settings) {
 
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
-    previewsColorTopic: stringSetting(settings.previews_color_topic, "var(--tertiary)"),
-    previewsColorRemote: stringSetting(settings.previews_color_remote, "var(--success)"),
-    previewsColorWikipedia: stringSetting(settings.previews_color_wikipedia, "#808080"),
-
-    previewProviders: normalizePreviewProviders(
-      settings.preview_providers
+    previewsColorTopic: stringSetting(
+      settings.previews_color_topic,
+      "var(--tertiary)"
     ),
+    previewsColorRemote: stringSetting(
+      settings.previews_color_remote,
+      "var(--success)"
+    ),
+    previewsColorWikipedia: stringSetting(
+      settings.previews_color_wikipedia,
+      "#808080"
+    ),
+
+    previewProviders: normalizePreviewProviders(settings.preview_providers),
 
     delayShow: intSetting(settings.delay_show, 300, 0, 2000),
     cardWidth: stringSetting(settings.card_width, "32rem"),
@@ -300,7 +298,12 @@ export function readConfig(settings) {
     excerptLengthDesktop: intSetting(settings.excerpt_length, 3, 1, 12),
 
     showExcerptMobile: settings.show_excerpt_mobile !== false,
-    excerptLengthMobile: intSetting(settings.excerpt_length_mobile, 3, 1, 12),
+    excerptLengthMobile: intSetting(
+      settings.excerpt_length_mobile,
+      3,
+      1,
+      12
+    ),
 
     showCategoryDesktop: settings.show_category !== false,
     showCategoryMobile: settings.show_category_mobile !== false,
@@ -364,18 +367,6 @@ export function readConfig(settings) {
     topicCacheMax: intSetting(settings.topic_cache_max, 100, 10, 500),
   };
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 export function logDebug(config, message, data = null) {
   if (!config?.debugMode) {
@@ -493,6 +484,14 @@ export function getTopicProviderConfig(config) {
 }
 
 export function providerKeyForTarget(target, preview = null) {
+  if (target?.providerKey) {
+    return target.providerKey;
+  }
+
+  if (preview?.providerKey) {
+    return preview.providerKey;
+  }
+
   if (target?.type === "wikipedia" || preview?.type === "wikipedia") {
     return "wikipedia";
   }
@@ -506,6 +505,10 @@ export function providerKeyForTarget(target, preview = null) {
 
   if (target?.type === "topic" || preview?.type === "topic") {
     return "topic";
+  }
+
+  if (target?.type === "external" || preview?.type === "external") {
+    return "external";
   }
 
   return null;
@@ -528,7 +531,7 @@ export function renderProviderGlyph(providerKey, config) {
       return "";
     }
 
-    return `<span class="thc-link-glyph thc-link-glyph--emoji" aria-hidden="true">${escapeHTML(emoji)}</span>`;
+    return `${escapeHTML(emoji)}`;
   }
 
   const iconName = String(provider.icon || "").trim();
@@ -568,7 +571,6 @@ export function safeAvatarURL(avatarTemplate, size = 24) {
   const replaced = String(avatarTemplate).replace("{size}", String(size));
   return sanitizeURL(replaced);
 }
-
 
 export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
   if (!avatarTemplate || !origin) {
@@ -744,7 +746,6 @@ export function topicIdFromHref(href) {
   return parseTopicUrl(href)?.topicId ?? null;
 }
 
-
 function matchesTagList(link, tags) {
   if (!link || !Array.isArray(tags) || !tags.length) {
     return null;
@@ -753,7 +754,6 @@ function matchesTagList(link, tags) {
   const selector = tags.join(", ");
   return selector ? link.closest(selector) : null;
 }
-
 
 function matchesClassList(link, classes) {
   if (!link || !Array.isArray(classes) || !classes.length) {
@@ -776,7 +776,6 @@ function matchesClassList(link, classes) {
   return null;
 }
 
-
 function matchesIncludedRules(link, config) {
   const includedTags = Array.isArray(config?.includedTags)
     ? config.includedTags
@@ -794,7 +793,6 @@ function matchesIncludedRules(link, config) {
     matchesClassList(link, includedClasses)
   );
 }
-
 
 function matchesExcludedRules(link, config) {
   const excludedTags = Array.isArray(config?.excludedTags)
@@ -823,7 +821,6 @@ function matchesExcludedRules(link, config) {
   return null;
 }
 
-
 export function isWikipediaArticleLink(link) {
   try {
     const url = new URL(link.href, window.location.origin);
@@ -836,99 +833,40 @@ export function isWikipediaArticleLink(link) {
   }
 }
 
-
-// ─── Per-type provider helpers ───────────────────────────────────────────────────
-
-export function previewModeEnabled(mode, usage) {
-  switch (mode) {
-    case "disabled":
-      return false;
-    case "auto_only":
-      return usage === "auto";
-    case "composer_only":
-      return usage === "composer";
-    case "auto_and_composer":
-      return true;
-    default:
-      return usage === "auto";
-  }
+export function autoPreviewEnabled(type, config) {
+  return previewTypeEnabled(type, config);
 }
 
-export function previewModeForProvider(providerKey, config) {
-  switch (providerKey) {
-    case "topic":
-      return config?.previewsTopicMode || "auto_only";
-    case "remote_topic":
-      return config?.previewsRemoteTopicMode || "auto_only";
-    case "external":
-      return config?.previewsExternalMode || "auto_only";
-    case "wikipedia":
-      return config?.previewsWikipediaMode || "auto_only";
-    default:
-      return "disabled";
-  }
+export function composerPreviewEnabled(type, config) {
+  return previewTypeEnabled(type, config);
 }
 
-export function previewProviderKeyForLink(link, config) {
-  if (isWikipediaArticleLink(link)) {
-    return "wikipedia";
-  }
+export function previewTypeEnabled(type, config) {
+  const providerKey = {
+    topic: "topic",
+    remote_topic: "remote_topic",
+    external: "external",
+    wikipedia: "wikipedia",
+  }[type];
 
-  if (parseTopicUrl(link?.href)) {
-    return "topic";
-  }
-
-  if (parseRemoteDiscourseTopicUrl(link?.href, config)) {
-    return "remote_topic";
-  }
-
-  if (matchesExternalTarget(link, config)) {
-    return "external";
-  }
-
-  return null;
-}
-
-export function autoPreviewEnabled(providerKey, config) {
-  if (!providerEnabled(config, providerKey)) {
+  if (!providerKey) {
     return false;
   }
 
-  return previewModeEnabled(previewModeForProvider(providerKey, config), "auto");
-}
-
-export function composerPreviewEnabled(providerKey, config) {
-  if (!providerEnabled(config, providerKey)) {
-    return false;
-  }
-
-  return previewModeEnabled(
-    previewModeForProvider(providerKey, config),
-    "composer"
-  );
-}
-
-export function previewTypeEnabled(providerKey, config) {
-  if (!providerEnabled(config, providerKey)) {
-    return false;
-  }
-
-  return previewModeForProvider(providerKey, config) !== "disabled";
+  return providerEnabled(config, providerKey);
 }
 
 export function composerButtonShouldShow(config) {
   return (
-    previewTypeEnabled("topic", config) ||
-    previewTypeEnabled("remote_topic", config) ||
-    previewTypeEnabled("external", config) ||
-    previewTypeEnabled("wikipedia", config)
+    providerEnabled(config, "topic") ||
+    providerEnabled(config, "remote_topic") ||
+    providerEnabled(config, "external") ||
+    providerEnabled(config, "wikipedia")
   );
 }
 
 export function isManuallyWrapped(link) {
-  return !!link?.closest?.(
-    ".rich-preview-wrap[data-rich-preview='true']"
-  );
+  return !!link?.closest?.(".rich-preview-wrap[data-rich-preview='true']");
 }
 
 export function classifyLink(link, config) {
@@ -951,8 +889,6 @@ export function classifyLink(link, config) {
   return null;
 }
 
-// ─── Eligibility ─────────────────────────────────────────────────────────────
-
 export function isEligiblePreviewLink(link, config) {
   if (!(link instanceof HTMLAnchorElement)) {
     return false;
@@ -962,29 +898,28 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
-  const providerKey = previewProviderKeyForLink(link, config);
-  if (!providerKey) {
+  const type = classifyLink(link, config);
+  if (!type) {
     return false;
   }
 
-  if (!previewTypeEnabled(providerKey, config)) {
+  if (!previewTypeEnabled(type, config)) {
     return false;
   }
 
   const manually = isManuallyWrapped(link);
 
   if (manually) {
-    return composerPreviewEnabled(providerKey, config);
+    return composerPreviewEnabled(type, config);
   }
 
-  if (!autoPreviewEnabled(providerKey, config)) {
+  if (!autoPreviewEnabled(type, config)) {
     return false;
   }
 
   if (!matchesIncludedRules(link, config)) {
     logDebug(config, "Skipping link due to include rules", {
       href: link.href,
-      providerKey,
     });
     return false;
   }
@@ -995,23 +930,20 @@ export function isEligiblePreviewLink(link, config) {
       logDebug(config, "Skipping link due to excluded tag", {
         href: link.href,
         tagName: excluded.match?.tagName,
-        providerKey,
       });
     } else {
       logDebug(config, "Skipping link due to excluded class", {
         href: link.href,
         className: excluded.match?.className,
-        providerKey,
       });
     }
     return false;
   }
 
-  if (providerKey === "topic" && inCookedPost(link)) {
+  if (type === "topic" && inCookedPost(link)) {
     if (isCurrentTopicLink(link)) {
       logDebug(config, "Skipping current-topic cooked-post link", {
         href: link.href,
-        providerKey,
       });
       return false;
     }
@@ -1019,7 +951,6 @@ export function isEligiblePreviewLink(link, config) {
     if (isCookedPostFragmentLink(link)) {
       logDebug(config, "Skipping cooked-post fragment link", {
         href: link.href,
-        providerKey,
       });
       return false;
     }
@@ -1027,7 +958,6 @@ export function isEligiblePreviewLink(link, config) {
 
   return true;
 }
-
 
 export function linkInSupportedArea(link, config) {
   if (!(link instanceof Element)) {
@@ -1038,8 +968,6 @@ export function linkInSupportedArea(link, config) {
     return false;
   }
 
-  // Manually wrapped links bypass area checks entirely —
-  // the author explicitly opted this link in regardless of page context
   if (isManuallyWrapped(link)) {
     return true;
   }
@@ -1101,10 +1029,7 @@ export function linkInSupportedArea(link, config) {
     return true;
   }
 
-  if (
-    config.enableOnTags &&
-    link.closest(".tag-topic-list, .tags-page, .discourse-tag")
-  ) {
+  if (config.enableOnTags && link.closest(".tag-topic-list, .tags-page, .discourse-tag")) {
     return true;
   }
 
@@ -1114,7 +1039,6 @@ export function linkInSupportedArea(link, config) {
 
   return false;
 }
-
 
 export function normalizedFieldKeyVariants(rawValue) {
   const raw = String(rawValue ?? "").trim();
@@ -1137,19 +1061,15 @@ export function normalizedFieldKeyVariants(rawValue) {
   return [...variants];
 }
 
-
 function isTruthyUserFieldValue(value) {
   if (value === true || value === 1) {
     return true;
   }
 
-  const normalized = String(value ?? "")
-    .trim()
-    .toLowerCase();
+  const normalized = String(value ?? "").trim().toLowerCase();
 
   return ["true", "t", "1", "yes", "y", "on"].includes(normalized);
 }
-
 
 export function findTruthyFieldMatch(source, candidates) {
   if (!source || !candidates?.length) {
@@ -1170,11 +1090,9 @@ export function findTruthyFieldMatch(source, candidates) {
   return null;
 }
 
-
 export function currentUserIsStaffLike(user) {
   return !!(user?.admin || user?.moderator || user?.staff);
 }
-
 
 export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
   const source = String(htmlOrText ?? "").trim();
@@ -1218,7 +1136,6 @@ export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
   return text.replace(/\s+/g, " ").trim();
 }
 
-
 export function normalizeTag(tag) {
   if (!tag) {
     return "";
@@ -1230,19 +1147,13 @@ export function normalizeTag(tag) {
 
   if (typeof tag === "object") {
     const value =
-      tag.name ||
-      tag.text ||
-      tag.id ||
-      tag.slug ||
-      tag.value ||
-      "";
+      tag.name || tag.text || tag.id || tag.slug || tag.value || "";
 
     return String(value).trim();
   }
 
   return String(tag).trim();
 }
-
 
 export function formatNumber(value) {
   const num = Number(value);

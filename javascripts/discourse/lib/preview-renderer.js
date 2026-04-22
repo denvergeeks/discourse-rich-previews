@@ -1,28 +1,100 @@
-import { escapeHTML, sanitizeURL } from "./rich-preview-utils";
+import {
+  escapeHTML,
+  formatNumber,
+  getPreviewProvider,
+  providerKeyForTarget,
+  safeAvatarURL,
+  sanitizeExcerpt,
+  sanitizeURL,
+} from "./rich-preview-utils";
 
 export function buildPreviewHTML(preview, categories, config, isMobile = false) {
   if (!preview) {
     return buildErrorPreviewHTML("No preview available.");
   }
 
+  const providerKey = resolveProviderKey(preview);
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false) {
+    return buildErrorPreviewHTML("Preview provider is disabled.");
+  }
+
   switch (preview.type) {
     case "wikipedia":
-      return buildWikipediaPreviewHTML(preview, config, isMobile);
+      return buildWikipediaPreviewHTML(preview, provider, config, isMobile);
     case "external":
-      return buildExternalPreviewHTML(preview, config, isMobile);
+      return buildExternalPreviewHTML(preview, provider, config, isMobile);
     case "topic":
-      return buildTopicFallbackHTML(preview, config, isMobile);
+      return buildTopicPreviewHTML(preview, provider, categories, config, isMobile);
     default:
       return buildErrorPreviewHTML("Unsupported preview type.");
   }
+}
+
+export function buildLoadingPreviewHTML() {
+  return `
+    <article class="topic-hover-card topic-hover-card--loading">
+      <div class="topic-hover-card__body">
+        <div class="topic-hover-card__title">Loading preview…</div>
+      </div>
+    </article>
+  `;
+}
+
+export function buildErrorPreviewHTML(message) {
+  return `
+    <article class="topic-hover-card topic-hover-card--error">
+      <div class="topic-hover-card__body">
+        <div class="topic-hover-card__title">Preview unavailable</div>
+        <div class="topic-hover-card__excerpt">${escapeHTML(message)}</div>
+      </div>
+    </article>
+  `;
+}
+
+function resolveProviderKey(preview) {
+  return (
+    preview?.providerKey ||
+    providerKeyForTarget(preview, preview) ||
+    (preview?.type === "wikipedia"
+      ? "wikipedia"
+      : preview?.type === "external"
+        ? "external"
+        : "topic")
+  );
+}
+
+function densityFor(provider, config, isMobile, previewType) {
+  if (previewType === "wikipedia") {
+    return isMobile
+      ? config?.wikipediaDensityMobile || "compact"
+      : config?.wikipediaDensityDesktop || "cozy";
+  }
+
+  return isMobile
+    ? config?.densityMobile || "cozy"
+    : config?.densityDesktop || "default";
 }
 
 function pick(config, desktopKey, mobileKey, isMobile) {
   return isMobile ? config?.[mobileKey] : config?.[desktopKey];
 }
 
-function buildSharedThumbnailHTML(imageUrl, config, isMobile) {
-  if (!imageUrl) {
+function buildCardClasses(preview, config, isMobile) {
+  const density = densityFor(resolveProviderKey(preview), config, isMobile, preview.type);
+  const classes = ["topic-hover-card", `topic-hover-card--${density}`];
+
+  if (isMobile) {
+    classes.push("topic-hover-card--mobile");
+  }
+
+  return classes.join(" ");
+}
+
+function buildSharedThumbnailHTML(imageUrl, title, config, isMobile) {
+  const safeImage = sanitizeURL(imageUrl);
+  if (!safeImage) {
     return "";
   }
 
@@ -37,6 +109,38 @@ function buildSharedThumbnailHTML(imageUrl, config, isMobile) {
     return "";
   }
 
+  const placement = pick(
+    config,
+    "thumbnailPlacementDesktop",
+    "thumbnailPlacementMobile",
+    isMobile
+  );
+
+  if (!placement) {
+    return "";
+  }
+
+  const sizeMode = pick(
+    config,
+    "thumbnailSizeModeDesktop",
+    "thumbnailSizeModeMobile",
+    isMobile
+  );
+
+  const maxWidth = pick(
+    config,
+    "thumbnailAutoFitMaxWidthDesktop",
+    "thumbnailAutoFitMaxWidthMobile",
+    isMobile
+  );
+
+  const widthPercent = pick(
+    config,
+    "thumbnailSizePercentDesktop",
+    "thumbnailSizePercentMobile",
+    isMobile
+  );
+
   const topBottomHeight = pick(
     config,
     "thumbnailHeightTopBottomDesktop",
@@ -44,78 +148,137 @@ function buildSharedThumbnailHTML(imageUrl, config, isMobile) {
     isMobile
   );
 
-  const isAutoFit =
-    pick(
-      config,
-      "thumbnailSizeModeDesktop",
-      "thumbnailSizeModeMobile",
-      isMobile
-    ) === "auto_fit_height";
+  let style = "";
+
+  if (placement === "left" || placement === "right") {
+    if (sizeMode === "manual") {
+      style = `style="width:${Number(widthPercent) || 15}%;"`;
+    } else {
+      style = `style="max-width:${escapeHTML(String(maxWidth || "10rem"))};"`;
+    }
+  } else if (placement === "top" || placement === "bottom") {
+    style = `style="height:${escapeHTML(String(topBottomHeight || "auto"))};"`;
+  }
 
   return `
-    <div class="topic-hover-card__thumb-wrap">
+    <div class="topic-hover-card__thumb topic-hover-card__thumb--${escapeHTML(
+      placement
+    )} topic-hover-card__thumb--${escapeHTML(sizeMode || "auto_fit_height")}" ${style}>
       <img
-        class="topic-hover-card__thumb${isAutoFit ? " topic-hover-card__thumb--auto-fit" : ""}"
-        src="${escapeHTML(imageUrl)}"
-        alt=""
+        src="${safeImage}"
+        alt="${escapeHTML(title || "Preview image")}"
         loading="lazy"
         decoding="async"
-        style="--thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};"
-      />
+      >
     </div>
   `;
 }
 
-function buildWikipediaPreviewHTML(preview, config, isMobile) {
-  const placement = pick(
+function buildMetaRow(items) {
+  const filtered = items.filter(Boolean);
+
+  if (!filtered.length) {
+    return "";
+  }
+
+  return `<div class="topic-hover-card__meta">${filtered.join("")}</div>`;
+}
+
+function buildMetaItem(label, value, extraClass = "") {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  return `<span class="topic-hover-card__meta-item ${extraClass}"><span class="topic-hover-card__meta-label">${escapeHTML(
+    label
+  )}:</span> ${escapeHTML(String(value))}</span>`;
+}
+
+function buildTopicCategoryHTML(category, categories, config, isMobile) {
+  const showCategory = pick(
     config,
-    "thumbnailPlacementDesktop",
-    "thumbnailPlacementMobile",
+    "showCategoryDesktop",
+    "showCategoryMobile",
     isMobile
   );
 
-  const density = pick(
-    config,
-    "wikipediaDensityDesktop",
-    "wikipediaDensityMobile",
-    isMobile
-);
-  const densityClass = `topic-hover-card--density-${density || "default"}`;
+  if (!showCategory || !category) {
+    return "";
+  }
 
-  const sizeMode = pick(
-    config,
-    "thumbnailSizeModeDesktop",
-    "thumbnailSizeModeMobile",
-    isMobile
+  const categoryName =
+    category?.name ||
+    categories?.find?.((c) => Number(c.id) === Number(category?.id))?.name ||
+    "";
+
+  if (!categoryName) {
+    return "";
+  }
+
+  return `<span class="topic-hover-card__badge topic-hover-card__category">${escapeHTML(
+    categoryName
+  )}</span>`;
+}
+
+function buildTagsHTML(tags, config, isMobile) {
+  const showTags = pick(config, "showTagsDesktop", "showTagsMobile", isMobile);
+
+  if (!showTags || !Array.isArray(tags) || !tags.length) {
+    return "";
+  }
+
+  return `
+    <div class="topic-hover-card__tags">
+      ${tags
+        .filter(Boolean)
+        .slice(0, 5)
+        .map(
+          (tag) =>
+            `<span class="topic-hover-card__badge topic-hover-card__tag">${escapeHTML(
+              String(tag)
+            )}</span>`
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function buildAuthorHTML(preview, config, isMobile) {
+  const showOp = pick(config, "showOpDesktop", "showOpMobile", isMobile);
+
+  if (!showOp) {
+    return "";
+  }
+
+  const username =
+    preview?.author?.username ||
+    preview?.username ||
+    preview?.op?.username ||
+    "";
+
+  if (!username) {
+    return "";
+  }
+
+  const avatarUrl = sanitizeURL(
+    preview?.author?.avatarUrl ||
+      preview?.avatarUrl ||
+      safeAvatarURL(preview?.author?.avatarTemplate || preview?.avatar_template, 48)
   );
 
-  const sizeModeClass =
-    sizeMode === "auto_fit_height"
-      ? "topic-hover-card--thumb-size-auto-fit-height"
-      : "topic-hover-card--thumb-size-manual";
+  return `
+    <div class="topic-hover-card__author">
+      ${
+        avatarUrl
+          ? `<img class="topic-hover-card__author-avatar" src="${avatarUrl}" alt="" loading="lazy" decoding="async">`
+          : ""
+      }
+      <span class="topic-hover-card__author-name">${escapeHTML(username)}</span>
+    </div>
+  `;
+}
 
-  const thumbnailPercent = pick(
-    config,
-    "thumbnailSizePercentDesktop",
-    "thumbnailSizePercentMobile",
-    isMobile
-  );
-
-  const autoFitMaxWidth = pick(
-    config,
-    "thumbnailAutoFitMaxWidthDesktop",
-    "thumbnailAutoFitMaxWidthMobile",
-    isMobile
-  );
-
-  const topBottomHeight = pick(
-    config,
-    "thumbnailHeightTopBottomDesktop",
-    "thumbnailHeightTopBottomMobile",
-    isMobile
-  );
-
-  const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
+function buildExcerptHTML(preview, config, isMobile) {
   const showExcerpt = pick(
     config,
     "showExcerptDesktop",
@@ -123,423 +286,203 @@ function buildWikipediaPreviewHTML(preview, config, isMobile) {
     isMobile
   );
 
-  const showImage = config?.wikipediaPreviewsShowImage !== false;
-  const useExtractHtml = config?.wikipediaPreviewsUseExtractHtml !== false;
-  const safeUrl = sanitizeURL(preview.url) || "#";
-
-  const wrapperStyle = `
-    --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
-    --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth || "10rem")};
-    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};
-  `;
-
-  const mobileCloseButton = isMobile
-    ? `
-      <button
-        class="topic-hover-card__mobile-x"
-        type="button"
-        aria-label="Close preview"
-        data-thc-close
-      >
-        &times;
-      </button>
-    `
-    : "";
-
-  const thumbnail =
-    showImage && preview.image_url
-      ? buildSharedThumbnailHTML(preview.image_url, config, isMobile)
-      : "";
-
-  let excerptHTML = "";
-  if (showExcerpt) {
-    excerptHTML =
-      useExtractHtml && preview.html
-        ? `
-          <div class="topic-hover-card__excerpt">
-            ${preview.html}
-          </div>
-        `
-        : `
-          <div class="topic-hover-card__excerpt">
-            ${escapeHTML(preview.excerpt || "")}
-          </div>
-        `;
+  if (!showExcerpt) {
+    return "";
   }
 
-  const titleHTML = showTitle
-    ? `
-      <h3 class="topic-hover-card__title">
-        ${escapeHTML(preview.title || "Wikipedia")}
-      </h3>
-    `
-    : "";
+  const rawExcerpt =
+    preview?.excerpt ||
+    preview?.description ||
+    preview?.raw?.excerpt ||
+    preview?.raw?.blurb ||
+    "";
 
-  const mobileActionsHTML = isMobile
-    ? `
-      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
-        <a
-          class="btn btn-primary topic-hover-card__open-topic"
-          href="${escapeHTML(safeUrl)}"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-thc-open-topic
-        >
-          Open article
-        </a>
-        <button
-          class="btn btn-default topic-hover-card__close"
-          type="button"
-          data-thc-close
-        >
-          Close
-        </button>
-      </div>
-    `
-    : "";
+  const excerpt = sanitizeExcerpt(
+    rawExcerpt,
+    config?.excerptExcludedSelectors || []
+  );
 
-  const bodyInner = `
-    <div class="topic-hover-card__body">
-      ${mobileCloseButton}
-      ${titleHTML}
-      ${excerptHTML}
+  if (!excerpt) {
+    return "";
+  }
 
-      <div class="topic-hover-card__meta">
-        <span class="topic-hover-card__meta-item">
-          <a
-            href="${escapeHTML(safeUrl)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read more on Wikipedia
-          </a>
-        </span>
-      </div>
+  const lines = pick(
+    config,
+    "excerptLengthDesktop",
+    "excerptLengthMobile",
+    isMobile
+  );
 
-      ${mobileActionsHTML}
+  return `
+    <div class="topic-hover-card__excerpt" style="-webkit-line-clamp:${Number(lines) || 3};">
+      ${escapeHTML(excerpt)}
     </div>
   `;
-
-  switch (placement) {
-    case "left":
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--wikipedia topic-hover-card--left ${densityClass} ${sizeModeClass}"
-          style="${wrapperStyle}"
-        >
-          ${thumbnail}
-          ${bodyInner}
-        </div>
-      `;
-    case "right":
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--wikipedia topic-hover-card--right ${densityClass} ${sizeModeClass}"
-          style="${wrapperStyle}"
-        >
-          ${bodyInner}
-          ${thumbnail}
-        </div>
-      `;
-    case "bottom":
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--wikipedia topic-hover-card--bottom ${densityClass} ${sizeModeClass}"
-          style="${wrapperStyle}"
-        >
-          ${bodyInner}
-          ${thumbnail}
-        </div>
-      `;
-    case "top":
-    default:
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--wikipedia topic-hover-card--top ${densityClass} ${sizeModeClass}"
-          style="${wrapperStyle}"
-        >
-          ${thumbnail}
-          ${bodyInner}
-        </div>
-      `;
-  }
 }
 
-function buildExternalPreviewHTML(preview, config, isMobile) {
-  const placement = pick(
-    config,
-    "thumbnailPlacementDesktop",
-    "thumbnailPlacementMobile",
-    isMobile
-  );
-
-  const density = pick(
-    config,
-    "wikipediaDensityDesktop",
-    "wikipediaDensityMobile",
-    isMobile
-  );
-  const densityClass = `topic-hover-card--density-${density || "default"}`;
-
-  const sizeMode = pick(
-    config,
-    "thumbnailSizeModeDesktop",
-    "thumbnailSizeModeMobile",
-    isMobile
-  );
-
-  const sizeModeClass =
-    sizeMode === "auto_fit_height"
-      ? "topic-hover-card--thumb-size-auto-fit-height"
-      : "topic-hover-card--thumb-size-manual";
-
-  const thumbnailPercent = pick(
-    config,
-    "thumbnailSizePercentDesktop",
-    "thumbnailSizePercentMobile",
-    isMobile
-  );
-
-  const autoFitMaxWidth = pick(
-    config,
-    "thumbnailAutoFitMaxWidthDesktop",
-    "thumbnailAutoFitMaxWidthMobile",
-    isMobile
-  );
-
-  const topBottomHeight = pick(
-    config,
-    "thumbnailHeightTopBottomDesktop",
-    "thumbnailHeightTopBottomMobile",
-    isMobile
-  );
-
+function buildTitleHTML(preview, config, isMobile) {
   const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
-  const showExcerpt = pick(
-    config,
-    "showExcerptDesktop",
-    "showExcerptMobile",
-    isMobile
-  );
 
-  const safeUrl = sanitizeURL(preview.url) || "#";
-  const siteLabel = escapeHTML(
-    preview?.raw?.site_name || preview?.raw?.hostname || "site"
-  );
-
-  const wrapperStyle = `
-    --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
-    --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth || "10rem")};
-    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};
-  `;
-
-  const mobileCloseButton = isMobile
-    ? `
-      <button
-        class="topic-hover-card__mobile-x"
-        type="button"
-        aria-label="Close preview"
-        data-thc-close
-      >
-        &times;
-      </button>
-    `
-    : "";
-
-  const thumbnail = preview.image_url
-    ? buildSharedThumbnailHTML(preview.image_url, config, isMobile)
-    : "";
-
-  const excerptHTML =
-    showExcerpt && preview.excerpt
-      ? `
-      <div class="topic-hover-card__excerpt">
-        ${escapeHTML(preview.excerpt || "")}
-      </div>
-    `
-      : "";
-
-  const titleHTML = showTitle
-    ? `
-      <h3 class="topic-hover-card__title">
-        ${escapeHTML(preview.title || "Preview")}
-      </h3>
-    `
-    : "";
-
-  const mobileActionsHTML = isMobile
-    ? `
-      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
-        <a
-          class="btn btn-primary topic-hover-card__open-topic"
-          href="${escapeHTML(safeUrl)}"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-thc-open-topic
-        >
-          Open link
-        </a>
-        <button
-          class="btn btn-default topic-hover-card__close"
-          type="button"
-          data-thc-close
-        >
-          Close
-        </button>
-      </div>
-    `
-    : "";
-
-  const bodyInner = `
-    <div class="topic-hover-card__body">
-      ${mobileCloseButton}
-      ${titleHTML}
-      ${excerptHTML}
-
-      <div class="topic-hover-card__meta">
-        <span class="topic-hover-card__meta-item">
-          <a
-            href="${escapeHTML(safeUrl)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read more on ${siteLabel}
-          </a>
-        </span>
-      </div>
-
-      ${mobileActionsHTML}
-    </div>
-  `;
-
-  switch (placement) {
-    case "left":
-      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--left ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${thumbnail}${bodyInner}</div>`;
-    case "right":
-      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--right ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${bodyInner}${thumbnail}</div>`;
-    case "bottom":
-      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--bottom ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${bodyInner}${thumbnail}</div>`;
-    case "top":
-    default:
-      return `<div class="topic-hover-card topic-hover-card--external topic-hover-card--top ${densityClass} ${sizeModeClass}" style="${wrapperStyle}">${thumbnail}${bodyInner}</div>`;
+  if (!showTitle) {
+    return "";
   }
+
+  const title = preview?.title || preview?.label || preview?.hostname || "";
+  if (!title) {
+    return "";
+  }
+
+  return `<div class="topic-hover-card__title">${escapeHTML(title)}</div>`;
 }
 
-function buildTopicFallbackHTML(preview, config, isMobile) {
-  const density = pick(
+function buildTopicPreviewHTML(preview, _provider, categories, config, isMobile) {
+  const title = preview?.title || "";
+  const imageUrl = preview?.imageUrl || preview?.thumbnail || preview?.image || "";
+  const category = preview?.category || preview?.raw?.category || null;
+  const tags = preview?.tags || preview?.raw?.tags || [];
+
+  const showPublishDate = pick(
     config,
-    "wikipediaDensityDesktop",
-    "wikipediaDensityMobile",
+    "showPublishDateDesktop",
+    "showPublishDateMobile",
     isMobile
   );
-  const densityClass = `topic-hover-card--density-${density || "default"}`;
-
-  const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
-  const showExcerpt = pick(
+  const showViews = pick(config, "showViewsDesktop", "showViewsMobile", isMobile);
+  const showReplyCount = pick(
     config,
-    "showExcerptDesktop",
-    "showExcerptMobile",
+    "showReplyCountDesktop",
+    "showReplyCountMobile",
+    isMobile
+  );
+  const showLikes = pick(config, "showLikesDesktop", "showLikesMobile", isMobile);
+  const showActivity = pick(
+    config,
+    "showActivityDesktop",
+    "showActivityMobile",
     isMobile
   );
 
-  const safeUrl = sanitizeURL(preview.url) || "";
+  const metaTop = buildMetaRow([
+    buildTopicCategoryHTML(category, categories, config, isMobile),
+  ]);
 
-  const mobileCloseButton = isMobile
-    ? `
-      <button
-        class="topic-hover-card__mobile-x"
-        type="button"
-        aria-label="Close preview"
-        data-thc-close
-      >
-        &times;
-      </button>
-    `
-    : "";
+  const tagsHtml = buildTagsHTML(tags, config, isMobile);
+  const thumbHtml = buildSharedThumbnailHTML(imageUrl, title, config, isMobile);
+  const authorHtml = buildAuthorHTML(preview, config, isMobile);
+  const excerptHtml = buildExcerptHTML(preview, config, isMobile);
 
-  const mobileActionsHTML = isMobile && safeUrl
-    ? `
-      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
-        <a
-          class="btn btn-primary topic-hover-card__open-topic"
-          href="${escapeHTML(safeUrl)}"
-          data-thc-open-topic
-        >
-          Open topic
-        </a>
-        <button
-          class="btn btn-default topic-hover-card__close"
-          type="button"
-          data-thc-close
-        >
-          Close
-        </button>
-      </div>
-    `
-    : isMobile
-    ? `
-      <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
-        <button
-          class="btn btn-default topic-hover-card__close"
-          type="button"
-          data-thc-close
-        >
-          Close
-        </button>
-      </div>
-    `
-    : "";
+  const metaBottom = buildMetaRow([
+    showPublishDate
+      ? buildMetaItem("Created", preview?.createdAt || preview?.created_at)
+      : "",
+    showActivity
+      ? buildMetaItem(
+          "Activity",
+          preview?.lastPostedAt ||
+            preview?.bumpedAt ||
+            preview?.last_posted_at ||
+            preview?.bumped_at
+        )
+      : "",
+    showViews ? buildMetaItem("Views", formatNumber(preview?.views || 0)) : "",
+    showReplyCount
+      ? buildMetaItem(
+          "Replies",
+          formatNumber(
+            preview?.replyCount ??
+              preview?.postsCount ??
+              preview?.reply_count ??
+              0
+          )
+        )
+      : "",
+    showLikes
+      ? buildMetaItem(
+          "Likes",
+          formatNumber(preview?.likeCount ?? preview?.like_count ?? 0)
+        )
+      : "",
+  ]);
 
   return `
-    <div class="topic-hover-card ${densityClass}">
+    <article class="${buildCardClasses(
+      preview,
+      config,
+      isMobile
+    )}" data-preview-type="topic" data-provider-key="${escapeHTML(
+      preview?.providerKey || "topic"
+    )}">
+      ${thumbHtml}
       <div class="topic-hover-card__body">
-        ${mobileCloseButton}
-
-        ${
-          showTitle
-            ? `
-          <h3 class="topic-hover-card__title">
-            ${escapeHTML(preview.title || "(no title)")}
-          </h3>
-        `
-            : ""
-        }
-
-        ${
-          showExcerpt
-            ? `
-          <div class="topic-hover-card__excerpt">
-            ${escapeHTML(preview.excerpt || "")}
-          </div>
-        `
-            : ""
-        }
-
-        ${mobileActionsHTML}
+        ${metaTop}
+        ${buildTitleHTML(preview, config, isMobile)}
+        ${excerptHtml}
+        ${tagsHtml}
+        ${authorHtml}
+        ${metaBottom}
       </div>
-    </div>
+    </article>
   `;
 }
 
-export function buildLoadingPreviewHTML() {
+function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
+  const title = preview?.title || preview?.pageKey || "Wikipedia";
+  const imageUrl = preview?.imageUrl || preview?.thumbnail || "";
+  const host = preview?.host || "wikipedia.org";
+
+  const thumbHtml = buildSharedThumbnailHTML(imageUrl, title, config, isMobile);
+  const excerptHtml = buildExcerptHTML(preview, config, isMobile);
+  const metaHtml = buildMetaRow([buildMetaItem("Source", host)]);
+
   return `
-    <div class="topic-hover-card topic-hover-card--loading">
+    <article class="${buildCardClasses(
+      preview,
+      config,
+      isMobile
+    )}" data-preview-type="wikipedia" data-provider-key="wikipedia">
+      ${thumbHtml}
       <div class="topic-hover-card__body">
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--title"></div>
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--line"></div>
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--line"></div>
-        <div class="topic-hover-card__skeleton topic-hover-card__skeleton--meta"></div>
+        ${metaHtml}
+        ${buildTitleHTML(preview, config, isMobile)}
+        ${excerptHtml}
       </div>
-    </div>
+    </article>
   `;
 }
 
-export function buildErrorPreviewHTML(message = "Could not load preview.") {
+function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
+  const title = preview?.title || preview?.hostname || preview?.url || "External link";
+  const imageUrl = preview?.imageUrl || preview?.thumbnail || preview?.image || "";
+  const description =
+    preview?.excerpt || preview?.description || preview?.siteName || "";
+
+  const thumbHtml = buildSharedThumbnailHTML(imageUrl, title, config, isMobile);
+
+  const normalizedPreview = {
+    ...preview,
+    title,
+    excerpt: description,
+  };
+
+  const excerptHtml = buildExcerptHTML(normalizedPreview, config, isMobile);
+
+  const metaHtml = buildMetaRow([
+    buildMetaItem("Site", preview?.siteName || preview?.hostname),
+    buildMetaItem("URL", preview?.displayUrl || preview?.url),
+  ]);
+
   return `
-    <div class="topic-hover-card topic-hover-card--error">
+    <article class="${buildCardClasses(
+      preview,
+      config,
+      isMobile
+    )}" data-preview-type="external" data-provider-key="external">
+      ${thumbHtml}
       <div class="topic-hover-card__body">
-        ${escapeHTML(message)}
+        ${metaHtml}
+        ${buildTitleHTML(normalizedPreview, config, isMobile)}
+        ${excerptHtml}
       </div>
-    </div>
+    </article>
   `;
 }
