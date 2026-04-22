@@ -4,8 +4,6 @@
  * input the URL, link text, and optional title attribute.
  */
 
-import { themePrefix } from "discourse/lib/theme-settings-store";
-
 export function registerPreviewComposerButton(api, config) {
   const tagName = config?.previewsTagName || "preview";
   const open = `[${tagName}]`;

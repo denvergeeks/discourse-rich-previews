@@ -9,7 +9,6 @@ import {
   parseRemoteDiscourseTopicUrl,
   isWikipediaArticleLink,
 } from "../lib/rich-preview-utils";
-import { themePrefix } from "discourse/lib/theme-settings-store";
 
 function classifyUrl(url, config) {
   if (!url) return null;

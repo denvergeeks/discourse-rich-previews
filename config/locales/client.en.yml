@@ -1,7 +1,7 @@
 en:
   js:
     composer_button:
-      label: "Preview"
-      title: "Insert a rich preview link"
+      label: "Preview Link"
+      title: "Insert a Rich Preview Link"
     modal:
-      insert: "Insert link"
+      insert: "Insert Link"
