@@ -9,8 +9,8 @@ import RichPreviewLinkModal from "../components/rich-preview-link-modal";
 
 export function registerPreviewComposerButton(api, config) {
   const tagName = config?.previewsTagName || "preview";
-  const open = `[${tagName}]`;
-  const close = `[/${tagName}]`;
+//  const open = `[${tagName}]`;
+//  const close = `[/${tagName}]`;
 
   // Discourse builds the toolbar tooltip key as composer.{id}_title
   // so we inject it directly into the global I18n namespace

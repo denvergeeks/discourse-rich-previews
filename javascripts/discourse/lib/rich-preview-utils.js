@@ -818,56 +818,50 @@ export function isWikipediaArticleLink(link) {
 }
 
 
-// ─── Per-type mode helpers ───────────────────────────────────────────────────
+// ─── Per-type provider helpers ───────────────────────────────────────────────────
 
 /**
  * Returns true if auto-detection is active for this link type.
+ * In the provider-based setup, enabled providers are auto-detectable.
  */
 export function autoPreviewEnabled(type, config) {
-  const mode = {
-    topic: config?.previewsTopicMode,
-    external: config?.previewsExternalMode,
-    wikipedia: config?.previewsWikipediaMode,
-  }[type];
-
-  return mode === "auto_only" || mode === "auto_and_composer";
+  return previewTypeEnabled(type, config);
 }
 
 /**
  * Returns true if composer/manual wrapping is active for this link type.
+ * In the provider-based setup, enabled providers are composer-available.
  */
 export function composerPreviewEnabled(type, config) {
-  const mode = {
-    topic: config?.previewsTopicMode,
-    external: config?.previewsExternalMode,
-    wikipedia: config?.previewsWikipediaMode,
-  }[type];
-
-  return mode === "composer_only" || mode === "auto_and_composer";
+  return previewTypeEnabled(type, config);
 }
 
 /**
  * Returns true if previews are enabled at all for this link type.
  */
 export function previewTypeEnabled(type, config) {
-  const mode = {
-    topic: config?.previewsTopicMode,
-    external: config?.previewsExternalMode,
-    wikipedia: config?.previewsWikipediaMode,
+  const providerKey = {
+    topic: "topic",
+    external: "remote_topic",
+    wikipedia: "wikipedia",
   }[type];
 
-  return mode !== "disabled";
+  if (!providerKey) {
+    return false;
+  }
+
+  return providerEnabled(config, providerKey);
 }
 
 /**
  * Returns true if the composer button should be shown.
- * True when at least one type has composer_only or auto_and_composer.
+ * Show it when at least one provider is enabled.
  */
 export function composerButtonShouldShow(config) {
   return (
-    composerPreviewEnabled("topic", config) ||
-    composerPreviewEnabled("external", config) ||
-    composerPreviewEnabled("wikipedia", config)
+    providerEnabled(config, "topic") ||
+    providerEnabled(config, "remote_topic") ||
+    providerEnabled(config, "wikipedia")
   );
 }
 
@@ -884,12 +878,20 @@ export function isManuallyWrapped(link) {
  * Classifies a link as "topic", "external", "wikipedia", or null.
  */
 export function classifyLink(link, config) {
-  if (isWikipediaArticleLink(link)) return "wikipedia";
-  if (parseTopicUrl(link?.href)) return "topic";
-  if (parseRemoteDiscourseTopicUrl(link?.href, config)) return "external";
+  if (isWikipediaArticleLink(link)) {
+    return "wikipedia";
+  }
+
+  if (parseTopicUrl(link?.href)) {
+    return "topic";
+  }
+
+  if (parseRemoteDiscourseTopicUrl(link?.href, config)) {
+    return "external";
+  }
+
   return null;
 }
-
 
 // ─── Eligibility ─────────────────────────────────────────────────────────────
 
