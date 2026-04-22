@@ -85,6 +85,11 @@ export function readConfig(settings) {
     // Visual indicators
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
+
+    previewsIconTopic: stringSetting(settings.previews_icon_topic, "🔗"),
+    previewsIconExternal: stringSetting(settings.previews_icon_external, "🌐"),
+    previewsIconWikipedia: stringSetting(settings.previews_icon_wikipedia, "📖"),
+
     previewsShowUnderline: settings.previews_show_underline !== false,
     previewsUnderlineAlways: settings.previews_underline_always !== false,
     previewsColorTopic: stringSetting(settings.previews_color_topic, "var(--tertiary)"),

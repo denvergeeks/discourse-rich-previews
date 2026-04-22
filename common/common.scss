@@ -597,15 +597,33 @@ a[data-rich-preview-type] {
   text-decoration-color: var(--rp-color, var(--tertiary));
 }
 
-// Icon after link text
-.previews-icon-after a[data-rich-preview-type="topic"]::after { content: " ⤴"; }
-.previews-icon-after a[data-rich-preview-type="external"]::after { content: " 🌐"; }
-.previews-icon-after a[data-rich-preview-type="wikipedia"]::after { content: " 📖"; }
+// Icon after link text — driven by --rp-icon CSS variable set by JS
+.previews-icon-after a[data-rich-preview-type]::after {
+  content: " " var(--rp-icon, "🔗");
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0.7;
+}
 
 // Icon before link text
-.previews-icon-before a[data-rich-preview-type="topic"]::before { content: "⤴ "; }
-.previews-icon-before a[data-rich-preview-type="external"]::before { content: "🌐 "; }
-.previews-icon-before a[data-rich-preview-type="wikipedia"]::before { content: "📖 "; }
+.previews-icon-before a[data-rich-preview-type]::before {
+  content: var(--rp-icon, "🔗") " ";
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+// Wrap icon after
+.rich-preview-wrap--icon-after a::after {
+  content: " " var(--rp-icon, "🔗");
+}
+
+// Wrap icon before
+.rich-preview-wrap--icon-before a::before {
+  content: var(--rp-icon, "🔗") " ";
+}
 
 // Common icon styling
 a[data-rich-preview-type]::before,
@@ -667,17 +685,8 @@ a[data-rich-preview-type]::after {
 // Topic → internal link symbol
 // External → globe
 // Wikipedia → book
-.rich-preview-wrap--topic {
-  --rp-icon: "⤴";
-}
 
-.rich-preview-wrap--external {
-  --rp-icon: "🌐";
-}
 
-.rich-preview-wrap--wikipedia {
-  --rp-icon: "📖";
-}
 
 
 // ─── Mobile media query ───────────────────────────────────────────────────────

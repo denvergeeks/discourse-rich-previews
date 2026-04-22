@@ -48,12 +48,6 @@ const TYPE_DOTS = {
   unsupported: "🔴",
 };
 
-const ICON_GLYPHS = {
-  topic: "⤴",
-  external: "🌐",
-  wikipedia: "📖",
-};
-
 export default class RichPreviewLinkModal extends Component {
   @tracked url = this.args.model?.initialUrl || "";
   @tracked linkText = this.args.model?.initialLinkText || "";
@@ -113,7 +107,12 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get iconGlyph() {
-    return ICON_GLYPHS[this.detectedType] || "";
+    const iconMap = {
+      topic: this.config?.previewsIconTopic || "🔗",
+      external: this.config?.previewsIconExternal || "🌐",
+      wikipedia: this.config?.previewsIconWikipedia || "📖",
+    };
+    return iconMap[this.detectedType] || "";
   }
 
   get showIconAfter() {

@@ -65,6 +65,19 @@ function stampModifierClasses(wrapEl, config) {
   // Apply per-type custom colors from settings as inline CSS variables
   // so admins can override the defaults without touching SCSS
   if (type && link) {
+
+  // Set icon glyph as CSS variable so ::before/::after can use it
+    const iconMap = {
+      topic: config?.previewsIconTopic || "🔗",
+      external: config?.previewsIconExternal || "🌐",
+      wikipedia: config?.previewsIconWikipedia || "📖",
+    };
+
+    const icon = type ? iconMap[type] : null;
+    if (icon) {
+      wrapEl.style.setProperty("--rp-icon", `"${icon}"`);
+    }
+
     const colorMap = {
       topic: config?.previewsColorTopic,
       external: config?.previewsColorRemote,
@@ -110,6 +123,18 @@ function stampAutoLinkIndicators(root, config) {
     if (color) {
       link.style.setProperty("--rp-color", color);
     }
+
+    const iconMap = {
+      topic: config?.previewsIconTopic || "🔗",
+      external: config?.previewsIconExternal || "🌐",
+      wikipedia: config?.previewsIconWikipedia || "📖",
+    };
+
+    const icon = iconMap[type];
+    if (icon) {
+      link.style.setProperty("--rp-icon", `"${icon}"`);
+    }
+
   });
 }
 

@@ -108,6 +108,36 @@ previews_icon_position:
     Position of the link type icon relative to the link text.
 
 
+previews_icon_topic:
+  default: "🔗"
+  type: string
+  client: true
+  description: >
+    Icon shown next to internal topic preview links.
+    Accepts any single Unicode character or emoji.
+    Default is 🔗.
+
+
+previews_icon_external:
+  default: "🌐"
+  type: string
+  client: true
+  description: >
+    Icon shown next to external Discourse topic preview links.
+    Accepts any single Unicode character or emoji.
+    Default is 🌐.
+
+
+previews_icon_wikipedia:
+  default: "📖"
+  type: string
+  client: true
+  description: >
+    Icon shown next to Wikipedia preview links.
+    Accepts any single Unicode character or emoji.
+    Default is 📖.
+
+
 previews_show_underline:
   default: true
   client: true
@@ -530,10 +560,15 @@ excerpt_excluded_selectors:
 # ─── Remote Discourse ────────────────────────────────────────────────────────
 
 
+remote_discourse_require_https:
+  type: bool
+  default: true
+  description: Only allow remote Discourse hover-card previews from HTTPS hosts.
+
 remote_discourse_hosts:
   type: list
   list_type: compact
-  default: "noobish.me"
+  default: "meta.discourse.org"
   description: External Discourse hosts whose public topic links may generate hover cards.
 
 
@@ -541,12 +576,6 @@ remote_discourse_timeout_ms:
   type: integer
   default: 3000
   description: Timeout in milliseconds for remote Discourse topic preview requests.
-
-
-remote_discourse_require_https:
-  type: bool
-  default: true
-  description: Only allow remote Discourse hover-card previews from HTTPS hosts.
 
 
 # ─── Wikipedia ───────────────────────────────────────────────────────────────
