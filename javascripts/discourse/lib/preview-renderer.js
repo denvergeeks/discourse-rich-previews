@@ -436,7 +436,7 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
   const title = preview?.title || preview?.pageKey || "Wikipedia";
   const imageUrl =
     preview?.imageUrl ||
-    preview?.imageurl ||
+    preview?.imageUlr ||
     preview?.thumbnail ||
     preview?.raw?.summary?.thumbnail?.source ||
     preview?.raw?.summary?.originalimage?.source ||
