@@ -108,9 +108,9 @@ export default class RichPreviewLinkModal extends Component {
 
   get iconGlyph() {
     const iconMap = {
-      topic: this.config?.previewsIconTopic || "🔗",
-      external: this.config?.previewsIconExternal || "🌐",
-      wikipedia: this.config?.previewsIconWikipedia || "📖",
+      topic: "🔗",
+      external: "🌐",
+      wikipedia: "📖",
     };
     return iconMap[this.detectedType] || "";
   }

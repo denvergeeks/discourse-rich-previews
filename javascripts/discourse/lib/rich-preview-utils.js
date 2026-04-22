@@ -195,9 +195,6 @@ export function readConfig(settings) {
 
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
-previewsIconTopic: stringSetting(settings.previews_icon_topic, "*"),
-previewsIconExternal: stringSetting(settings.previews_icon_external, "+"),
-previewsIconWikipedia: stringSetting(settings.previews_icon_wikipedia, "#"),
     previewsColorTopic: stringSetting(settings.previews_color_topic, "var(--tertiary)"),
     previewsColorRemote: stringSetting(settings.previews_color_remote, "var(--success)"),
     previewsColorWikipedia: stringSetting(settings.previews_color_wikipedia, "#808080"),

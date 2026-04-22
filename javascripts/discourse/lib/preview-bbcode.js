@@ -102,17 +102,6 @@ function stampAutoLinkIndicators(root, config) {
     if (color) {
       link.style.setProperty("--rp-color", color);
     }
-
-    const iconMap = {
-      topic: config?.previewsIconTopic || "*",
-      external: config?.previewsIconExternal || "+",
-      wikipedia: config?.previewsIconWikipedia || "#",
-    };
-
-    const icon = iconMap[type];
-    if (icon) {
-      link.style.setProperty("--rp-icon", `"${icon}"`);
-    }
   });
 }
 
