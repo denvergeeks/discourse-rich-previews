@@ -4,6 +4,7 @@
  * input the URL, link text, and optional title attribute.
  */
 
+import I18n from "I18n";
 import RichPreviewLinkModal from "../components/rich-preview-link-modal";
 
 export function registerPreviewComposerButton(api, config) {
@@ -16,8 +17,8 @@ export function registerPreviewComposerButton(api, config) {
       id: "rich-preview-wrap",
       group: "insertions",
       icon: "eye",
-      label: themePrefix("composer_button.label"),
-      title: themePrefix("composer_button.title"),
+      label: "Preview",
+      title: "Insert a rich preview link",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
         const initialLinkText = selected?.value?.trim() || "";

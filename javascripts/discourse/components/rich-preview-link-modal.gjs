@@ -148,6 +148,10 @@ export default class RichPreviewLinkModal extends Component {
     return !!this.url.trim();
   }
 
+  get insertLabel() {
+    return "Insert link";
+  }
+
   @action
   onUrlInput(event) {
     this.url = event.target.value;
@@ -285,7 +289,7 @@ export default class RichPreviewLinkModal extends Component {
       <:footer>
         <DButton
           @action={{this.onInsert}}
-          @label={{themePrefix "modal.insert"}}
+          @translatedLabel={{this.insertLabel}}
           @disabled={{this.cannotInsert}}
           class="btn-primary"
         />
