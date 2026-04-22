@@ -17,7 +17,6 @@ export function registerPreviewComposerButton(api, config) {
       id: "rich-preview-wrap",
       group: "insertions",
       icon: "eye",
-      label: "Preview",
       title: "Insert a rich preview link",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
