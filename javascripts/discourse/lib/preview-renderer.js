@@ -92,18 +92,25 @@ function buildCardClasses(preview, config, isMobile) {
   return classes.join(" ");
 }
 
-function buildSharedThumbnailHTML(imageUrl, title, config, isMobile) {
+function buildSharedThumbnailHTML(
+  imageUrl,
+  title,
+  config,
+  isMobile,
+  forceShow = false
+) {
+  if (!imageUrl) {
+    return "";
+  }
+
   const safeImage = sanitizeURL(imageUrl);
   if (!safeImage) {
     return "";
   }
 
-  const showThumbnail = pick(
-    config,
-    "showThumbnailDesktop",
-    "showThumbnailMobile",
-    isMobile
-  );
+  const showThumbnail = forceShow
+    ? true
+    : pick(config, "showThumbnailDesktop", "showThumbnailMobile", isMobile);
 
   if (!showThumbnail) {
     return "";
