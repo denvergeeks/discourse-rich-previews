@@ -434,7 +434,13 @@ function buildTopicPreviewHTML(preview, _provider, categories, config, isMobile)
 
 function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
   const title = preview?.title || preview?.pageKey || "Wikipedia";
-  const imageUrl = preview?.imageUrl || preview?.thumbnail || "";
+  const imageUrl =
+    preview?.imageUrl ||
+    preview?.imageurl ||
+    preview?.thumbnail ||
+    preview?.raw?.summary?.thumbnail?.source ||
+    preview?.raw?.summary?.originalimage?.source ||
+    "";
   const host = preview?.host || "wikipedia.org";
 
   const thumbHtml = buildSharedThumbnailHTML(imageUrl, title, config, isMobile);

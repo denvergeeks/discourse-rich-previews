@@ -144,10 +144,10 @@ async function fetchWikipediaPreview(host, title, config, signal) {
       config?.wikipediaPreviewsUseExtractHtml !== false
         ? summary?.extract_html || null
         : null,
-    imageurl:
+    imageUrl:
       config?.wikipediaPreviewsShowImage !== false
-        ? summary?.originalimage?.source ||
-          summary?.thumbnail?.source ||
+        ? summary?.thumbnail?.source ||
+          summary?.originalimage?.source ||
           null
         : null,
     url:
