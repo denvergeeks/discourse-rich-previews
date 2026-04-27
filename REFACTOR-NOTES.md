@@ -3,36 +3,35 @@
 ## **File Tree (relevant JS/config files)**
 
 .
-└── discourse-rich-previews/
-    ├── assets/
-    │   └── tooltip-icon.svg
-    ├── common/
-    │   └── common.scss
-    ├── config/
-    │   └── locales/
-    │       └── client.en.yml
-    ├── javascripts/
-    │   └── discourse/
-    │       ├── api-initializers/
-    │       │   └── discourse-rich-previews.gjs
-    │       ├── components/
-    │       │   └── rich-preview-link-modal.gjs
-    │       └── lib/
-    │           ├── providers/
-    │           │   ├── external-provider.js
-    │           │   ├── index.js
-    │           │   ├── topic-provider.js
-    │           │   └── wikipedia-provider.js
-    │           ├── preview-bbcode.js
-    │           ├── preview-composer-button.js
-    │           ├── preview-renderer.js
-    │           ├── preview-router.js
-    │           └── rich-preview-utils.js
-    ├── locales/
-    │   └── en.yml
-    ├── about.json
-    └── settings.yml
-    
+└── ./discourse-rich-previews/
+    ├── ./discourse-rich-previews/assets/
+    │   └── ./discourse-rich-previews/assets/tooltip-icon.svg
+    ├── ./discourse-rich-previews/common/
+    │   └── ./discourse-rich-previews/common/common.scss
+    ├── ./discourse-rich-previews/config/
+    │   └── ./discourse-rich-previews/config/locales/
+    │       └── ./discourse-rich-previews/config/locales/client.en.yml
+    ├── ./discourse-rich-previews/javascripts/
+    │   └── ./discourse-rich-previews/javascripts/discourse/
+    │       ├── ./discourse-rich-previews/javascripts/discourse/api-initializers/
+    │       │   └── ./discourse-rich-previews/javascripts/discourse/api-initializers/discourse-rich-previews.gjs
+    │       ├── ./discourse-rich-previews/javascripts/discourse/components/
+    │       │   └── ./discourse-rich-previews/javascripts/discourse/components/rich-preview-link-modal.gjs
+    │       └── ./discourse-rich-previews/javascripts/discourse/lib/
+    │           ├── ./discourse-rich-previews/javascripts/discourse/lib/providers/
+    │           │   ├── ./discourse-rich-previews/javascripts/discourse/lib/providers/external-provider.js
+    │           │   ├── ./discourse-rich-previews/javascripts/discourse/lib/providers/index.js
+    │           │   ├── ./discourse-rich-previews/javascripts/discourse/lib/providers/topic-provider.js
+    │           │   └── ./discourse-rich-previews/javascripts/discourse/lib/providers/wikipedia-provider.js
+    │           ├── ./discourse-rich-previews/javascripts/discourse/lib/preview-bbcode.js
+    │           ├── ./discourse-rich-previews/javascripts/discourse/lib/preview-composer-button.js
+    │           ├── ./discourse-rich-previews/javascripts/discourse/lib/preview-renderer.js
+    │           ├── ./discourse-rich-previews/javascripts/discourse/lib/preview-router.js
+    │           └── ./discourse-rich-previews/javascripts/discourse/lib/rich-preview-utils.js
+    ├── ./discourse-rich-previews/locales/
+    │   └── ./discourse-rich-previews/locales/en.yml
+    ├── ./discourse-rich-previews/about.json
+    └── ./discourse-rich-previews/settings.yml
 ---
 
 ## **File-by-File Summary**
