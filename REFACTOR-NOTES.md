@@ -19,7 +19,9 @@
 `    preview-bbcode.js                 ← BBCode [preview] tag registration`
 
 `    preview-composer-button.js        ← composer toolbar button`
+
 `    providers/`
+
 `      topic-provider.js               ← local + remote Discourse topic fetch`
 
 `      wikipedia-provider.js           ← Wikipedia REST API fetch`
