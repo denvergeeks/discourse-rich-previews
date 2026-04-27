@@ -2,6 +2,15 @@
 
 ## **File Tree (relevant JS/config files)**
 
+project-root/
+├── docs/
+│   ├── index.md
+│   └── setup.md
+├── src/
+│   └── main.py
+└── README.md
+
+
 discourse-rich-previews/
 ├── assets/
 │   ├── tooltip-icon.svg
