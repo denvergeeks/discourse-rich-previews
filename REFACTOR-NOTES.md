@@ -2,33 +2,33 @@
 
 ## **File Tree (relevant JS/config files)**
 
-`javascripts/discourse/`
+-`javascripts/discourse/`
 
-`  api-initializers/`
+-`  api-initializers/`
 
-`    discourse-rich-previews.gjs       ← main entry point`
+-`    discourse-rich-previews.gjs       ← main entry point`
 
-`  lib/`
+-`  lib/`
 
-`    rich-preview-utils.js             ← shared utilities + readConfig`
+-`    rich-preview-utils.js             ← shared utilities + readConfig`
 
-`    preview-router.js                 ← matchPreviewTarget dispatcher`
+-`    preview-router.js                 ← matchPreviewTarget dispatcher`
 
-`    preview-renderer.js               ← HTML builders for all preview types`
+-`    preview-renderer.js               ← HTML builders for all preview types`
 
-`    preview-bbcode.js                 ← BBCode [preview] tag registration`
+-`    preview-bbcode.js                 ← BBCode [preview] tag registration`
 
-`    preview-composer-button.js        ← composer toolbar button`
+-`    preview-composer-button.js        ← composer toolbar button`
 
-`    providers/`
+-`    providers/`
 
-`      topic-provider.js               ← local + remote Discourse topic fetch`
+-`      topic-provider.js               ← local + remote Discourse topic fetch`
 
-`      wikipedia-provider.js           ← Wikipedia REST API fetch`
+-`      wikipedia-provider.js           ← Wikipedia REST API fetch`
 
-`      external-provider.js            ← generic external link fetch via proxy`
+-`      external-provider.js            ← generic external link fetch via proxy`
 
-`settings.yml`
+-`settings.yml`
 
 
 ---
