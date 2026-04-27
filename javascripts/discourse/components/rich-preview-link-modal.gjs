@@ -8,6 +8,8 @@ import {
   parseTopicUrl,
   parseRemoteDiscourseTopicUrl,
   isWikipediaArticleLink,
+  providerSupportsComposer,
+  previewTypeEnabled,
 } from "../lib/rich-preview-utils";
 
 function classifyUrl(url, config) {
@@ -66,6 +68,22 @@ export default class RichPreviewLinkModal extends Component {
     return classifyUrl(this.url.trim(), this.config);
   }
 
+  get providerEnabledForDetectedType() {
+    if (!this.detectedType) {
+      return false;
+    }
+
+    return previewTypeEnabled(this.detectedType, this.config);
+  }
+
+  get composerAllowedForDetectedType() {
+    if (!this.detectedType) {
+      return false;
+    }
+
+    return providerSupportsComposer(this.detectedType, this.config);
+  }
+
   get isValidUrl() {
     if (!this.url.trim()) return false;
     try {
@@ -77,7 +95,11 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get isSupported() {
-    return this.isValidUrl && this.detectedType !== null;
+    return (
+      this.isValidUrl &&
+      this.detectedType !== null &&
+      this.detectedType !== "unsupported"
+    );
   }
 
   get cannotInsert() {
