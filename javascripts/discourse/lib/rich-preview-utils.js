@@ -475,7 +475,7 @@ export function providerEnabled(config, key) {
   return getPreviewProvider(config, key)?.enabled !== false;
 }
 
-function modeForType(type, config) {
+export function providerModeForType(type, config) {
   switch (type) {
     case "topic":
       return config?.previewsTopicMode || "auto_only";
@@ -488,6 +488,16 @@ function modeForType(type, config) {
     default:
       return "disabled";
   }
+}
+
+export function providerSupportsAuto(type, config) {
+  const mode = providerModeForType(type, config);
+  return mode === "auto_only" || mode === "auto_and_composer";
+}
+
+export function providerSupportsComposer(type, config) {
+  const mode = providerModeForType(type, config);
+  return mode === "composer_only" || mode === "auto_and_composer";
 }
 
 export function getRemoteTopicProvider(config) {
@@ -853,13 +863,11 @@ export function isWikipediaArticleLink(link) {
 }
 
 export function autoPreviewEnabled(type, config) {
-  const mode = modeForType(type, config);
-  return mode === "auto_only" || mode === "auto_and_composer";
+  return providerSupportsAuto(type, config);
 }
 
 export function composerPreviewEnabled(type, config) {
-  const mode = modeForType(type, config);
-  return mode === "composer_only" || mode === "auto_and_composer";
+  return providerSupportsComposer(type, config);
 }
 
 export function previewTypeEnabled(type, config) {
@@ -874,8 +882,7 @@ export function previewTypeEnabled(type, config) {
     return false;
   }
 
-  const mode = modeForType(type, config);
-  if (mode === "disabled") {
+  if (providerModeForType(type, config) === "disabled") {
     return false;
   }
 
