@@ -17,8 +17,8 @@ function classifyUrl(url, config) {
     tempLink.href = url;
     if (isWikipediaArticleLink(tempLink)) return "wikipedia";
     if (parseTopicUrl(url)) return "topic";
-    if (parseRemoteDiscourseTopicUrl(url, config)) return "external";
-    return "unsupported";
+    if (parseRemoteDiscourseTopicUrl(url, config)) return "remote_topic";
+    return "external";
   } catch {
     return null;
   }
@@ -35,17 +35,17 @@ function buildBBCode(url, linkText, title, tagName) {
 }
 
 const TYPE_LABELS = {
-  topic: "Internal Topic",
-  external: "External Discourse",
+  topic: "Internal topic",
+  remote_topic: "Remote Discourse topic",
+  external: "External link",
   wikipedia: "Wikipedia",
-  unsupported: "Not supported",
 };
 
 const TYPE_DOTS = {
   topic: "🟢",
-  external: "🔵",
+  remote_topic: "🔵",
+  external: "🟣",
   wikipedia: "⚪",
-  unsupported: "🔴",
 };
 
 export default class RichPreviewLinkModal extends Component {
@@ -77,19 +77,11 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get isSupported() {
-    return (
-      this.isValidUrl &&
-      this.detectedType !== null &&
-      this.detectedType !== "unsupported"
-    );
+    return this.isValidUrl && this.detectedType !== null;
   }
 
   get cannotInsert() {
     return !this.isValidUrl || !this.isSupported;
-  }
-
-  get showUnsupportedWarning() {
-    return this.isValidUrl && !this.isSupported;
   }
 
   get typeLabel() {
@@ -109,7 +101,8 @@ export default class RichPreviewLinkModal extends Component {
   get iconGlyph() {
     const iconMap = {
       topic: "🔗",
-      external: "🌐",
+      remote_topic: "🌐",
+      external: "↗",
       wikipedia: "📖",
     };
     return iconMap[this.detectedType] || "";
@@ -173,12 +166,14 @@ export default class RichPreviewLinkModal extends Component {
       this.urlError = "Please enter a supported URL before inserting.";
       return;
     }
+
     const bbcode = buildBBCode(
       this.url.trim(),
       this.linkText,
       this.title,
       this.tagName
     );
+
     this.args.model?.onInsert?.(bbcode);
     this.args.closeModal();
   }
@@ -195,7 +190,6 @@ export default class RichPreviewLinkModal extends Component {
       class="rich-preview-link-modal"
     >
       <:body>
-
         <div class="rplm-field">
           <label class="rplm-label" for="rplm-url">URL</label>
           <input
@@ -214,13 +208,6 @@ export default class RichPreviewLinkModal extends Component {
             <div class={{this.typeBadgeClass}}>
               {{this.typeDot}} {{this.typeLabel}}
             </div>
-          {{/if}}
-          {{#if this.showUnsupportedWarning}}
-            <p class="rplm-warning">
-              This URL is not supported. Only internal topics,
-              external Discourse forums in your allowlist, and
-              Wikipedia links are supported.
-            </p>
           {{/if}}
         </div>
 
@@ -283,7 +270,6 @@ export default class RichPreviewLinkModal extends Component {
             </div>
           </div>
         {{/if}}
-
       </:body>
       <:footer>
         <DButton
