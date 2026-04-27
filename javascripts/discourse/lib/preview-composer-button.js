@@ -1,19 +1,9 @@
-/**
- * Registers the composer toolbar button for wrapping links in the
- * configured preview BBCode tag. Opens a modal for the user to
- * input the URL, link text, and optional title attribute.
- */
-
 import I18n from "I18n";
 import RichPreviewLinkModal from "../components/rich-preview-link-modal";
 
 export function registerPreviewComposerButton(api, config) {
   const tagName = config?.previewsTagName || "preview";
-//  const open = `[${tagName}]`;
-//  const close = `[/${tagName}]`;
 
-  // Discourse builds the toolbar tooltip key as composer.{id}_title
-  // so we inject it directly into the global I18n namespace
   try {
     const locale = I18n.currentLocale();
     I18n.translations[locale] ??= {};
@@ -29,7 +19,7 @@ export function registerPreviewComposerButton(api, config) {
     toolbar.addButton({
       id: "rich-preview-wrap",
       group: config?.composerButtonGroup || "insertions",
-      icon: "tooltip-icon",
+      icon: "up-right-from-square",
       shortcut: "P",
       perform(toolbarEvent) {
         const selected = toolbarEvent.selected;
