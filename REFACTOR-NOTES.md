@@ -2,33 +2,37 @@
 
 ## **File Tree (relevant JS/config files)**
 
-project-root/
-├── docs/
-│   ├── index.md
-│   └── setup.md
-├── src/
-│   └── main.py
-└── README.md
-
-
-discourse-rich-previews/
-├── assets/
-│   ├── tooltip-icon.svg
-├── common/
-│   └── common.scss
-└── README.md
-
-
-
-├── config/
-│   └── locales/
-      └── client.en.yml
-├── common/
-│   └── common.scss
-├── common/
-│   └── common.scss
-└── README.md
-
+.
+└── discourse-rich-previews/
+    ├── assets/
+    │   └── tooltip-icon.svg
+    ├── common/
+    │   └── common.scss
+    ├── config/
+    │   └── locales/
+    │       └── client.en.yml
+    ├── javascripts/
+    │   └── discourse/
+    │       ├── api-initializers/
+    │       │   └── discourse-rich-previews.gjs
+    │       ├── components/
+    │       │   └── rich-preview-link-modal.gjs
+    │       └── lib/
+    │           ├── providers/
+    │           │   ├── external-provider.js
+    │           │   ├── index.js
+    │           │   ├── topic-provider.js
+    │           │   └── wikipedia-provider.js
+    │           ├── preview-bbcode.js
+    │           ├── preview-composer-button.js
+    │           ├── preview-renderer.js
+    │           ├── preview-router.js
+    │           └── rich-preview-utils.js
+    ├── locales/
+    │   └── en.yml
+    ├── about.json
+    └── settings.yml
+    
 ---
 
 ## **File-by-File Summary**
