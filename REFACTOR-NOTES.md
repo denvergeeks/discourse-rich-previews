@@ -7,6 +7,10 @@ discourse-rich-previews/
 │   ├── tooltip-icon.svg
 ├── common/
 │   └── common.scss
+└── README.md
+
+
+
 ├── config/
 │   └── locales/
       └── client.en.yml
