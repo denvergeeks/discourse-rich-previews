@@ -2,12 +2,12 @@
 
 ## **File Tree (relevant JS/config files)**
 
--javascripts/discourse/
---api-initializers/
----discourse-rich-previews.gjs       ← main entry point
---lib/
----rich-preview-utils.js             ← shared utilities + readConfig
----preview-router.js                 ← matchPreviewTarget dispatcher`
+- javascripts/discourse/
+-- api-initializers/
+--- discourse-rich-previews.gjs       ← main entry point
+-- lib/
+--- rich-preview-utils.js             ← shared utilities + readConfig
+--- preview-router.js                 ← matchPreviewTarget dispatcher`
 
 -`    preview-renderer.js               ← HTML builders for all preview types`
 
