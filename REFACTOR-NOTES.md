@@ -1,19 +1,20 @@
-javascripts/discourse/
-api-initializers/
-discourse-rich-previews.gjs       <- main entry point
-lib/
-rich-preview-utils.js             <- shared utilities + readConfig
-preview-router.js                 <- matchPreviewTarget dispatcher
-preview-renderer.js               <- HTML builders for all preview types
-preview-bbcode.js                 <- BBCode \[preview\] tag registration
-preview-composer-button.js        <- composer toolbar button
-providers/
-topic-provider.js               <- local + remote Discourse topic fetch
-wikipedia-provider.js           <- Wikipedia REST API fetch
-external-provider.js            <- generic external link fetch via proxy
+javascripts/
+  discourse/
+    api-initializers/
+      discourse-rich-previews.gjs       <- main entry point
+    lib/
+      rich-preview-utils.js             <- shared utilities + readConfig
+      preview-router.js                 <- matchPreviewTarget dispatcher
+      preview-renderer.js               <- HTML builders for all preview types
+      preview-bbcode.js                 <- BBCode \[preview\] tag registration
+      preview-composer-button.js        <- composer toolbar button
+      providers/
+        topic-provider.js               <- local + remote Discourse topic fetch
+        wikipedia-provider.js           <- Wikipedia REST API fetch
+        external-provider.js            <- generic external link fetch via proxy
 settings.yml
-File-by-File Summary
-settings.yml
+
+---
 
 ## **Current Repo State --- `external-topics` Branch**
 
