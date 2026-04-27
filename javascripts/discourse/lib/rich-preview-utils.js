@@ -185,6 +185,10 @@ export function readConfig(settings) {
     ),
 
     previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
+    previewsRemoteTopicMode: stringSetting(
+      settings.previews_remote_topic_mode,
+      "auto_only"
+    ),
     previewsExternalMode: stringSetting(
       settings.previews_external_mode,
       "auto_only"
@@ -374,9 +378,9 @@ export function logDebug(config, message, data = null) {
   }
 
   if (data !== null && data !== undefined) {
-    console.debug(`[topic-hover-cards] ${message}`, data);
+    console.debug(`[discourse-rich-previews] ${message}`, data);
   } else {
-    console.debug(`[topic-hover-cards] ${message}`);
+    console.debug(`[discourse-rich-previews] ${message}`);
   }
 }
 
@@ -469,6 +473,21 @@ export function getPreviewProvider(config, key) {
 
 export function providerEnabled(config, key) {
   return getPreviewProvider(config, key)?.enabled !== false;
+}
+
+function modeForType(type, config) {
+  switch (type) {
+    case "topic":
+      return config?.previewsTopicMode || "auto_only";
+    case "remote_topic":
+      return config?.previewsRemoteTopicMode || "auto_only";
+    case "external":
+      return config?.previewsExternalMode || "auto_only";
+    case "wikipedia":
+      return config?.previewsWikipediaMode || "auto_only";
+    default:
+      return "disabled";
+  }
 }
 
 export function getRemoteTopicProvider(config) {
@@ -834,11 +853,13 @@ export function isWikipediaArticleLink(link) {
 }
 
 export function autoPreviewEnabled(type, config) {
-  return previewTypeEnabled(type, config);
+  const mode = modeForType(type, config);
+  return mode === "auto_only" || mode === "auto_and_composer";
 }
 
 export function composerPreviewEnabled(type, config) {
-  return previewTypeEnabled(type, config);
+  const mode = modeForType(type, config);
+  return mode === "composer_only" || mode === "auto_and_composer";
 }
 
 export function previewTypeEnabled(type, config) {
@@ -853,15 +874,20 @@ export function previewTypeEnabled(type, config) {
     return false;
   }
 
+  const mode = modeForType(type, config);
+  if (mode === "disabled") {
+    return false;
+  }
+
   return providerEnabled(config, providerKey);
 }
 
 export function composerButtonShouldShow(config) {
   return (
-    providerEnabled(config, "topic") ||
-    providerEnabled(config, "remote_topic") ||
-    providerEnabled(config, "external") ||
-    providerEnabled(config, "wikipedia")
+    previewTypeEnabled("topic", config) ||
+    previewTypeEnabled("remote_topic", config) ||
+    previewTypeEnabled("external", config) ||
+    previewTypeEnabled("wikipedia", config)
   );
 }
 
@@ -1132,7 +1158,7 @@ export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
     });
   });
 
-  const text = temp.textContent || temp.innerText || "";
+  const text = temp.textContent || "";
   return text.replace(/\s+/g, " ").trim();
 }
 
