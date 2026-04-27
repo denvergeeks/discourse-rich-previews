@@ -1,3 +1,4 @@
+
 javascripts/
   discourse/
     api-initializers/
