@@ -2,7 +2,7 @@
 
 ## **File Tree (relevant JS/config files)**
 
-**`javascripts/discourse/`
+`javascripts/discourse/`
 
 `  api-initializers/`
 
@@ -26,7 +26,7 @@
 
 `      external-provider.js            ← generic external link fetch via proxy`
 
-`settings.yml`**
+`settings.yml`
 
 
 ---
