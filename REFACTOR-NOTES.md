@@ -2,13 +2,13 @@
 
 ## **File Tree (relevant JS/config files)**
 
--javascripts/discourse/
+- javascripts/discourse/
 
--  api-initializers/
+-   api-initializers/
 
--    discourse-rich-previews.gjs       ← main entry point
+-     discourse-rich-previews.gjs       ← main entry point
 
--`  lib/`
+-   lib/
 
 -`    rich-preview-utils.js             ← shared utilities + readConfig`
 
