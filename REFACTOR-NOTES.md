@@ -2,10 +2,6 @@
 
 ## **File Tree (relevant JS/config files)**
 
-```
-text
-```
-
 **`javascripts/discourse/`
 `  api-initializers/`
 `    discourse-rich-previews.gjs       ← main entry point`
