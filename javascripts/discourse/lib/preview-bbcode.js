@@ -281,17 +281,17 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 }
 
 /**
- * Called from the api initializer to wire up the BBCode tag.
+ * Called from the api initializer to wire up preview-tag handling.
  * Accepts config so the tag name and visual indicators are driven
  * by the component settings.
  */
 export function registerPreviewBBCode(api, config) {
   const tagName = config?.previewsTagName || "preview";
 
-  // 2. Decorate already-cooked elements (topic page, user profile,
-  //    anywhere cooked HTML appears) so stored posts with the tag
-  //    that were cooked before this component was installed still
-  //    work, and so modifier classes are applied on every render.
+  // Fallback compatibility path:
+  // decorates already-cooked HTML (topic page, user profile, anywhere
+  // cooked content appears) so posts cooked before this component was
+  // installed still work, and so modifier classes are re-applied on render.
   api.decorateCookedElement(
     (element) => {
       applyPreviewWraps(element, tagName, config);
