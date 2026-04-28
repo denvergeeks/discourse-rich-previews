@@ -8,7 +8,7 @@ RSpec.describe "Rich preview BBCode", type: :system do
   fab!(:linked_topic) { Fabricate(:topic) }
 
   before do
-    upload_theme_or_component
+    upload_theme_component
     sign_in(user)
   end
 
