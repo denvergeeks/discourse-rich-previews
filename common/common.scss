@@ -537,8 +537,6 @@
 
 // ─── Manual [preview] wrap indicators + auto-link indicators ────────────────
 
-// Wrapper path for [preview]...[/preview] links.
-// JS sets --rp-color on the wrapper; CSS custom properties inherit to descendants.
 .rich-preview-wrap {
   display: inline;
   --rp-color: var(--tertiary);
@@ -548,12 +546,10 @@
   }
 }
 
-// Auto-detected links get classes directly on the anchor.
 .rich-preview-link {
   --rp-color: var(--tertiary);
 }
 
-// Shared underline styling for any decorated link.
 .rich-preview-wrap--underline-always a,
 .rich-preview-wrap--underline-hover a:hover,
 .rich-preview-link--underline-always,
@@ -566,7 +562,6 @@
   transition: text-decoration-color 120ms ease;
 }
 
-// Real injected inline glyph node used by JS for both auto links and wrapped links.
 .thc-inline-glyph {
   display: inline-flex;
   align-items: center;
@@ -588,7 +583,6 @@
   }
 }
 
-// Spacing for injected glyph nodes.
 .rich-preview-wrap--icon-after a > .thc-inline-glyph,
 .rich-preview-link--icon-after > .thc-inline-glyph {
   margin-inline-start: 0.22em;
@@ -599,55 +593,25 @@
   margin-inline-end: 0.22em;
 }
 
-// Optional wrapper fallback icon for manual [preview] links.
-// This ensures wrapped links still show an icon even if child-node injection fails.
-.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--icon-before a::before {
+// Optional generic fallback only if a wrapped link somehow has icon classes
+// but no injected glyph node. Keep it neutral and non-provider-specific.
+.rich-preview-wrap--icon-after a:not(:has(> .thc-inline-glyph))::after,
+.rich-preview-wrap--icon-before a:not(:has(> .thc-inline-glyph))::before {
+  content: "↗";
   display: inline-block;
   color: var(--rp-color, currentColor);
-  opacity: 0.78;
-  text-decoration: none;
+  opacity: 0.55;
   line-height: 1;
 }
 
-.rich-preview-wrap--icon-after a::after {
+.rich-preview-wrap--icon-after a:not(:has(> .thc-inline-glyph))::after {
   margin-inline-start: 0.22em;
 }
 
-.rich-preview-wrap--icon-before a::before {
+.rich-preview-wrap--icon-before a:not(:has(> .thc-inline-glyph))::before {
   margin-inline-end: 0.22em;
 }
 
-// Provider-specific wrapper fallback glyphs.
-// Keep these simple; the richer glyph system still comes from JS injection.
-.rich-preview-wrap--topic.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--topic.rich-preview-wrap--icon-before a::before {
-  content: "●";
-  font-size: 0.72em;
-  vertical-align: middle;
-}
-
-.rich-preview-wrap--remote_topic.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--remote_topic.rich-preview-wrap--icon-before a::before,
-.rich-preview-wrap--external.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--external.rich-preview-wrap--icon-before a::before {
-  content: "↗";
-  font-size: 0.9em;
-}
-
-.rich-preview-wrap--wikipedia.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--wikipedia.rich-preview-wrap--icon-before a::before {
-  content: "📖";
-  font-size: 0.9em;
-}
-
-// If a real injected glyph exists, suppress wrapper pseudo fallback to avoid duplicates.
-/*
-.rich-preview-wrap--icon-after a:has(> .thc-inline-glyph)::after,
-.rich-preview-wrap--icon-before a:has(> .thc-inline-glyph)::before {
-  content: none;
-}
-*/
 
 // ─── Mobile media query ───────────────────────────────────────────────────────
 
