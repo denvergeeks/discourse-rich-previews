@@ -11,29 +11,23 @@ import {
   providerSupportsComposer,
   previewTypeEnabled,
 } from "../lib/rich-preview-utils";
+import { buildPreviewWrappedMarkdown } from "../lib/preview-markup";
 
 function classifyUrl(url, config) {
   if (!url) return null;
+
   try {
     const tempLink = document.createElement("a");
     tempLink.href = url;
+
     if (isWikipediaArticleLink(tempLink)) return "wikipedia";
     if (parseTopicUrl(url)) return "topic";
     if (parseRemoteDiscourseTopicUrl(url, config)) return "remote_topic";
+
     return "external";
   } catch {
     return null;
   }
-}
-
-function buildBBCode(url, linkText, title, tagName) {
-  if (!url) return "";
-  const displayText = linkText?.trim() || url;
-  const tag = tagName || "preview";
-  const mdLink = title?.trim()
-    ? `[${displayText}](${url} "${title.trim()}")`
-    : `[${displayText}](${url})`;
-  return `[${tag}]${mdLink}[/${tag}]`;
 }
 
 const TYPE_LABELS = {
@@ -58,10 +52,6 @@ export default class RichPreviewLinkModal extends Component {
 
   get config() {
     return this.args.model?.config || {};
-  }
-
-  get tagName() {
-    return "preview";
   }
 
   get detectedType() {
@@ -135,6 +125,7 @@ export default class RichPreviewLinkModal extends Component {
       external: "↗",
       wikipedia: "📖",
     };
+
     return iconMap[this.detectedType] || "";
   }
 
@@ -163,7 +154,11 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get bbcodePreview() {
-    return buildBBCode(this.url.trim(), this.linkText, this.title, this.tagName);
+    return buildPreviewWrappedMarkdown(
+      this.url.trim(),
+      this.linkText,
+      this.title
+    );
   }
 
   get showPreview() {
@@ -198,11 +193,10 @@ export default class RichPreviewLinkModal extends Component {
       return;
     }
 
-    const bbcode = buildBBCode(
+    const bbcode = buildPreviewWrappedMarkdown(
       this.url.trim(),
       this.linkText,
-      this.title,
-      this.tagName
+      this.title
     );
 
     this.args.model?.onInsert?.(bbcode);
