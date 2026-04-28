@@ -9,6 +9,7 @@ import {
   TOOLTIP_SELECTOR,
   readConfig,
   logDebug,
+  providerTimeoutMs,
   sanitizeURL,
   createViewportState,
   getCachedValue,
@@ -829,7 +830,7 @@ export default apiInitializer((api) => {
           positionTooltipNextFrame(anchorRect);
           return;
         }
-console.debug("[discourse-rich-previews] preview object", preview);
+
         tooltip.innerHTML = getRenderedCard(
           preview,
           viewport.isMobileLayout()
@@ -1116,18 +1117,8 @@ console.debug("[discourse-rich-previews] preview object", preview);
           if (!target) continue;
 
           const controller = new AbortController();
-          const timeoutId = setTimeout(
-            () => controller.abort(),
-            config.proxyTimeoutMs ?? 10000
-          );
-
-          fetchPreview(target, controller.signal)
-            .catch(() => {
-              prefetched.delete(href);
-            })
-            .finally(() => {
-              clearTimeout(timeoutId);
-            });
+          const timeoutMs = providerTimeoutMs(target?.providerKey, config, 3000);
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
         }
       },
       {
