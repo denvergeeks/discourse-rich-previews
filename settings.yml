@@ -110,7 +110,7 @@ preview_providers:
 
       remote_hosts:
         type: list
-        default: ""
+        default: []
         description: "Allowed remote Discourse hostnames for this provider"
 
       require_https:
