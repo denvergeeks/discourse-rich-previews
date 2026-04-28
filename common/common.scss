@@ -642,10 +642,12 @@
 }
 
 // If a real injected glyph exists, suppress wrapper pseudo fallback to avoid duplicates.
+/*
 .rich-preview-wrap--icon-after a:has(> .thc-inline-glyph)::after,
 .rich-preview-wrap--icon-before a:has(> .thc-inline-glyph)::before {
   content: none;
 }
+*/
 
 // ─── Mobile media query ───────────────────────────────────────────────────────
 
