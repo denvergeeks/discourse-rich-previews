@@ -281,20 +281,15 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 }
 
 /**
- * Called from the api initializer to wire up preview-tag handling.
- * Accepts config so the tag name and visual indicators are driven
- * by the component settings.
+ * Called from the api initializer to decorate cook-time preview wrappers
+ * after cooked HTML is rendered into the DOM.
  */
 export function registerPreviewBBCode(api, config) {
-  const tagName = config?.previewsTagName || "preview";
-
-  // Fallback compatibility path:
-  // decorates already-cooked HTML (topic page, user profile, anywhere
-  // cooked content appears) so posts cooked before this component was
-  // installed still work, and so modifier classes are re-applied on render.
+  // The cook-time markdown extension standardizes on [preview]...[/preview].
+  // This decorator only applies wrapper classes and indicators after render.
   api.decorateCookedElement(
     (element) => {
-      applyPreviewWraps(element, tagName, config);
+      applyPreviewWraps(element, "preview", config);
     },
     {
       id: "rich-preview-bbcode-decorator",
