@@ -108,8 +108,9 @@ preview_providers:
         description: CSS color used for link indicators and provider-tinted UI for this provider.
 
       remote_hosts:
-        type: string
-        description: Pipe-separated allowed hostnames for this provider if applicable.
+        type: list
+        list_type: compact
+        description: Allowed hostnames for this provider if applicable.
 
       require_https:
         type: boolean
