@@ -84,7 +84,7 @@ function normalizePreviewProviders(rawProviders = []) {
     topic: {
       key: "topic",
       enabled: true,
-      label: "Local topic",
+      label: "Local Topic",
       glyph_mode: "icon",
       icon: "comment",
       emoji: "💬",
@@ -96,7 +96,7 @@ function normalizePreviewProviders(rawProviders = []) {
     remote_topic: {
       key: "remote_topic",
       enabled: true,
-      label: "Remote Discourse topic",
+      label: "Remote Discourse Topic",
       glyph_mode: "icon",
       icon: "up-right-from-square",
       emoji: "🌐",
@@ -108,7 +108,7 @@ function normalizePreviewProviders(rawProviders = []) {
     external: {
       key: "external",
       enabled: true,
-      label: "External link",
+      label: "External Link",
       glyph_mode: "icon",
       icon: "up-right-from-square",
       emoji: "🔗",
@@ -123,7 +123,7 @@ function normalizePreviewProviders(rawProviders = []) {
       enabled: true,
       label: "Wikipedia",
       glyph_mode: "icon",
-      icon: "wikipedia-w",
+      icon: "far-wikipedia-w",
       emoji: "📚",
       color: "#808080",
       remote_hosts: [],
