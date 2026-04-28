@@ -10,19 +10,31 @@ import {
   isWikipediaArticleLink,
   providerSupportsComposer,
   previewTypeEnabled,
+  providerColor,
+  renderProviderGlyph,
 } from "../lib/rich-preview-utils";
 import { buildPreviewWrappedMarkdown } from "../lib/preview-markup";
 
 function classifyUrl(url, config) {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
 
   try {
     const tempLink = document.createElement("a");
     tempLink.href = url;
 
-    if (isWikipediaArticleLink(tempLink)) return "wikipedia";
-    if (parseTopicUrl(url)) return "topic";
-    if (parseRemoteDiscourseTopicUrl(url, config)) return "remote_topic";
+    if (isWikipediaArticleLink(tempLink)) {
+      return "wikipedia";
+    }
+
+    if (parseTopicUrl(url)) {
+      return "topic";
+    }
+
+    if (parseRemoteDiscourseTopicUrl(url, config)) {
+      return "remote_topic";
+    }
 
     return "external";
   } catch {
@@ -35,13 +47,6 @@ const TYPE_LABELS = {
   remote_topic: "Remote Discourse topic",
   external: "External link",
   wikipedia: "Wikipedia",
-};
-
-const TYPE_DOTS = {
-  topic: "🟢",
-  remote_topic: "🔵",
-  external: "🟣",
-  wikipedia: "⚪",
 };
 
 export default class RichPreviewLinkModal extends Component {
@@ -105,28 +110,37 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get typeLabel() {
-    if (!this.isValidUrl) return "";
-    return TYPE_LABELS[this.detectedType] || "";
-  }
+    if (!this.isValidUrl) {
+      return "";
+    }
 
-  get typeDot() {
-    if (!this.isValidUrl) return "";
-    return TYPE_DOTS[this.detectedType] || "";
+    return TYPE_LABELS[this.detectedType] || "";
   }
 
   get typeBadgeClass() {
     return `rplm-type-badge rplm-type-badge--${this.detectedType || "unsupported"}`;
   }
 
-  get iconGlyph() {
-    const iconMap = {
+  get providerGlyphText() {
+    if (!this.detectedType || !this.isValidUrl) {
+      return "";
+    }
+
+    const provider =
+      this.config?.previewProviders?.[this.detectedType] || {};
+
+    if (provider.glyph_mode === "emoji" && provider.emoji) {
+      return provider.emoji;
+    }
+
+    const fallbackGlyphs = {
       topic: "🔗",
       remote_topic: "🌐",
       external: "↗",
       wikipedia: "📖",
     };
 
-    return iconMap[this.detectedType] || "";
+    return fallbackGlyphs[this.detectedType] || "";
   }
 
   get showIconAfter() {
@@ -167,6 +181,16 @@ export default class RichPreviewLinkModal extends Component {
 
   get insertLabel() {
     return "Insert link";
+  }
+
+  get modalProviderColorStyle() {
+    if (!this.detectedType || !this.isValidUrl) {
+      return "";
+    }
+
+    const color = providerColor(this.detectedType, this.config);
+
+    return color ? `--thc-provider-color: ${color};` : "";
   }
 
   @action
@@ -215,92 +239,94 @@ export default class RichPreviewLinkModal extends Component {
       class="rich-preview-link-modal"
     >
       <:body>
-        <div class="rplm-field">
-          <label class="rplm-label" for="rplm-url">URL</label>
-          <input
-            id="rplm-url"
-            type="url"
-            class="rplm-input"
-            placeholder="https://..."
-            value={{this.url}}
-            {{on "input" this.onUrlInput}}
-            autofocus
-          />
-          {{#if this.urlError}}
-            <p class="rplm-error">{{this.urlError}}</p>
-          {{/if}}
-          {{#if this.typeLabel}}
-            <div class={{this.typeBadgeClass}}>
-              {{this.typeDot}} {{this.typeLabel}}
-            </div>
-          {{/if}}
-          {{#if this.showUnsupportedWarning}}
-            <p class="rplm-warning">
-              This link type is currently unavailable for manual rich previews
-              based on your theme component settings.
-            </p>
-          {{/if}}
-        </div>
-
-        <div class="rplm-field">
-          <label class="rplm-label" for="rplm-linktext">
-            Link text
-          </label>
-          <p class="rplm-hint">Optional. Defaults to the URL if left blank.</p>
-          <input
-            id="rplm-linktext"
-            type="text"
-            class="rplm-input"
-            placeholder="Display text for the link"
-            value={{this.linkText}}
-            {{on "input" this.onLinkTextInput}}
-          />
-        </div>
-
-        <div class="rplm-field">
-          <label class="rplm-label" for="rplm-title">
-            Title attribute
-          </label>
-          <p class="rplm-hint">Optional. Shown on hover and helps SEO.</p>
-          <input
-            id="rplm-title"
-            type="text"
-            class="rplm-input"
-            placeholder="Brief description of the link destination"
-            value={{this.title}}
-            {{on "input" this.onTitleInput}}
-          />
-        </div>
-
-        {{#if this.showPreview}}
-          <div class="rplm-preview-section">
-            <p class="rplm-preview-label">Preview</p>
-            <div class="rplm-visual-preview">
-              {{#if this.showIconBefore}}
-                <span class="rplm-icon" aria-hidden="true">
-                  {{this.iconGlyph}}
-                </span>
-              {{/if}}
-              <a
-                href={{this.url}}
-                title={{this.title}}
-                class={{this.previewLinkClass}}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {{this.displayText}}
-              </a>
-              {{#if this.showIconAfter}}
-                <span class="rplm-icon" aria-hidden="true">
-                  {{this.iconGlyph}}
-                </span>
-              {{/if}}
-            </div>
-            <div class="rplm-bbcode-preview">
-              <pre class="rplm-bbcode-pre">{{this.bbcodePreview}}</pre>
-            </div>
+        <div style={{this.modalProviderColorStyle}}>
+          <div class="rplm-field">
+            <label class="rplm-label" for="rplm-url">URL</label>
+            <input
+              id="rplm-url"
+              type="url"
+              class="rplm-input"
+              placeholder="https://..."
+              value={{this.url}}
+              {{on "input" this.onUrlInput}}
+              autofocus
+            />
+            {{#if this.urlError}}
+              <p class="rplm-error">{{this.urlError}}</p>
+            {{/if}}
+            {{#if this.typeLabel}}
+              <div class={{this.typeBadgeClass}}>
+                {{this.typeLabel}}
+              </div>
+            {{/if}}
+            {{#if this.showUnsupportedWarning}}
+              <p class="rplm-warning">
+                This link type is currently unavailable for manual rich previews
+                based on your theme component settings.
+              </p>
+            {{/if}}
           </div>
-        {{/if}}
+
+          <div class="rplm-field">
+            <label class="rplm-label" for="rplm-linktext">
+              Link text
+            </label>
+            <p class="rplm-hint">Optional. Defaults to the URL if left blank.</p>
+            <input
+              id="rplm-linktext"
+              type="text"
+              class="rplm-input"
+              placeholder="Display text for the link"
+              value={{this.linkText}}
+              {{on "input" this.onLinkTextInput}}
+            />
+          </div>
+
+          <div class="rplm-field">
+            <label class="rplm-label" for="rplm-title">
+              Title attribute
+            </label>
+            <p class="rplm-hint">Optional. Shown on hover and helps SEO.</p>
+            <input
+              id="rplm-title"
+              type="text"
+              class="rplm-input"
+              placeholder="Brief description of the link destination"
+              value={{this.title}}
+              {{on "input" this.onTitleInput}}
+            />
+          </div>
+
+          {{#if this.showPreview}}
+            <div class="rplm-preview-section">
+              <p class="rplm-preview-label">Preview</p>
+              <div class="rplm-visual-preview">
+                {{#if this.showIconBefore}}
+                  <span class="rplm-icon" aria-hidden="true">
+                    {{this.providerGlyphText}}
+                  </span>
+                {{/if}}
+                <a
+                  href={{this.url}}
+                  title={{this.title}}
+                  class={{this.previewLinkClass}}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{this.displayText}}
+                </a>
+                {{#if this.showIconAfter}}
+                  <span class="rplm-icon" aria-hidden="true">
+                    {{this.providerGlyphText}}
+                  </span>
+                {{/if}}
+              </div>
+              <div class="rplm-bbcode-preview">
+                <pre class="rplm-bbcode-pre">{{this.bbcodePreview}}</pre>
+              </div>
+            </div>
+          {{/if}}
+        </div>
       </:body>
       <:footer>
         <DButton
