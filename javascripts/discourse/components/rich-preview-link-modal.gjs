@@ -85,7 +85,10 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get isValidUrl() {
-    if (!this.url.trim()) return false;
+    if (!this.url.trim()) {
+      return false;
+    }
+
     try {
       new URL(this.url.trim());
       return true;
@@ -98,12 +101,17 @@ export default class RichPreviewLinkModal extends Component {
     return (
       this.isValidUrl &&
       this.detectedType !== null &&
-      this.detectedType !== "unsupported"
+      this.providerEnabledForDetectedType &&
+      this.composerAllowedForDetectedType
     );
   }
 
   get cannotInsert() {
     return !this.isValidUrl || !this.isSupported;
+  }
+
+  get showUnsupportedWarning() {
+    return this.isValidUrl && !this.isSupported;
   }
 
   get typeLabel() {
@@ -185,7 +193,8 @@ export default class RichPreviewLinkModal extends Component {
   @action
   onInsert() {
     if (this.cannotInsert) {
-      this.urlError = "Please enter a supported URL before inserting.";
+      this.urlError =
+        "Please enter a URL that is enabled for manual rich previews.";
       return;
     }
 
@@ -230,6 +239,12 @@ export default class RichPreviewLinkModal extends Component {
             <div class={{this.typeBadgeClass}}>
               {{this.typeDot}} {{this.typeLabel}}
             </div>
+          {{/if}}
+          {{#if this.showUnsupportedWarning}}
+            <p class="rplm-warning">
+              This link type is currently unavailable for manual rich previews
+              based on your theme component settings.
+            </p>
           {{/if}}
         </div>
 
