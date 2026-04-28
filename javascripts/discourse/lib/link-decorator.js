@@ -73,6 +73,7 @@ function clearInlineProviderPresentation(link, wrapper = null) {
     link.style.removeProperty("--rp-color");
     removeInlineGlyphNode(link);
     clearLinkClasses(link);
+
     delete link.dataset.richPreviewType;
     delete link.dataset.richPreviewUnderline;
     delete link.dataset.richPreviewIcon;
