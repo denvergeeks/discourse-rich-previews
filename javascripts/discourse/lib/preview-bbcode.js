@@ -4,11 +4,7 @@
  * apply preview cards and visual indicators to wrapped links.
  */
 
-import {
-  classifyLink,
-  composerPreviewEnabled,
-  linkInSupportedArea,
-} from "./rich-preview-utils";
+import { classifyLink, linkInSupportedArea } from "./rich-preview-utils";
 
 /**
  * Builds a regex that matches [tagName]...[/tagName] case-insensitively.
@@ -25,7 +21,7 @@ function buildTagRegex(tagName) {
 /**
  * Builds the rendered HTML for a wrapped link.
  * The span gets data-rich-preview="true" so the theme component
- * can find it and apply hover cards regardless of page-level settings.
+ * can find it and apply preview cards regardless of page-level settings.
  */
 function buildPreviewWrapHTML(inner) {
   return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
@@ -63,9 +59,10 @@ function clearAutoLinkIndicators(root) {
  * - the type of link inside it (topic, external, wikipedia)
  * - the current config settings for icons and underlines
  *
- * Manual wraps should only be decorated if that link type is allowed for
- * composer/manual previews. This prevents disabled/manual-ineligible types
- * from still showing preview visual treatment.
+ * IMPORTANT:
+ * Manual [preview] wrappers should only be visually decorated when the link
+ * would actually be active for rich preview behavior in the current context.
+ * This keeps visual treatment aligned with hover/preview eligibility.
  */
 function stampModifierClasses(wrapEl, config) {
   if (!(wrapEl instanceof Element)) return;
@@ -73,9 +70,16 @@ function stampModifierClasses(wrapEl, config) {
   clearWrapModifierClasses(wrapEl);
 
   const link = wrapEl.querySelector("a[href]");
-  const type = link ? classifyLink(link, config) : null;
+  if (!(link instanceof HTMLAnchorElement)) {
+    return;
+  }
 
-  if (!type || !composerPreviewEnabled(type, config)) {
+  if (!linkInSupportedArea(link, config)) {
+    return;
+  }
+
+  const type = classifyLink(link, config);
+  if (!type) {
     return;
   }
 
