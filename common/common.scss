@@ -634,13 +634,13 @@ a[data-rich-preview-type] {
 
 // Wrapped links: after
 .rich-preview-wrap--topic.rich-preview-wrap--icon-after a::after { content: "🔗"; }
-.rich-preview-wrap--remote-topic.rich-preview-wrap--icon-after a::after { content: "🌐"; }
+.rich-preview-wrap--remote_topic.rich-preview-wrap--icon-after a::after { content: "🌐"; }
 .rich-preview-wrap--external.rich-preview-wrap--icon-after a::after { content: "🌐"; }
 .rich-preview-wrap--wikipedia.rich-preview-wrap--icon-after a::after { content: "📖"; }
 
 // Wrapped links: before
 .rich-preview-wrap--topic.rich-preview-wrap--icon-before a::before { content: "🔗"; }
-.rich-preview-wrap--remote-topic.rich-preview-wrap--icon-before a::before { content: "🌐"; }
+.rich-preview-wrap--remote_topic.rich-preview-wrap--icon-before a::before { content: "🌐"; }
 .rich-preview-wrap--external.rich-preview-wrap--icon-before a::before { content: "🌐"; }
 .rich-preview-wrap--wikipedia.rich-preview-wrap--icon-before a::before { content: "📖"; }
 
