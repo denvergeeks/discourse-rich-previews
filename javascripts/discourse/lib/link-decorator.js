@@ -274,7 +274,7 @@ function applyAutoLinkPresentation(link, providerKey, config) {
 
   removeInlineGlyphNode(link);
 
-  if (config?.previewsShowIcon === false) {
+  if (!iconMode) {
     return;
   }
 
@@ -317,7 +317,8 @@ function applyWrappedLinkPresentation(wrapper, link, providerKey, config) {
 
   removeWrapperGlyphNode(wrapper);
 
-  if (config?.previewsShowIcon === false) {
+  const iconMode = normalizeIconMode(config, providerKey);
+  if (!iconMode) {
     return;
   }
 
