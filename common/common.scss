@@ -547,40 +547,51 @@
   }
 }
 
+.rich-preview-link {
+  --rp-color: var(--tertiary);
+}
+
 .rich-preview-wrap--underline-always a,
-.rich-preview-wrap--underline-hover a:hover {
+.rich-preview-wrap--underline-hover a:hover,
+.rich-preview-link--underline-always,
+.rich-preview-link--underline-hover:hover {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
   text-decoration-color: var(--rp-color, var(--tertiary));
+  transition: text-decoration-color 120ms ease;
 }
 
-.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--icon-before a::before {
-  display: inline-block;
-  color: var(--rp-color, currentColor);
+.thc-inline-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: text-bottom;
+  line-height: 1;
   opacity: 0.78;
+  color: var(--rp-color, currentColor);
   text-decoration: none;
+  pointer-events: none;
+
+  .d-icon,
+  svg {
+    width: 0.9em;
+    height: 0.9em;
+    color: currentColor;
+    fill: currentColor;
+    flex: 0 0 auto;
+  }
 }
 
-.rich-preview-wrap--icon-after a::after {
-  content: "↗";
+.rich-preview-wrap--icon-after a > .thc-inline-glyph,
+.rich-preview-link--icon-after > .thc-inline-glyph {
   margin-inline-start: 0.22em;
 }
 
-.rich-preview-wrap--icon-before a::before {
-  content: "↗";
+.rich-preview-wrap--icon-before a > .thc-inline-glyph,
+.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
-}
-
-.rich-preview-wrap--topic.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--topic.rich-preview-wrap--icon-before a::before {
-  content: "●";
-  font-size: 0.72em;
-  vertical-align: middle;
-}
-
-.rich-preview-wrap--wikipedia.rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--wikipedia.rich-preview-wrap--icon-before a::before {
-  content: "📖";
-  font-size: 0.9em;
 }
 
 // ─── Auto-detected link visual indicators ────────────────────────────────────
