@@ -32,6 +32,7 @@ import {
   buildPreviewHTML,
   buildLoadingPreviewHTML,
   buildErrorPreviewHTML,
+  buildRootAttrsForTarget,
 } from "../lib/preview-renderer";
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
@@ -808,8 +809,12 @@ export default apiInitializer((api) => {
     abortCurrentRequest();
     currentAbortController = new AbortController();
     currentPreviewKey = target.key;
-
-    tooltip.innerHTML = buildLoadingPreviewHTML();
+    const loadingAttrs = buildRootAttrsForTarget(
+      target,
+      config,
+      target?.type || "topic"
+    );
+    tooltip.innerHTML = buildLoadingPreviewHTML(loadingAttrs);
     tooltip.classList.add("is-visible");
     positionTooltipNextFrame(anchorRect);
 
@@ -826,7 +831,15 @@ export default apiInitializer((api) => {
         }
 
         if (!preview) {
-          tooltip.innerHTML = buildErrorPreviewHTML("No preview available.");
+          const errorAttrs = buildRootAttrsForTarget(
+            target,
+            config,
+            target?.type || "topic"
+          );
+          tooltip.innerHTML = buildErrorPreviewHTML(
+            "No preview available.",
+            errorAttrs
+          );
           positionTooltipNextFrame(anchorRect);
           return;
         }
@@ -847,8 +860,15 @@ export default apiInitializer((api) => {
         logDebug(config, "Could not load preview", { target, error });
 
         if (!tooltip || currentPreviewKey !== target.key) return;
-
-        tooltip.innerHTML = buildErrorPreviewHTML("Could not load preview.");
+        const errorAttrs = buildRootAttrsForTarget(
+          target,
+          config,
+          target?.type || "topic"
+        );
+        tooltip.innerHTML = buildErrorPreviewHTML(
+          "Could not load preview.",
+          errorAttrs
+        );
         positionTooltipNextFrame(anchorRect);
       });
   }
