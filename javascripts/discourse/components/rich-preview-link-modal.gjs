@@ -61,7 +61,7 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get tagName() {
-    return this.config?.previewsTagName || "preview";
+    return "preview";
   }
 
   get detectedType() {
