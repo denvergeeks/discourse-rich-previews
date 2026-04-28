@@ -198,7 +198,6 @@ export function readConfig(settings) {
       "auto_only"
     ),
 
-    previewsTagName: stringSetting(settings.previews_tag_name, "preview"),
     composerButtonGroup: stringSetting(
       settings.composer_button_group,
       "insertions"
