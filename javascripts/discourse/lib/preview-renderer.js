@@ -2,6 +2,7 @@ import {
   escapeHTML,
   formatNumber,
   getPreviewProvider,
+  providerColor,
   providerKeyForTarget,
   safeAvatarURL,
   sanitizeExcerpt,
@@ -63,6 +64,36 @@ function resolveProviderKey(preview) {
         ? "external"
         : "topic")
   );
+}
+
+
+function resolveProviderKeyAndColor(preview, config) {
+  const providerKey = resolveProviderKey(preview);
+  const color = providerColor(providerKey, config, "var(--tertiary)");
+
+  return {
+    providerKey,
+    providerColor: color || "var(--tertiary)",
+  };
+}
+
+function buildProviderRootAttrs(preview, config, fallbackType = "topic") {
+  const { providerKey, providerColor } = resolveProviderKeyAndColor(
+    preview,
+    config
+  );
+
+  const finalProviderKey = providerKey || fallbackType;
+
+  return {
+    providerKey: finalProviderKey,
+    providerColor,
+    rootAttrs: `data-preview-type="${escapeHTML(
+      preview?.type || fallbackType
+    )}" data-provider-key="${escapeHTML(
+      finalProviderKey
+    )}" style="--thc-provider-color:${escapeHTML(providerColor)};"`
+  };
 }
 
 function densityFor(provider, config, isMobile, previewType) {
@@ -343,6 +374,7 @@ function buildTitleHTML(preview, config, isMobile) {
 }
 
 function buildTopicPreviewHTML(preview, _provider, categories, config, isMobile) {
+  const { rootAttrs } = buildProviderRootAttrs(preview, config, "topic");
   const title = preview?.title || "";
   const imageUrl = preview?.imageUrl || preview?.thumbnail || preview?.image || "";
   const category = preview?.category || preview?.raw?.category || null;
@@ -416,9 +448,7 @@ function buildTopicPreviewHTML(preview, _provider, categories, config, isMobile)
       preview,
       config,
       isMobile
-    )}" data-preview-type="topic" data-provider-key="${escapeHTML(
-      preview?.providerKey || "topic"
-    )}">
+    )}" ${rootAttrs}>
       ${thumbHtml}
       <div class="topic-hover-card__body">
         ${metaTop}
@@ -433,6 +463,7 @@ function buildTopicPreviewHTML(preview, _provider, categories, config, isMobile)
 }
 
 function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
+  const { rootAttrs } = buildProviderRootAttrs(preview, config, "wikipedia");
   const title = preview?.title || preview?.pageKey || "Wikipedia";
   const imageUrl =
     preview?.imageUrl ||
@@ -452,7 +483,7 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
       preview,
       config,
       isMobile
-    )}" data-preview-type="wikipedia" data-provider-key="wikipedia">
+    )}" ${rootAttrs}>
       ${thumbHtml}
       <div class="topic-hover-card__body">
         ${metaHtml}
@@ -464,6 +495,7 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
 }
 
 function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
+  const { rootAttrs } = buildProviderRootAttrs(preview, config, "external");
   const title = preview?.title || preview?.hostname || preview?.url || "External link";
   const imageUrl = preview?.imageUrl || preview?.thumbnail || preview?.image || "";
   const description =
@@ -489,7 +521,7 @@ function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
       preview,
       config,
       isMobile
-    )}" data-preview-type="external" data-provider-key="external">
+    )}" ${rootAttrs}>
       ${thumbHtml}
       <div class="topic-hover-card__body">
         ${metaHtml}
