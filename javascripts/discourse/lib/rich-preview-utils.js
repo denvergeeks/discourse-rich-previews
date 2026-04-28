@@ -1093,7 +1093,12 @@ export function linkInSupportedArea(link, config) {
     return true;
   }
 
-  if (config.enableOnOther && link.closest(".cooked") && !inTopicContext) {
+  if (
+    config.enableOnOther &&
+    link.closest(".cooked") &&
+    !inTopicContext &&
+    !inComposerPreview
+  ) {
     return true;
   }
 
