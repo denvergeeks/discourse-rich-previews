@@ -559,20 +559,15 @@
 
 // ─── Manual [preview] wrap indicators ───────────────────────────────────────
 
-// Base wrap container — inline so it does not break text flow
+// Base wrap container — inline so it does not break text flow.
+// Do NOT apply decoration here; modifier classes control decoration.
 .rich-preview-wrap {
   display: inline;
 
-  // All links inside a wrap get the indicator treatment
   a {
     --rp-color: var(--tertiary);
-
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 0.18em;
-    text-decoration-color: transparent;
-    transition: text-decoration-color 120ms ease;
+    /* No text-decoration here; decoration is driven by
+       .rich-preview-wrap--underline-* classes below */
   }
 }
 
