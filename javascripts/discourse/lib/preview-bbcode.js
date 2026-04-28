@@ -5,6 +5,7 @@
  */
 
 import { classifyLink, linkInSupportedArea } from "./rich-preview-utils";
+import { matchPreviewTarget } from "./preview-router";
 
 /**
  * Builds a regex that matches [tagName]...[/tagName] case-insensitively.
@@ -50,6 +51,8 @@ function clearAutoLinkIndicators(root) {
 
   root.querySelectorAll("a[data-rich-preview-type]").forEach((link) => {
     link.removeAttribute("data-rich-preview-type");
+    link.removeAttribute("data-rich-preview-underline");
+    link.removeAttribute("data-rich-preview-icon");
     link.style.removeProperty("--rp-color");
   });
 }
@@ -134,10 +137,32 @@ function stampAutoLinkIndicators(root, config) {
       return;
     }
 
-    const type = classifyLink(link, config);
-    if (!type || type === "unsupported") return;
+    const target = matchPreviewTarget(link, config);
+    const type = target?.providerKey;
+
+    if (!type || type === "unsupported") {
+      return;
+    }
 
     link.setAttribute("data-rich-preview-type", type);
+
+    if (config.previewsShowUnderline) {
+      link.setAttribute(
+        "data-rich-preview-underline",
+        config.previewsUnderlineAlways ? "always" : "hover"
+      );
+    } else {
+      link.removeAttribute("data-rich-preview-underline");
+    }
+
+    if (config.previewsShowIcon) {
+      link.setAttribute(
+        "data-rich-preview-icon",
+        config.previewsIconPosition === "before" ? "before" : "after"
+      );
+    } else {
+      link.removeAttribute("data-rich-preview-icon");
+    }
 
     const colorMap = {
       topic: config.previewsColorTopic,
