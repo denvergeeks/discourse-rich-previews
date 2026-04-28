@@ -44,8 +44,9 @@ module("Rich previews | utils", function () {
     assert.true(previewTypeEnabled("external", localConfig));
   });
 
-  test("providerSupportsComposer returns true for enabled composer-capable provider", function (assert) {
+  test("providerSupportsComposer returns true for enabled provider", function (assert) {
     assert.true(providerSupportsComposer("topic", config));
+    assert.true(providerSupportsComposer("remote_topic", config));
     assert.true(providerSupportsComposer("external", config));
   });
 
