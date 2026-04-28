@@ -12,7 +12,7 @@ RSpec.describe "Rich preview BBCode", type: :system do
     sign_in(user)
   end
 
-  it "renders preview-wrapped links without raw preview tags" do
+  it "renders preview-wrapped links without showing raw preview tags" do
     create_post(
       topic: topic,
       raw: "[preview][linked topic](#{linked_topic.url})[/preview]"
