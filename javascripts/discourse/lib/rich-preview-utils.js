@@ -1034,10 +1034,11 @@ export function linkInSupportedArea(link, config) {
     }
   }
 
-  if (
-    config.enableOnTopicPage &&
-    link.closest(".topic-post, .topic-body, .suggested-topics")
-  ) {
+  const inTopicContext = !!link.closest(
+    ".topic-post, .topic-body, .cooked, .suggested-topics"
+  );
+
+  if (config.enableOnTopicPage && inTopicContext) {
     return true;
   }
 
@@ -1077,11 +1078,14 @@ export function linkInSupportedArea(link, config) {
     return true;
   }
 
-  if (config.enableOnTags && link.closest(".tag-topic-list, .tags-page, .discourse-tag")) {
+  if (
+    config.enableOnTags &&
+    link.closest(".tag-topic-list, .tags-page, .discourse-tag")
+  ) {
     return true;
   }
 
-  if (config.enableOnOther && link.closest(".cooked")) {
+  if (config.enableOnOther && link.closest(".cooked") && !inTopicContext) {
     return true;
   }
 
