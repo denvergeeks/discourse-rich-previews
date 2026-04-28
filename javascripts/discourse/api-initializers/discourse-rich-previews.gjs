@@ -1183,24 +1183,33 @@ export default apiInitializer((api) => {
     setupPrefetch();
   }
 
-  function applyBodyClasses() {
-    const body = document.body;
+function applyBodyClasses() {
+  const body = document.body;
+  if (!body) return;
 
-    if (config.previewsShowUnderline) {
-      if (config.previewsUnderlineAlways) {
-        body.classList.add("previews-underline-always");
-      } else {
-        body.classList.add("previews-underline-hover");
-      }
-    }
+  body.classList.remove(
+    "previews-underline-always",
+    "previews-underline-hover",
+    "previews-icon-before",
+    "previews-icon-after"
+  );
 
-    if (config.previewsShowIcon) {
-      const pos = config.previewsIconPosition === "before"
-        ? "before"
-        : "after";
-      body.classList.add(`previews-icon-${pos}`);
-    }
+  if (config.previewsShowUnderline) {
+    body.classList.add(
+      config.previewsUnderlineAlways
+        ? "previews-underline-always"
+        : "previews-underline-hover"
+    );
   }
+
+  if (config.previewsShowIcon) {
+    body.classList.add(
+      config.previewsIconPosition === "before"
+        ? "previews-icon-before"
+        : "previews-icon-after"
+    );
+  }
+}
 
   (async () => {
     const disabledForUser = await hoverCardsDisabledForUser();
