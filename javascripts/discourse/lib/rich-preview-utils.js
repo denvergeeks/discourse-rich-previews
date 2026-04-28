@@ -548,6 +548,13 @@ export function providerKeyForTarget(target, preview = null) {
   return null;
 }
 
+const FALLBACK_GLYPHS = {
+  topic: "🔗",
+  remote_topic: "🌐",
+  external: "🌐",
+  wikipedia: "📖",
+};
+
 export function renderProviderGlyph(providerKey, config) {
   const provider = getPreviewProvider(config, providerKey);
 
@@ -555,17 +562,15 @@ export function renderProviderGlyph(providerKey, config) {
     return "";
   }
 
-  if (provider.glyph_mode === "none") {
+  const mode = String(provider.glyph_mode || "emoji").trim().toLowerCase();
+
+  if (mode === "none") {
     return "";
   }
 
-  if (provider.glyph_mode === "emoji") {
-    const emoji = String(provider.emoji || "").trim();
-    if (!emoji) {
-      return "";
-    }
-
-    return `${escapeHTML(emoji)}`;
+  if (mode === "emoji") {
+    const emoji = String(provider.emoji || FALLBACK_GLYPHS[providerKey] || "").trim();
+    return emoji ? escapeHTML(emoji) : "";
   }
 
   const iconName = String(provider.icon || "").trim();
