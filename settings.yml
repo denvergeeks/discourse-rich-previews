@@ -110,6 +110,7 @@ preview_providers:
       remote_hosts:
         type: list
         list_type: compact
+        default: ""
         description: Allowed hostnames for this provider if applicable.
 
       require_https:
