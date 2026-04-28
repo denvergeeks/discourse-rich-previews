@@ -20,7 +20,7 @@ composer_button_group:
 svg_icons:
   type: list
   list_type: compact
-  default: "comment|up-right-from-square|wikipedia-w"
+  default: "comment|far-discourse|far-wikipedia-w"
   description: Additional SVG icons used by configured preview providers.
 
 preview_providers:
@@ -28,7 +28,7 @@ preview_providers:
   default:
     - key: topic
       enabled: true
-      label: Local topic
+      label: Local Topic
       glyph_mode: icon
       icon: comment
       emoji: "💬"
@@ -37,9 +37,9 @@ preview_providers:
       timeout_ms: 3000
     - key: remote_topic
       enabled: true
-      label: Remote Discourse topic
+      label: Remote Discourse Topic
       glyph_mode: icon
-      icon: up-right-from-square
+      icon: far-discourse
       emoji: "🌐"
       color: "var(--success)"
       remote_hosts: "meta.discourse.org"
@@ -47,7 +47,7 @@ preview_providers:
       timeout_ms: 3000
     - key: external
       enabled: true
-      label: External link
+      label: External Link
       glyph_mode: icon
       icon: up-right-from-square
       emoji: "🔗"
@@ -58,7 +58,7 @@ preview_providers:
       enabled: true
       label: Wikipedia
       glyph_mode: icon
-      icon: wikipedia-w
+      icon: far-wikipedia-w
       emoji: "📚"
       color: "#808080"
       require_https: true
