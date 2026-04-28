@@ -1,8 +1,7 @@
 /**
- * Registers the [preview]...[/preview] BBCode tag (or whatever tag name
- * is configured via previews_tag_name) with Discourse's markdown-it
+ * Registers the [preview]...[/preview] BBCode tag with Discourse's markdown-it
  * pipeline and decorates cooked elements so the theme component can
- * apply hover cards and visual indicators to wrapped links.
+ * apply preview cards and visual indicators to wrapped links.
  */
 
 import {
