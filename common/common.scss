@@ -622,21 +622,25 @@ a[data-rich-preview-type] {
 
 // Plain auto-detected links: after
 .previews-icon-after a[data-rich-preview-type="topic"]::after { content: "🔗"; }
+.previews-icon-after a[data-rich-preview-type="remote_topic"]::after { content: "🌐"; }
 .previews-icon-after a[data-rich-preview-type="external"]::after { content: "🌐"; }
 .previews-icon-after a[data-rich-preview-type="wikipedia"]::after { content: "📖"; }
 
 // Plain auto-detected links: before
 .previews-icon-before a[data-rich-preview-type="topic"]::before { content: "🔗"; }
+.previews-icon-before a[data-rich-preview-type="remote_topic"]::before { content: "🌐"; }
 .previews-icon-before a[data-rich-preview-type="external"]::before { content: "🌐"; }
 .previews-icon-before a[data-rich-preview-type="wikipedia"]::before { content: "📖"; }
 
 // Wrapped links: after
 .rich-preview-wrap--topic.rich-preview-wrap--icon-after a::after { content: "🔗"; }
+.rich-preview-wrap--remote-topic.rich-preview-wrap--icon-after a::after { content: "🌐"; }
 .rich-preview-wrap--external.rich-preview-wrap--icon-after a::after { content: "🌐"; }
 .rich-preview-wrap--wikipedia.rich-preview-wrap--icon-after a::after { content: "📖"; }
 
 // Wrapped links: before
 .rich-preview-wrap--topic.rich-preview-wrap--icon-before a::before { content: "🔗"; }
+.rich-preview-wrap--remote-topic.rich-preview-wrap--icon-before a::before { content: "🌐"; }
 .rich-preview-wrap--external.rich-preview-wrap--icon-before a::before { content: "🌐"; }
 .rich-preview-wrap--wikipedia.rich-preview-wrap--icon-before a::before { content: "📖"; }
 
