@@ -127,7 +127,7 @@ previews_topic_mode:
   description: >
     Controls how hover card previews work for internal topic links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [tag].
+    composer_only: cards only appear on links wrapped with [preview]...[/preview].
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no local topic previews at all.
 
@@ -143,7 +143,7 @@ previews_remote_topic_mode:
   description: >
     Controls how hover card previews work for remote Discourse topic links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [tag].
+    composer_only: cards only appear on links wrapped with [preview]...[/preview].
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no remote Discourse topic previews at all.
 
@@ -159,7 +159,7 @@ previews_external_mode:
   description: >
     Controls how hover card previews work for generic external links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [tag].
+    composer_only: cards only appear on links wrapped with [preview]...[/preview].
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no generic external previews at all.
 
@@ -175,7 +175,7 @@ previews_wikipedia_mode:
   description: >
     Controls how hover card previews work for Wikipedia links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [tag].
+    composer_only: cards only appear on links wrapped with [preview]...[/preview].
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no Wikipedia previews at all.
 
