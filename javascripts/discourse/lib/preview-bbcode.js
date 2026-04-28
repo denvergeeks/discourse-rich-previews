@@ -12,8 +12,12 @@ import {
   clearDecoratedLink,
 } from "./link-decorator";
 
+const WRAP_SELECTOR = ".rich-preview-wrap[data-rich-preview='true']";
+
 function clearWrapModifierClasses(wrapEl) {
-  if (!(wrapEl instanceof Element)) return;
+  if (!(wrapEl instanceof Element)) {
+    return;
+  }
 
   [
     "rich-preview-wrap--topic",
@@ -27,24 +31,41 @@ function clearWrapModifierClasses(wrapEl) {
   ].forEach((klass) => wrapEl.classList.remove(klass));
 
   wrapEl.style.removeProperty("--rp-color");
+  delete wrapEl.dataset.providerKey;
 }
 
 function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   root.querySelectorAll("a[data-rich-preview-type]").forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement)) return;
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+
     clearDecoratedLink(link);
   });
 }
 
+function getWrappedAnchor(wrapEl) {
+  if (!(wrapEl instanceof Element)) {
+    return null;
+  }
+
+  const link = wrapEl.querySelector(":scope > a[href]");
+  return link instanceof HTMLAnchorElement ? link : null;
+}
+
 function stampModifierClasses(wrapEl, config) {
-  if (!(wrapEl instanceof Element)) return;
+  if (!(wrapEl instanceof Element)) {
+    return;
+  }
 
   clearWrapModifierClasses(wrapEl);
 
-  const link = wrapEl.querySelector("a[href]");
-  if (!(link instanceof HTMLAnchorElement)) {
+  const link = getWrappedAnchor(wrapEl);
+  if (!link) {
     return;
   }
 
@@ -60,16 +81,27 @@ function stampModifierClasses(wrapEl, config) {
   }
 
   decorateWrappedPreviewLink(wrapEl, link, target, config);
+
+  if (link.dataset.richPreviewType) {
+    wrapEl.dataset.providerKey = link.dataset.richPreviewType;
+  }
 }
 
 function stampAutoLinkIndicators(root, config) {
-  if (!(root instanceof Element) || !config) return;
+  if (!(root instanceof Element) || !config) {
+    return;
+  }
 
   clearAutoLinkIndicators(root);
 
   root.querySelectorAll("a[href]").forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement)) return;
-    if (link.closest(".rich-preview-wrap")) return;
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    if (link.closest(WRAP_SELECTOR)) {
+      return;
+    }
 
     if (!linkInSupportedArea(link, config)) {
       clearDecoratedLink(link);
@@ -87,16 +119,22 @@ function stampAutoLinkIndicators(root, config) {
 }
 
 function wrapLiteralPreviewTags(root, tagName = "preview") {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   const openTag = `[${tagName}]`;
   const closeTag = `[/${tagName}]`;
 
   root.querySelectorAll("p, li, td, div, blockquote").forEach((container) => {
-    if (!(container instanceof Element)) return;
+    if (!(container instanceof Element)) {
+      return;
+    }
 
     const html = container.innerHTML;
-    if (!html || !html.includes(openTag) || !html.includes(closeTag)) return;
+    if (!html || !html.includes(openTag) || !html.includes(closeTag)) {
+      return;
+    }
 
     container.innerHTML = html.replaceAll(
       new RegExp(
@@ -109,7 +147,9 @@ function wrapLiteralPreviewTags(root, tagName = "preview") {
 }
 
 export function applyPreviewWraps(root, tagName = "preview", config = null) {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   wrapLiteralPreviewTags(root, tagName);
 
@@ -117,9 +157,9 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
     return;
   }
 
-  root
-    .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
-    .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
+  root.querySelectorAll(WRAP_SELECTOR).forEach((wrapEl) => {
+    stampModifierClasses(wrapEl, config);
+  });
 
   stampAutoLinkIndicators(root, config);
 }

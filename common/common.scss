@@ -540,10 +540,47 @@
 // Base wrap container — inline so it does not break text flow.
 .rich-preview-wrap {
   display: inline;
+  --rp-color: var(--tertiary);
 
   a {
-    --rp-color: var(--tertiary);
+    --rp-color: inherit;
   }
+}
+
+.rich-preview-wrap--underline-always a,
+.rich-preview-wrap--underline-hover a:hover {
+  text-decoration-color: var(--rp-color, var(--tertiary));
+}
+
+.rich-preview-wrap--icon-after a::after,
+.rich-preview-wrap--icon-before a::before {
+  display: inline-block;
+  color: var(--rp-color, currentColor);
+  opacity: 0.78;
+  text-decoration: none;
+}
+
+.rich-preview-wrap--icon-after a::after {
+  content: "↗";
+  margin-inline-start: 0.22em;
+}
+
+.rich-preview-wrap--icon-before a::before {
+  content: "↗";
+  margin-inline-end: 0.22em;
+}
+
+.rich-preview-wrap--topic.rich-preview-wrap--icon-after a::after,
+.rich-preview-wrap--topic.rich-preview-wrap--icon-before a::before {
+  content: "●";
+  font-size: 0.72em;
+  vertical-align: middle;
+}
+
+.rich-preview-wrap--wikipedia.rich-preview-wrap--icon-after a::after,
+.rich-preview-wrap--wikipedia.rich-preview-wrap--icon-before a::before {
+  content: "📖";
+  font-size: 0.9em;
 }
 
 // ─── Auto-detected link visual indicators ────────────────────────────────────
