@@ -286,7 +286,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
  */
 export function registerPreviewBBCode(api, config) {
   // The cook-time markdown extension standardizes on [preview]...[/preview].
-  // This decorator only applies wrapper classes and indicators after render.
+  // This decorator applies wrapper classes and indicators after render.
   api.decorateCookedElement(
     (element) => {
       applyPreviewWraps(element, "preview", config);
