@@ -1020,6 +1020,14 @@ export function linkInSupportedArea(link, config) {
     return true;
   }
 
+  const inComposerPreview = !!link.closest(
+    ".d-editor-preview, .composer-preview, .preview, .composer .cooked"
+  );
+
+  if (inComposerPreview) {
+    return true;
+  }
+
   if (config.enableOnKanbanBoards) {
     const isBoardUrl =
       window.location.pathname === "/latest" &&
