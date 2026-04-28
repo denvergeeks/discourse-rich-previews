@@ -35,17 +35,16 @@ function clearWrapModifierClasses(wrapEl) {
 }
 
 function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) {
-    return;
-  }
+  if (!(root instanceof Element)) return;
 
-  root.querySelectorAll("a[data-rich-preview-type]").forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-
-    clearDecoratedLink(link);
-  });
+  root
+    .querySelectorAll(
+      "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
+    )
+    .forEach((link) => {
+      if (!(link instanceof HTMLAnchorElement)) return;
+      clearDecoratedLink(link);
+    });
 }
 
 function getWrappedAnchor(wrapEl) {
