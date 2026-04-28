@@ -112,7 +112,8 @@ function normalizePreviewProviders(rawProviders = []) {
       glyph_mode: "icon",
       icon: "up-right-from-square",
       emoji: "🔗",
-      color: "var(--primary)",
+      // Match legacy previews_color_remote behavior (remote/external)
+      color: "var(--success)",
       remote_hosts: [],
       require_https: true,
       timeout_ms: 3000,
@@ -208,18 +209,6 @@ export function readConfig(settings) {
 
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
-    previewsColorTopic: stringSetting(
-      settings.previews_color_topic,
-      "var(--tertiary)"
-    ),
-    previewsColorRemote: stringSetting(
-      settings.previews_color_remote,
-      "var(--success)"
-    ),
-    previewsColorWikipedia: stringSetting(
-      settings.previews_color_wikipedia,
-      "#808080"
-    ),
 
     previewProviders: normalizePreviewProviders(settings.preview_providers),
 
@@ -234,7 +223,7 @@ export function readConfig(settings) {
     mobileEnabled: settings.mobile_enabled !== false,
 
     densityDesktop: stringSetting(settings.density, "default"),
-    densityMobile: stringSetting(settings.density_mobile, "cozy"),
+    densityMobile: stringSetting(settings.density_mobile, "default"),
 
     wikipediaDensityDesktop: stringSetting(
       settings.wikipedia_density,
@@ -470,6 +459,12 @@ export function getPreviewProvider(config, key) {
   return config?.previewProviders?.[key] || null;
 }
 
+export function providerColor(providerKey, config, fallback = "") {
+  return String(
+    getPreviewProvider(config, providerKey)?.color || fallback || ""
+  ).trim();
+}
+
 export function providerEnabled(config, key) {
   return getPreviewProvider(config, key)?.enabled !== false;
 }
@@ -582,6 +577,16 @@ export function renderProviderGlyph(providerKey, config) {
     class: "thc-link-glyph thc-link-glyph--icon",
     "aria-hidden": true,
   });
+}
+
+export function renderInlineProviderGlyph(providerKey, config) {
+  const glyphHTML = renderProviderGlyph(providerKey, config);
+
+  if (!glyphHTML) {
+    return "";
+  }
+
+  return `<span class="thc-inline-glyph" aria-hidden="true">${glyphHTML}</span>`;
 }
 
 export function isAllowedRemoteDiscourseHost(hostname, config) {
