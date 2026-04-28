@@ -560,14 +560,12 @@
 // ─── Manual [preview] wrap indicators ───────────────────────────────────────
 
 // Base wrap container — inline so it does not break text flow.
-// Do NOT apply decoration here; modifier classes control decoration.
+// Do not decorate here; decoration is controlled only by explicit modifier classes.
 .rich-preview-wrap {
   display: inline;
 
   a {
     --rp-color: var(--tertiary);
-    /* No text-decoration here; decoration is driven by
-       .rich-preview-wrap--underline-* classes below */
   }
 }
 
@@ -577,17 +575,10 @@ a[data-rich-preview-type] {
   --rp-color: var(--tertiary);
 }
 
-// Always-visible underline
-a[data-rich-preview-type][data-rich-preview-underline="always"] {
-  text-decoration-line: underline;
-  text-decoration-style: dotted;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 0.18em;
-  text-decoration-color: var(--rp-color, var(--tertiary));
-  transition: text-decoration-color 120ms ease;
-}
-
-// Hover-only underline
+// Shared underline styling for any decorated link
+.rich-preview-wrap--underline-always a,
+.rich-preview-wrap--underline-hover a:hover,
+a[data-rich-preview-type][data-rich-preview-underline="always"],
 a[data-rich-preview-type][data-rich-preview-underline="hover"]:hover {
   text-decoration-line: underline;
   text-decoration-style: dotted;
@@ -598,10 +589,10 @@ a[data-rich-preview-type][data-rich-preview-underline="hover"]:hover {
 }
 
 // Shared icon styling
-a[data-rich-preview-type][data-rich-preview-icon="after"]::after,
-a[data-rich-preview-type][data-rich-preview-icon="before"]::before,
 .rich-preview-wrap--icon-after a::after,
-.rich-preview-wrap--icon-before a::before {
+.rich-preview-wrap--icon-before a::before,
+a[data-rich-preview-type][data-rich-preview-icon="after"]::after,
+a[data-rich-preview-type][data-rich-preview-icon="before"]::before {
   display: inline-block;
   font-size: 0.72em;
   line-height: 1;
@@ -610,27 +601,15 @@ a[data-rich-preview-type][data-rich-preview-icon="before"]::before,
 }
 
 // Spacing
-a[data-rich-preview-type][data-rich-preview-icon="after"]::after,
-.rich-preview-wrap--icon-after a::after {
+.rich-preview-wrap--icon-after a::after,
+a[data-rich-preview-type][data-rich-preview-icon="after"]::after {
   margin-inline-start: 0.22em;
 }
 
-a[data-rich-preview-type][data-rich-preview-icon="before"]::before,
-.rich-preview-wrap--icon-before a::before {
+.rich-preview-wrap--icon-before a::before,
+a[data-rich-preview-type][data-rich-preview-icon="before"]::before {
   margin-inline-end: 0.22em;
 }
-
-// Plain auto-detected links: after
-a[data-rich-preview-type="topic"][data-rich-preview-icon="after"]::after { content: "🔗"; }
-a[data-rich-preview-type="remote_topic"][data-rich-preview-icon="after"]::after { content: "🌐"; }
-a[data-rich-preview-type="external"][data-rich-preview-icon="after"]::after { content: "🌐"; }
-a[data-rich-preview-type="wikipedia"][data-rich-preview-icon="after"]::after { content: "📖"; }
-
-// Plain auto-detected links: before
-a[data-rich-preview-type="topic"][data-rich-preview-icon="before"]::before { content: "🔗"; }
-a[data-rich-preview-type="remote_topic"][data-rich-preview-icon="before"]::before { content: "🌐"; }
-a[data-rich-preview-type="external"][data-rich-preview-icon="before"]::before { content: "🌐"; }
-a[data-rich-preview-type="wikipedia"][data-rich-preview-icon="before"]::before { content: "📖"; }
 
 // Wrapped links: after
 .rich-preview-wrap--topic.rich-preview-wrap--icon-after a::after { content: "🔗"; }
@@ -644,25 +623,43 @@ a[data-rich-preview-type="wikipedia"][data-rich-preview-icon="before"]::before {
 .rich-preview-wrap--external.rich-preview-wrap--icon-before a::before { content: "🌐"; }
 .rich-preview-wrap--wikipedia.rich-preview-wrap--icon-before a::before { content: "📖"; }
 
-// Underline variants for wrapped links
-.rich-preview-wrap--underline-always a {
-  text-decoration-color: var(--rp-color);
-}
+// Auto links: after
+a[data-rich-preview-type="topic"][data-rich-preview-icon="after"]::after { content: "🔗"; }
+a[data-rich-preview-type="remote_topic"][data-rich-preview-icon="after"]::after { content: "🌐"; }
+a[data-rich-preview-type="external"][data-rich-preview-icon="after"]::after { content: "🌐"; }
+a[data-rich-preview-type="wikipedia"][data-rich-preview-icon="after"]::after { content: "📖"; }
 
-.rich-preview-wrap--underline-hover a:hover {
-  text-decoration-color: var(--rp-color);
-}
+// Auto links: before
+a[data-rich-preview-type="topic"][data-rich-preview-icon="before"]::before { content: "🔗"; }
+a[data-rich-preview-type="remote_topic"][data-rich-preview-icon="before"]::before { content: "🌐"; }
+a[data-rich-preview-type="external"][data-rich-preview-icon="before"]::before { content: "🌐"; }
+a[data-rich-preview-type="wikipedia"][data-rich-preview-icon="before"]::before { content: "📖"; }
 
-// Per-type color overrides
+// Per-type color overrides for wrapped links
 .rich-preview-wrap--topic a {
   --rp-color: var(--tertiary);
 }
 
+.rich-preview-wrap--remote_topic a,
 .rich-preview-wrap--external a {
   --rp-color: var(--success);
 }
 
 .rich-preview-wrap--wikipedia a {
+  --rp-color: #808080;
+}
+
+// Per-type color overrides for auto links
+a[data-rich-preview-type="topic"] {
+  --rp-color: var(--tertiary);
+}
+
+a[data-rich-preview-type="remote_topic"],
+a[data-rich-preview-type="external"] {
+  --rp-color: var(--success);
+}
+
+a[data-rich-preview-type="wikipedia"] {
   --rp-color: #808080;
 }
 
