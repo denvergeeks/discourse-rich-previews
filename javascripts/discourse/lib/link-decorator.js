@@ -51,6 +51,14 @@ function getInlineGlyphNode(link) {
   return link?.querySelector(":scope > .thc-inline-glyph") || null;
 }
 
+function removeWrapperGlyphNode(wrapper) {
+  wrapper?.querySelector(":scope > .thc-inline-glyph-wrap")?.remove();
+}
+
+function getWrapperGlyphNode(wrapper) {
+  return wrapper?.querySelector(":scope > .thc-inline-glyph-wrap") || null;
+}
+
 function clearLinkClasses(link) {
   if (!link) {
     return;
@@ -66,6 +74,8 @@ function clearWrapperState(wrapper) {
 
   wrapper.classList.remove(...WRAP_TYPE_CLASSES, ...WRAP_MODE_CLASSES);
   wrapper.style.removeProperty("--rp-color");
+  delete wrapper.dataset.providerKey;
+  removeWrapperGlyphNode(wrapper);
 }
 
 function clearInlineProviderPresentation(link, wrapper = null) {
@@ -81,10 +91,11 @@ function clearInlineProviderPresentation(link, wrapper = null) {
 
   if (wrapper) {
     wrapper.style.removeProperty("--rp-color");
+    removeWrapperGlyphNode(wrapper);
   }
 }
 
-function buildInlineGlyphFragment(providerKey, config) {
+function buildInlineGlyphFragment(providerKey, config, wrapperMode = false) {
   const html = renderInlineProviderGlyph(providerKey, config);
 
   if (!html) {
@@ -94,7 +105,16 @@ function buildInlineGlyphFragment(providerKey, config) {
   const template = document.createElement("template");
   template.innerHTML = html.trim();
 
-  return template.content.firstElementChild || null;
+  const node = template.content.firstElementChild || null;
+  if (!node) {
+    return null;
+  }
+
+  if (wrapperMode) {
+    node.classList.add("thc-inline-glyph-wrap");
+  }
+
+  return node;
 }
 
 function normalizeInlineGlyphPosition(config) {
@@ -161,6 +181,50 @@ function placeInlineGlyphNode(link, glyphNode, position = "after") {
   }
 }
 
+function wrapperGlyphNodeIsInPosition(wrapper, glyphNode, position) {
+  if (!wrapper || !glyphNode) {
+    return false;
+  }
+
+  const anchor = wrapper.querySelector(":scope > a[href]");
+  if (!anchor) {
+    return false;
+  }
+
+  if (position === "before") {
+    return wrapper.firstElementChild === glyphNode;
+  }
+
+  return wrapper.lastElementChild === glyphNode;
+}
+
+function placeWrapperGlyphNode(wrapper, glyphNode, position = "after") {
+  if (!wrapper || !glyphNode) {
+    return;
+  }
+
+  if (wrapperGlyphNodeIsInPosition(wrapper, glyphNode, position)) {
+    return;
+  }
+
+  glyphNode.remove();
+
+  const anchor = wrapper.querySelector(":scope > a[href]");
+  if (!anchor) {
+    return;
+  }
+
+  if (position === "before") {
+    wrapper.insertBefore(glyphNode, anchor);
+  } else {
+    if (anchor.nextSibling) {
+      wrapper.insertBefore(glyphNode, anchor.nextSibling);
+    } else {
+      wrapper.appendChild(glyphNode);
+    }
+  }
+}
+
 function applyLinkClasses(link, providerKey, config) {
   if (!link || !providerKey) {
     return;
@@ -186,24 +250,12 @@ function applyLinkClasses(link, providerKey, config) {
   }
 }
 
-function applyInlineProviderPresentation(link, wrapper, providerKey, config) {
-  if (!providerKey) {
+function applyAutoLinkPresentation(link, providerKey, config) {
+  if (!link || !providerKey) {
     return;
   }
 
   const color = providerColor(providerKey, config, "var(--tertiary)");
-
-  if (wrapper) {
-    if (color) {
-      wrapper.style.setProperty("--rp-color", color);
-    } else {
-      wrapper.style.removeProperty("--rp-color");
-    }
-  }
-
-  if (!link) {
-    return;
-  }
 
   if (color) {
     link.style.setProperty("--rp-color", color);
@@ -258,6 +310,53 @@ function applyInlineProviderPresentation(link, wrapper, providerKey, config) {
   placeInlineGlyphNode(link, glyphNode, position);
 }
 
+function applyWrappedLinkPresentation(wrapper, link, providerKey, config) {
+  if (!wrapper || !providerKey) {
+    return;
+  }
+
+  const color = providerColor(providerKey, config, "var(--tertiary)");
+
+  if (color) {
+    wrapper.style.setProperty("--rp-color", color);
+  } else {
+    wrapper.style.removeProperty("--rp-color");
+  }
+
+  wrapper.dataset.providerKey = providerKey;
+
+  if (link) {
+    link.style.removeProperty("--rp-color");
+    clearLinkClasses(link);
+    delete link.dataset.richPreviewType;
+    delete link.dataset.richPreviewUnderline;
+    delete link.dataset.richPreviewIcon;
+    removeInlineGlyphNode(link);
+  }
+
+  if (config?.previewsShowIcon === false) {
+    removeWrapperGlyphNode(wrapper);
+    return;
+  }
+
+  const existingGlyphNode = getWrapperGlyphNode(wrapper);
+  const nextGlyphNode = buildInlineGlyphFragment(providerKey, config, true);
+
+  if (!nextGlyphNode) {
+    removeWrapperGlyphNode(wrapper);
+    return;
+  }
+
+  if (existingGlyphNode) {
+    existingGlyphNode.replaceWith(nextGlyphNode);
+  }
+
+  const glyphNode = getWrapperGlyphNode(wrapper) || nextGlyphNode;
+  const position = normalizeInlineGlyphPosition(config);
+
+  placeWrapperGlyphNode(wrapper, glyphNode, position);
+}
+
 export function decorateAutoDetectedLink(link, target, config) {
   const providerKey = providerKeyForTarget(target, null);
 
@@ -266,7 +365,7 @@ export function decorateAutoDetectedLink(link, target, config) {
     return;
   }
 
-  applyInlineProviderPresentation(link, null, providerKey, config);
+  applyAutoLinkPresentation(link, providerKey, config);
 }
 
 export function decorateWrappedPreviewLink(wrapper, link, target, config) {
@@ -279,7 +378,7 @@ export function decorateWrappedPreviewLink(wrapper, link, target, config) {
     return;
   }
 
-  applyInlineProviderPresentation(resolvedLink, wrapper, providerKey, config);
+  applyWrappedLinkPresentation(wrapper, resolvedLink, providerKey, config);
 
   if (wrapper) {
     wrapper.classList.remove(...WRAP_TYPE_CLASSES);
