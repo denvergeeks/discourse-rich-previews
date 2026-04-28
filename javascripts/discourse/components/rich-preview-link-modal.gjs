@@ -43,9 +43,9 @@ function classifyUrl(url, config) {
 }
 
 const TYPE_LABELS = {
-  topic: "Internal topic",
-  remote_topic: "Remote Discourse topic",
-  external: "External link",
+  topic: "Internal Topic",
+  remote_topic: "Remote Discourse Topic",
+  external: "External Link",
   wikipedia: "Wikipedia",
 };
 
