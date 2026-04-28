@@ -33,9 +33,9 @@ export function buildPreviewHTML(preview, categories, config, isMobile = false) 
   }
 }
 
-export function buildLoadingPreviewHTML() {
+export function buildLoadingPreviewHTML(rootAttrs = "") {
   return `
-    <article class="topic-hover-card topic-hover-card--loading">
+    <article class="topic-hover-card topic-hover-card--loading" ${rootAttrs}>
       <div class="topic-hover-card__body">
         <div class="topic-hover-card__title">Loading preview…</div>
       </div>
@@ -43,9 +43,9 @@ export function buildLoadingPreviewHTML() {
   `;
 }
 
-export function buildErrorPreviewHTML(message) {
+export function buildErrorPreviewHTML(message, rootAttrs = "") {
   return `
-    <article class="topic-hover-card topic-hover-card--error">
+    <article class="topic-hover-card topic-hover-card--error" ${rootAttrs}>
       <div class="topic-hover-card__body">
         <div class="topic-hover-card__title">Preview unavailable</div>
         <div class="topic-hover-card__excerpt">${escapeHTML(message)}</div>
@@ -77,6 +77,7 @@ function resolveProviderKeyAndColor(preview, config) {
   };
 }
 
+
 function buildProviderRootAttrs(preview, config, fallbackType = "topic") {
   const { providerKey, providerColor } = resolveProviderKeyAndColor(
     preview,
@@ -95,6 +96,17 @@ function buildProviderRootAttrs(preview, config, fallbackType = "topic") {
     )}" style="--thc-provider-color:${escapeHTML(providerColor)};"`
   };
 }
+
+
+export function buildRootAttrsForTarget(target, config, fallbackType = "topic") {
+  const previewLike = {
+    type: target?.type || fallbackType,
+    providerKey: target?.providerKey,
+  };
+
+  return buildProviderRootAttrs(previewLike, config, fallbackType).rootAttrs;
+}
+
 
 function densityFor(provider, config, isMobile, previewType) {
   if (previewType === "wikipedia") {
