@@ -540,14 +540,15 @@
 .rich-preview-wrap {
   display: inline;
   --rp-color: var(--tertiary);
-
-  a {
-    --rp-color: inherit;
-  }
 }
 
 .rich-preview-link {
   --rp-color: var(--tertiary);
+}
+
+// Wrapped links inherit wrapper color
+.rich-preview-wrap > a {
+  color: inherit;
 }
 
 // Manual / wrapped underline
@@ -558,30 +559,36 @@
   text-decoration-thickness: 1.5px;
   text-underline-offset: 0.18em;
   text-decoration-color: var(--rp-color, var(--tertiary));
-  transition: text-decoration-color 120ms ease;
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
 }
 
-// Auto-link underline — stronger specificity for cooked content / inline-onebox
+// Auto-link underline — explicit cooked + composer preview selectors
 .cooked a.rich-preview-link.rich-preview-link--underline-always,
-.cooked a.inline-onebox.rich-preview-link.rich-preview-link--underline-always,
+.d-editor-preview a.rich-preview-link.rich-preview-link--underline-always,
 a.rich-preview-link.rich-preview-link--underline-always {
   text-decoration-line: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 0.18em;
   text-decoration-color: var(--rp-color, var(--tertiary)) !important;
-  transition: text-decoration-color 120ms ease;
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
 }
 
 .cooked a.rich-preview-link.rich-preview-link--underline-hover:hover,
-.cooked a.inline-onebox.rich-preview-link.rich-preview-link--underline-hover:hover,
+.d-editor-preview a.rich-preview-link.rich-preview-link--underline-hover:hover,
 a.rich-preview-link.rich-preview-link--underline-hover:hover {
   text-decoration-line: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 0.18em;
   text-decoration-color: var(--rp-color, var(--tertiary)) !important;
-  transition: text-decoration-color 120ms ease;
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
 }
 
 // Shared glyph styling
@@ -592,9 +599,9 @@ a.rich-preview-link.rich-preview-link--underline-hover:hover {
   justify-content: center;
   vertical-align: text-bottom;
   line-height: 1;
-  opacity: 0.78;
+  opacity: 0.82;
   color: var(--rp-color, currentColor);
-  text-decoration: none;
+  text-decoration: none !important;
   pointer-events: none;
 
   .d-icon,
@@ -607,17 +614,43 @@ a.rich-preview-link.rich-preview-link--underline-hover:hover {
   }
 }
 
-// Glyph spacing
-.rich-preview-wrap--icon-after > .thc-inline-glyph-wrap,
-.rich-preview-wrap--icon-after > a > .thc-inline-glyph,
+// Glyph spacing for auto links
 a.rich-preview-link.rich-preview-link--icon-after > .thc-inline-glyph {
   margin-inline-start: 0.22em;
 }
 
-.rich-preview-wrap--icon-before > .thc-inline-glyph-wrap,
-.rich-preview-wrap--icon-before > a > .thc-inline-glyph,
 a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
+}
+
+// Glyph spacing for wrapped/manual links
+.rich-preview-wrap--icon-after > .thc-inline-glyph-wrap {
+  margin-inline-start: 0.22em;
+}
+
+.rich-preview-wrap--icon-before > .thc-inline-glyph-wrap {
+  margin-inline-end: 0.22em;
+}
+
+// Keep links stable in cooked content and preview
+.rich-preview-wrap > a,
+a.rich-preview-link {
+  display: inline;
+  overflow-wrap: anywhere;
+}
+
+// Inline-onebox protection
+.cooked a.inline-onebox.rich-preview-link,
+.d-editor-preview a.inline-onebox.rich-preview-link {
+  text-decoration-skip-ink: auto;
+}
+
+// Fine vertical alignment in compact contexts
+.cooked a.rich-preview-link > .thc-inline-glyph,
+.d-editor-preview a.rich-preview-link > .thc-inline-glyph,
+.rich-preview-wrap > .thc-inline-glyph-wrap {
+  position: relative;
+  top: 0.02em;
 }
 
 // ─── Mobile media query ───────────────────────────────────────────────────────
