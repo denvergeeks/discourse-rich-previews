@@ -110,7 +110,7 @@ function normalizePreviewProviders(rawProviders = []) {
       enabled: true,
       label: "External Link",
       glyph_mode: "icon",
-      icon: "up-right-from-square",
+      icon: "eye",
       emoji: "🔗",
       // Match legacy previews_color_remote behavior (remote/external)
       color: "var(--success)",
