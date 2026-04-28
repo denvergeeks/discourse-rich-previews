@@ -1,32 +1,11 @@
 /**
- * Registers the [preview]...[/preview] BBCode tag with Discourse's markdown-it
- * pipeline and decorates cooked elements so the theme component can
- * apply preview cards and visual indicators to wrapped links.
+ * Registers the [preview]...[/preview] wrapper handling and applies
+ * visual decoration metadata to both manual wrapped links and
+ * auto-detected eligible links in cooked content.
  */
 
 import { classifyLink, linkInSupportedArea } from "./rich-preview-utils";
 import { matchPreviewTarget } from "./preview-router";
-
-/**
- * Builds a regex that matches [tagName]...[/tagName] case-insensitively.
- * A new regex instance is returned each time to avoid lastIndex state issues.
- */
-function buildTagRegex(tagName) {
-  const escaped = tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(
-    `\\[${escaped}\\]([\\s\\S]*?)\\[\\/${escaped}\\]`,
-    "gi"
-  );
-}
-
-/**
- * Builds the rendered HTML for a wrapped link.
- * The span gets data-rich-preview="true" so the theme component
- * can find it and apply preview cards regardless of page-level settings.
- */
-function buildPreviewWrapHTML(inner) {
-  return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
-}
 
 function clearWrapModifierClasses(wrapEl) {
   if (!(wrapEl instanceof Element)) return;
@@ -43,7 +22,6 @@ function clearWrapModifierClasses(wrapEl) {
   ].forEach((klass) => wrapEl.classList.remove(klass));
 
   wrapEl.style.removeProperty("--rp-color");
-  wrapEl.style.removeProperty("--rp-icon");
 }
 
 function clearAutoLinkIndicators(root) {
@@ -58,14 +36,9 @@ function clearAutoLinkIndicators(root) {
 }
 
 /**
- * Stamps modifier classes onto a .rich-preview-wrap span based on:
- * - the type of link inside it (topic, external, wikipedia)
- * - the current config settings for icons and underlines
- *
- * IMPORTANT:
- * Manual [preview] wrappers should only be visually decorated when the link
- * would actually be active for rich preview behavior in the current context.
- * This keeps visual treatment aligned with hover/preview eligibility.
+ * Manual [preview] wrapper decoration.
+ * Only decorate when the wrapped link is actually eligible in the current
+ * render context/settings, so visual treatment matches real preview behavior.
  */
 function stampModifierClasses(wrapEl, config) {
   if (!(wrapEl instanceof Element)) return;
@@ -82,23 +55,26 @@ function stampModifierClasses(wrapEl, config) {
   }
 
   const type = classifyLink(link, config);
-  if (!type) {
+  if (!type || type === "unsupported") {
     return;
   }
 
   wrapEl.classList.add(`rich-preview-wrap--${type}`);
 
   if (config?.previewsShowUnderline) {
-    if (config?.previewsUnderlineAlways) {
-      wrapEl.classList.add("rich-preview-wrap--underline-always");
-    } else {
-      wrapEl.classList.add("rich-preview-wrap--underline-hover");
-    }
+    wrapEl.classList.add(
+      config?.previewsUnderlineAlways
+        ? "rich-preview-wrap--underline-always"
+        : "rich-preview-wrap--underline-hover"
+    );
   }
 
   if (config?.previewsShowIcon) {
-    const position = config?.previewsIconPosition || "after";
-    wrapEl.classList.add(`rich-preview-wrap--icon-${position}`);
+    wrapEl.classList.add(
+      config?.previewsIconPosition === "before"
+        ? "rich-preview-wrap--icon-before"
+        : "rich-preview-wrap--icon-after"
+    );
   }
 
   const colorMap = {
@@ -115,22 +91,19 @@ function stampModifierClasses(wrapEl, config) {
 }
 
 /**
- * Stamps data-rich-preview-type onto plain eligible <a> tags
- * so CSS can apply visual indicators to auto-detected links
- * the same way it does for manually wrapped links.
- *
- * IMPORTANT: only decorate links that are actually eligible in the current
- * context and settings. This must use the same gating as hover preview
- * behavior to avoid decorating links that will never show previews.
+ * Auto-link decoration for plain cooked links.
+ * Uses the same routing decision as hover previews so visual indicators
+ * and actual preview behavior cannot drift apart.
  */
 function stampAutoLinkIndicators(root, config) {
-  if (!root || !config) return;
+  if (!(root instanceof Element) || !config) return;
 
   clearAutoLinkIndicators(root);
 
   if (!config.previewsShowIcon && !config.previewsShowUnderline) return;
 
   root.querySelectorAll("a[href]").forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) return;
     if (link.closest(".rich-preview-wrap")) return;
 
     if (!linkInSupportedArea(link, config)) {
@@ -179,143 +152,38 @@ function stampAutoLinkIndicators(root, config) {
 }
 
 /**
- * Scans a cooked element for literal [tagName]...[/tagName] text nodes
- * that were not processed by the markdown pipeline (e.g. posts cooked
- * before this tag was registered) and wraps them in the correct HTML.
- * Then stamps modifier classes on all .rich-preview-wrap spans found.
+ * Converts literal [preview]...[/preview] text into wrapper spans
+ * for older cooked posts or content that did not already render the wrapper.
+ */
+function wrapLiteralPreviewTags(root, tagName = "preview") {
+  if (!(root instanceof Element)) return;
+
+  const openTag = `[${tagName}]`;
+  const closeTag = `[/${tagName}]`;
+
+  root.querySelectorAll("p, li, td, div, blockquote").forEach((container) => {
+    if (!(container instanceof Element)) return;
+
+    const html = container.innerHTML;
+    if (!html || !html.includes(openTag)) return;
+
+    container.innerHTML = html.replaceAll(
+      new RegExp(
+        `\\[${tagName}\\]([\\s\\S]*?)\\[\\/${tagName}\\]`,
+        "gi"
+      ),
+      `<span class="rich-preview-wrap" data-rich-preview="true">$1</span>`
+    );
+  });
+}
+
+/**
+ * Applies manual wrapper decoration + auto-link indicators to a cooked root.
  */
 export function applyPreviewWraps(root, tagName = "preview", config = null) {
   if (!(root instanceof Element)) return;
 
-  const openTagLower = `[${tagName}]`.toLowerCase();
-  const closeTagLower = `[/${tagName}]`.toLowerCase();
-
-  const containers = root.querySelectorAll("p, li, td, div, blockquote");
-
-  containers.forEach((container) => {
-    let childNodes = Array.from(container.childNodes);
-
-    let i = 0;
-    while (i < childNodes.length) {
-      const node = childNodes[i];
-
-      if (node.nodeType !== Node.TEXT_NODE) {
-        i++;
-        continue;
-      }
-
-      const text = node.textContent;
-      const lowerText = text.toLowerCase();
-
-      const openIdx = lowerText.indexOf(openTagLower);
-      if (openIdx === -1) {
-        i++;
-        continue;
-      }
-
-      const beforeText = text.slice(0, openIdx);
-      const afterOpenText = text.slice(openIdx + openTagLower.length);
-      const closeInSameNode = afterOpenText.toLowerCase().indexOf(closeTagLower);
-
-      if (closeInSameNode !== -1) {
-        const inner = afterOpenText.slice(0, closeInSameNode);
-        const afterClose = afterOpenText.slice(
-          closeInSameNode + closeTagLower.length
-        );
-
-        const wrapSpan = document.createElement("span");
-        wrapSpan.className = "rich-preview-wrap";
-        wrapSpan.setAttribute("data-rich-preview", "true");
-        wrapSpan.textContent = inner;
-
-        const fragment = document.createDocumentFragment();
-        if (beforeText) fragment.appendChild(document.createTextNode(beforeText));
-        fragment.appendChild(wrapSpan);
-        if (afterClose) fragment.appendChild(document.createTextNode(afterClose));
-
-        container.replaceChild(fragment, node);
-
-        if (config) stampModifierClasses(wrapSpan, config);
-
-        childNodes = Array.from(container.childNodes);
-        i = childNodes.indexOf(wrapSpan) + 1;
-        continue;
-      }
-
-      const wrapNodes = [];
-      let closeNode = null;
-      let closeNodeOffset = -1;
-      let j = i + 1;
-
-      let afterOpenNode = null;
-      if (afterOpenText) {
-        afterOpenNode = document.createTextNode(afterOpenText);
-      }
-
-      while (j < childNodes.length) {
-        const candidate = childNodes[j];
-
-        if (candidate.nodeType === Node.TEXT_NODE) {
-          const candidateLower = candidate.textContent.toLowerCase();
-          const closeIdx = candidateLower.indexOf(closeTagLower);
-
-          if (closeIdx !== -1) {
-            closeNode = candidate;
-            closeNodeOffset = closeIdx;
-            break;
-          }
-        }
-
-        wrapNodes.push(candidate);
-        j++;
-      }
-
-      if (!closeNode) {
-        i++;
-        continue;
-      }
-
-      const wrapSpan = document.createElement("span");
-      wrapSpan.className = "rich-preview-wrap";
-      wrapSpan.setAttribute("data-rich-preview", "true");
-
-      if (afterOpenNode) {
-        wrapSpan.appendChild(afterOpenNode);
-      }
-
-      wrapNodes.forEach((n) => wrapSpan.appendChild(n));
-
-      const closeNodeText = closeNode.textContent;
-      const textBeforeClose = closeNodeText.slice(0, closeNodeOffset);
-      const textAfterClose = closeNodeText.slice(
-        closeNodeOffset + closeTagLower.length
-      );
-
-      if (textBeforeClose) {
-        wrapSpan.appendChild(document.createTextNode(textBeforeClose));
-      }
-
-      const fragment = document.createDocumentFragment();
-
-      if (beforeText) {
-        fragment.appendChild(document.createTextNode(beforeText));
-      }
-
-      fragment.appendChild(wrapSpan);
-
-      if (textAfterClose) {
-        fragment.appendChild(document.createTextNode(textAfterClose));
-      }
-
-      container.replaceChild(fragment, node);
-      closeNode.remove();
-
-      if (config) stampModifierClasses(wrapSpan, config);
-
-      childNodes = Array.from(container.childNodes);
-      i = childNodes.indexOf(wrapSpan) + 1;
-    }
-  });
+  wrapLiteralPreviewTags(root, tagName);
 
   if (config) {
     root
@@ -327,8 +195,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 }
 
 /**
- * Called from the api initializer to decorate cook-time preview wrappers
- * after cooked HTML is rendered into the DOM.
+ * Hook into cooked post rendering.
  */
 export function registerPreviewBBCode(api, config) {
   api.decorateCookedElement(
