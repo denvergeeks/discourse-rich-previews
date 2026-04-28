@@ -2,8 +2,6 @@ import I18n from "I18n";
 import RichPreviewLinkModal from "../components/rich-preview-link-modal";
 
 export function registerPreviewComposerButton(api, config) {
-  const tagName = "preview";
-
   try {
     const locale = I18n.currentLocale();
     I18n.translations[locale] ??= {};
@@ -39,7 +37,6 @@ export function registerPreviewComposerButton(api, config) {
         api.container.lookup("service:modal").show(RichPreviewLinkModal, {
           model: {
             config,
-            tagName,
             initialUrl,
             initialLinkText: initialText,
             onInsert(bbcode) {
