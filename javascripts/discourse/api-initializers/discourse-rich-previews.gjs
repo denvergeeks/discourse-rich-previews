@@ -9,6 +9,7 @@ import {
   TOOLTIP_SELECTOR,
   readConfig,
   logDebug,
+  providerColor,
   providerTimeoutMs,
   sanitizeURL,
   createViewportState,
@@ -646,6 +647,19 @@ export default apiInitializer((api) => {
     );
   }
 
+
+  function applyTooltipProviderColor(providerKey) {
+    ensureTooltip();
+
+    const color = providerColor(providerKey, config, "var(--tertiary)");
+
+    if (color) {
+      tooltip.style.setProperty("--thc-provider-color", color);
+    } else {
+      tooltip.style.setProperty("--thc-provider-color", "var(--tertiary)");
+    }
+  }
+
   function positionTooltip(anchorRect) {
     if (!tooltip) return;
 
@@ -749,6 +763,7 @@ export default apiInitializer((api) => {
     if (!tooltip) return;
 
     tooltip.classList.remove("is-visible");
+    tooltip.style.removeProperty("--thc-provider-color");
     clearCurrentAnchorDescription();
 
     later(() => {
@@ -809,6 +824,7 @@ export default apiInitializer((api) => {
     abortCurrentRequest();
     currentAbortController = new AbortController();
     currentPreviewKey = target.key;
+    applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
     const loadingAttrs = buildRootAttrsForTarget(
       target,
       config,
@@ -831,6 +847,7 @@ export default apiInitializer((api) => {
         }
 
         if (!preview) {
+          applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
           const errorAttrs = buildRootAttrsForTarget(
             target,
             config,
@@ -844,6 +861,9 @@ export default apiInitializer((api) => {
           return;
         }
 
+        applyTooltipProviderColor(
+          preview?.providerKey || preview?.type || target?.providerKey || "topic"
+        );
         tooltip.innerHTML = getRenderedCard(
           preview,
           viewport.isMobileLayout()
@@ -860,6 +880,7 @@ export default apiInitializer((api) => {
         logDebug(config, "Could not load preview", { target, error });
 
         if (!tooltip || currentPreviewKey !== target.key) return;
+        applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
         const errorAttrs = buildRootAttrsForTarget(
           target,
           config,
