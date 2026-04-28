@@ -20,7 +20,7 @@ composer_button_group:
 svg_icons:
   type: list
   list_type: compact
-  default: "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
+  : "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
   description: Additional SVG icons used by configured preview providers.
 
 preview_providers:
@@ -42,7 +42,8 @@ preview_providers:
       icon: fab-discourse
       emoji: "🌐"
       color: "var(--success)"
-      remote_hosts: "meta.discourse.org"
+      remote_hosts:
+        - meta.discourse.org
       require_https: true
       timeout_ms: 3000
     - key: external
