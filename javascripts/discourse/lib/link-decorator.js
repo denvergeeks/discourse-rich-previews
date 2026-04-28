@@ -47,16 +47,8 @@ function removeInlineGlyphNode(link) {
   link?.querySelector(":scope > .thc-inline-glyph")?.remove();
 }
 
-function getInlineGlyphNode(link) {
-  return link?.querySelector(":scope > .thc-inline-glyph") || null;
-}
-
 function removeWrapperGlyphNode(wrapper) {
   wrapper?.querySelector(":scope > .thc-inline-glyph-wrap")?.remove();
-}
-
-function getWrapperGlyphNode(wrapper) {
-  return wrapper?.querySelector(":scope > .thc-inline-glyph-wrap") || null;
 }
 
 function clearLinkClasses(link) {
@@ -216,12 +208,10 @@ function placeWrapperGlyphNode(wrapper, glyphNode, position = "after") {
 
   if (position === "before") {
     wrapper.insertBefore(glyphNode, anchor);
+  } else if (anchor.nextSibling) {
+    wrapper.insertBefore(glyphNode, anchor.nextSibling);
   } else {
-    if (anchor.nextSibling) {
-      wrapper.insertBefore(glyphNode, anchor.nextSibling);
-    } else {
-      wrapper.appendChild(glyphNode);
-    }
+    wrapper.appendChild(glyphNode);
   }
 }
 
@@ -282,32 +272,23 @@ function applyAutoLinkPresentation(link, providerKey, config) {
     delete link.dataset.richPreviewIcon;
   }
 
+  removeInlineGlyphNode(link);
+
   if (config?.previewsShowIcon === false) {
-    removeInlineGlyphNode(link);
     return;
   }
 
   if (anchorHasComplexInlineContent(link)) {
-    removeInlineGlyphNode(link);
     return;
   }
 
-  const existingGlyphNode = getInlineGlyphNode(link);
-  const nextGlyphNode = buildInlineGlyphFragment(providerKey, config);
+  const glyphNode = buildInlineGlyphFragment(providerKey, config);
 
-  if (!nextGlyphNode) {
-    removeInlineGlyphNode(link);
+  if (!glyphNode) {
     return;
   }
 
-  if (existingGlyphNode) {
-    existingGlyphNode.replaceWith(nextGlyphNode);
-  }
-
-  const glyphNode = existingGlyphNode ? getInlineGlyphNode(link) : nextGlyphNode;
-  const position = normalizeInlineGlyphPosition(config);
-
-  placeInlineGlyphNode(link, glyphNode, position);
+  placeInlineGlyphNode(link, glyphNode, iconMode === "before" ? "before" : "after");
 }
 
 function applyWrappedLinkPresentation(wrapper, link, providerKey, config) {
@@ -334,26 +315,19 @@ function applyWrappedLinkPresentation(wrapper, link, providerKey, config) {
     removeInlineGlyphNode(link);
   }
 
+  removeWrapperGlyphNode(wrapper);
+
   if (config?.previewsShowIcon === false) {
-    removeWrapperGlyphNode(wrapper);
     return;
   }
 
-  const existingGlyphNode = getWrapperGlyphNode(wrapper);
-  const nextGlyphNode = buildInlineGlyphFragment(providerKey, config, true);
+  const glyphNode = buildInlineGlyphFragment(providerKey, config, true);
 
-  if (!nextGlyphNode) {
-    removeWrapperGlyphNode(wrapper);
+  if (!glyphNode) {
     return;
   }
 
-  if (existingGlyphNode) {
-    existingGlyphNode.replaceWith(nextGlyphNode);
-  }
-
-  const glyphNode = getWrapperGlyphNode(wrapper) || nextGlyphNode;
   const position = normalizeInlineGlyphPosition(config);
-
   placeWrapperGlyphNode(wrapper, glyphNode, position);
 }
 
