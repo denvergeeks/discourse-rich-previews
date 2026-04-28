@@ -6,6 +6,8 @@
 
 import {
   classifyLink,
+  composerPreviewEnabled,
+  linkInSupportedArea,
 } from "./rich-preview-utils";
 
 /**
@@ -29,20 +31,55 @@ function buildPreviewWrapHTML(inner) {
   return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
 }
 
+function clearWrapModifierClasses(wrapEl) {
+  if (!(wrapEl instanceof Element)) return;
+
+  [
+    "rich-preview-wrap--topic",
+    "rich-preview-wrap--remote_topic",
+    "rich-preview-wrap--external",
+    "rich-preview-wrap--wikipedia",
+    "rich-preview-wrap--underline-always",
+    "rich-preview-wrap--underline-hover",
+    "rich-preview-wrap--icon-before",
+    "rich-preview-wrap--icon-after",
+  ].forEach((klass) => wrapEl.classList.remove(klass));
+
+  wrapEl.style.removeProperty("--rp-color");
+  wrapEl.style.removeProperty("--rp-icon");
+}
+
+function clearAutoLinkIndicators(root) {
+  if (!(root instanceof Element)) return;
+
+  root.querySelectorAll("a[data-rich-preview-type]").forEach((link) => {
+    link.removeAttribute("data-rich-preview-type");
+    link.style.removeProperty("--rp-color");
+  });
+}
+
 /**
  * Stamps modifier classes onto a .rich-preview-wrap span based on:
  * - the type of link inside it (topic, external, wikipedia)
  * - the current config settings for icons and underlines
+ *
+ * Manual wraps should only be decorated if that link type is allowed for
+ * composer/manual previews. This prevents disabled/manual-ineligible types
+ * from still showing preview visual treatment.
  */
 function stampModifierClasses(wrapEl, config) {
   if (!(wrapEl instanceof Element)) return;
 
+  clearWrapModifierClasses(wrapEl);
+
   const link = wrapEl.querySelector("a[href]");
   const type = link ? classifyLink(link, config) : null;
 
-  if (type) {
-    wrapEl.classList.add(`rich-preview-wrap--${type}`);
+  if (!type || !composerPreviewEnabled(type, config)) {
+    return;
   }
+
+  wrapEl.classList.add(`rich-preview-wrap--${type}`);
 
   if (config?.previewsShowUnderline) {
     if (config?.previewsUnderlineAlways) {
@@ -52,25 +89,21 @@ function stampModifierClasses(wrapEl, config) {
     }
   }
 
-  if (config?.previewsShowIcon && type) {
+  if (config?.previewsShowIcon) {
     const position = config?.previewsIconPosition || "after";
     wrapEl.classList.add(`rich-preview-wrap--icon-${position}`);
   }
 
-  if (type && link) {
-    const colorMap = {
-      topic: config?.previewsColorTopic,
-      remote_topic: config?.previewsColorRemote,
-      external: config?.previewsColorRemote,
-      wikipedia: config?.previewsColorWikipedia,
-    };
+  const colorMap = {
+    topic: config?.previewsColorTopic,
+    remote_topic: config?.previewsColorRemote,
+    external: config?.previewsColorRemote,
+    wikipedia: config?.previewsColorWikipedia,
+  };
 
-    const color = colorMap[type];
-    if (color) {
-      wrapEl.style.setProperty("--rp-color", color);
-    }
-
-    wrapEl.style.removeProperty("--rp-icon");
+  const color = colorMap[type];
+  if (color) {
+    wrapEl.style.setProperty("--rp-color", color);
   }
 }
 
@@ -78,14 +111,24 @@ function stampModifierClasses(wrapEl, config) {
  * Stamps data-rich-preview-type onto plain eligible <a> tags
  * so CSS can apply visual indicators to auto-detected links
  * the same way it does for manually wrapped links.
+ *
+ * IMPORTANT: only decorate links that are actually eligible in the current
+ * context and settings. This must use the same gating as hover preview
+ * behavior to avoid decorating links that will never show previews.
  */
 function stampAutoLinkIndicators(root, config) {
   if (!root || !config) return;
+
+  clearAutoLinkIndicators(root);
+
   if (!config.previewsShowIcon && !config.previewsShowUnderline) return;
 
   root.querySelectorAll("a[href]").forEach((link) => {
     if (link.closest(".rich-preview-wrap")) return;
-    if (link.hasAttribute("data-rich-preview-type")) return;
+
+    if (!linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const type = classifyLink(link, config);
     if (!type || type === "unsupported") return;
@@ -135,33 +178,21 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
       const text = node.textContent;
       const lowerText = text.toLowerCase();
 
-      // Check if this text node contains [preview] anywhere inside it
       const openIdx = lowerText.indexOf(openTagLower);
       if (openIdx === -1) {
         i++;
         continue;
       }
 
-      // Split this text node into: before-text + open-tag-text + after-text
-      // Then look forward for the close tag
-
-      // Text before the open tag
       const beforeText = text.slice(0, openIdx);
-      // Text after the open tag on the same node
       const afterOpenText = text.slice(openIdx + openTagLower.length);
-
-      // Now scan forward from the next sibling looking for [/preview]
-      // The close tag could be:
-      // 1. In the afterOpenText on the same node (whole tag in one text node)
-      // 2. In a later sibling text node
-
-      // First check if close tag is in the remainder of this same text node
       const closeInSameNode = afterOpenText.toLowerCase().indexOf(closeTagLower);
 
       if (closeInSameNode !== -1) {
-        // Entire [preview]...[/preview] is within this one text node
         const inner = afterOpenText.slice(0, closeInSameNode);
-        const afterClose = afterOpenText.slice(closeInSameNode + closeTagLower.length);
+        const afterClose = afterOpenText.slice(
+          closeInSameNode + closeTagLower.length
+        );
 
         const wrapSpan = document.createElement("span");
         wrapSpan.className = "rich-preview-wrap";
@@ -182,14 +213,11 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
         continue;
       }
 
-      // Close tag is in a later sibling — collect nodes until we find it
       const wrapNodes = [];
       let closeNode = null;
       let closeNodeOffset = -1;
       let j = i + 1;
 
-      // Handle any remaining text after [preview] on the same node
-      // by creating a temporary text node for it
       let afterOpenNode = null;
       if (afterOpenText) {
         afterOpenNode = document.createTextNode(afterOpenText);
@@ -218,20 +246,16 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
         continue;
       }
 
-      // Build the wrap span
       const wrapSpan = document.createElement("span");
       wrapSpan.className = "rich-preview-wrap";
       wrapSpan.setAttribute("data-rich-preview", "true");
 
-      // Add the text after [preview] on the open-tag node (if any)
       if (afterOpenNode) {
         wrapSpan.appendChild(afterOpenNode);
       }
 
-      // Add all collected sibling nodes
       wrapNodes.forEach((n) => wrapSpan.appendChild(n));
 
-      // Handle text before and after [/preview] in the close node
       const closeNodeText = closeNode.textContent;
       const textBeforeClose = closeNodeText.slice(0, closeNodeOffset);
       const textAfterClose = closeNodeText.slice(
@@ -242,7 +266,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
         wrapSpan.appendChild(document.createTextNode(textBeforeClose));
       }
 
-      // Build the replacement fragment
       const fragment = document.createDocumentFragment();
 
       if (beforeText) {
@@ -255,10 +278,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
         fragment.appendChild(document.createTextNode(textAfterClose));
       }
 
-      // Replace the open-tag text node with the fragment
       container.replaceChild(fragment, node);
-
-      // Remove the close tag text node
       closeNode.remove();
 
       if (config) stampModifierClasses(wrapSpan, config);
@@ -268,13 +288,11 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
     }
   });
 
-  // Stamp modifier classes on all .rich-preview-wrap spans
   if (config) {
     root
       .querySelectorAll(".rich-preview-wrap[data-rich-preview='true']")
       .forEach((wrapEl) => stampModifierClasses(wrapEl, config));
 
-    // Stamp indicators on plain auto-detected links
     stampAutoLinkIndicators(root, config);
   }
 }
@@ -284,8 +302,6 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
  * after cooked HTML is rendered into the DOM.
  */
 export function registerPreviewBBCode(api, config) {
-  // The cook-time markdown extension standardizes on [preview]...[/preview].
-  // This decorator applies wrapper classes and indicators after render.
   api.decorateCookedElement(
     (element) => {
       applyPreviewWraps(element, "preview", config);
