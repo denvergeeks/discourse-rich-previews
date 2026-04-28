@@ -475,6 +475,17 @@ export function providerEnabled(config, key) {
   return getPreviewProvider(config, key)?.enabled !== false;
 }
 
+export function providerTimeoutMs(providerKey, config, fallback = 3000) {
+  const timeout = getPreviewProvider(config, providerKey)?.timeout_ms;
+  const parsed = Number.parseInt(timeout, 10);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.max(250, Math.min(parsed, 10000));
+}
+
 export function providerModeForType(type, config) {
   switch (type) {
     case "topic":
