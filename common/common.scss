@@ -537,8 +537,6 @@
 
 // ─── Rich Preview Inline Links (auto + manual) ──────────────────────────────
 
-// Wrapper used by [preview]...[/preview] BBCode.
-// JS sets --rp-color on the wrapper; CSS variables inherit into the anchor/glyph.
 .rich-preview-wrap {
   display: inline;
   --rp-color: var(--tertiary);
@@ -548,17 +546,13 @@
   }
 }
 
-// Auto-detected links get classes directly on the anchor.
-// JS sets --rp-color on the anchor for auto links.
 .rich-preview-link {
   --rp-color: var(--tertiary);
 }
 
-// Shared underline styling for any decorated link (auto or wrapped).
-.rich-preview-wrap--underline-always a,
-.rich-preview-wrap--underline-hover a:hover,
-.rich-preview-link--underline-always,
-.rich-preview-link--underline-hover:hover {
+// Manual / wrapped underline
+.rich-preview-wrap--underline-always > a,
+.rich-preview-wrap--underline-hover > a:hover {
   text-decoration-line: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1.5px;
@@ -567,9 +561,30 @@
   transition: text-decoration-color 120ms ease;
 }
 
-// Shared glyph styling — used for:
-// - auto links → .thc-inline-glyph inside the <a>
-// - manual/wrapped links → .thc-inline-glyph-wrap sibling in the wrapper
+// Auto-link underline — stronger specificity for cooked content / inline-onebox
+.cooked a.rich-preview-link.rich-preview-link--underline-always,
+.cooked a.inline-onebox.rich-preview-link.rich-preview-link--underline-always,
+a.rich-preview-link.rich-preview-link--underline-always {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rp-color, var(--tertiary)) !important;
+  transition: text-decoration-color 120ms ease;
+}
+
+.cooked a.rich-preview-link.rich-preview-link--underline-hover:hover,
+.cooked a.inline-onebox.rich-preview-link.rich-preview-link--underline-hover:hover,
+a.rich-preview-link.rich-preview-link--underline-hover:hover {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rp-color, var(--tertiary)) !important;
+  transition: text-decoration-color 120ms ease;
+}
+
+// Shared glyph styling
 .thc-inline-glyph,
 .thc-inline-glyph-wrap {
   display: inline-flex;
@@ -592,17 +607,16 @@
   }
 }
 
-// Spacing when the icon is after the link text.
+// Glyph spacing
 .rich-preview-wrap--icon-after > .thc-inline-glyph-wrap,
-.rich-preview-wrap--icon-after a > .thc-inline-glyph,
-.rich-preview-link--icon-after > .thc-inline-glyph {
+.rich-preview-wrap--icon-after > a > .thc-inline-glyph,
+a.rich-preview-link.rich-preview-link--icon-after > .thc-inline-glyph {
   margin-inline-start: 0.22em;
 }
 
-// Spacing when the icon is before the link text.
 .rich-preview-wrap--icon-before > .thc-inline-glyph-wrap,
-.rich-preview-wrap--icon-before a > .thc-inline-glyph,
-.rich-preview-link--icon-before > .thc-inline-glyph {
+.rich-preview-wrap--icon-before > a > .thc-inline-glyph,
+a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
 }
 
