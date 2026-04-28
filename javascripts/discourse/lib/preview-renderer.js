@@ -125,7 +125,7 @@ function pick(config, desktopKey, mobileKey, isMobile) {
 }
 
 function buildCardClasses(preview, config, isMobile) {
-  const density = densityFor(resolveProviderKey(preview), config, isMobile, preview.type);
+  const density = densityFor(null, config, isMobile, preview.type);
   const classes = ["topic-hover-card", `topic-hover-card--${density}`];
 
   if (isMobile) {
