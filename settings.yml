@@ -18,9 +18,9 @@ composer_button_group:
     extras places it at the end of the toolbar.
 
 svg_icons:
+  default: "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
   type: list
   list_type: compact
-  : "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
   description: Additional SVG icons used by configured preview providers.
 
 preview_providers:
