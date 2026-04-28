@@ -18,9 +18,9 @@ composer_button_group:
     extras places it at the end of the toolbar.
 
 svg_icons:
-  default: "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
   type: list
   list_type: compact
+  default: "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
   description: Additional SVG icons used by configured preview providers.
 
 preview_providers:
@@ -35,7 +35,6 @@ preview_providers:
       color: "var(--tertiary)"
       require_https: true
       timeout_ms: 3000
-
     - key: remote_topic
       enabled: true
       label: Remote Discourse Topic
@@ -43,11 +42,9 @@ preview_providers:
       icon: fab-discourse
       emoji: "🌐"
       color: "var(--success)"
-      remote_hosts:
-        - meta.discourse.org
+      remote_hosts: "meta.discourse.org"
       require_https: true
       timeout_ms: 3000
-
     - key: external
       enabled: true
       label: External Link
@@ -57,7 +54,6 @@ preview_providers:
       color: "var(--success)"
       require_https: true
       timeout_ms: 3000
-
     - key: wikipedia
       enabled: true
       label: Wikipedia
@@ -67,7 +63,6 @@ preview_providers:
       color: "#808080"
       require_https: true
       timeout_ms: 3000
-
   schema:
     name: provider
     properties:
@@ -113,9 +108,8 @@ preview_providers:
         description: CSS color used for link indicators and provider-tinted UI for this provider.
 
       remote_hosts:
-        type: list
-        default: []
-        description: Allowed remote Discourse hostnames for this provider.
+        type: string
+        description: Pipe-separated allowed hostnames for this provider if applicable.
 
       require_https:
         type: boolean
@@ -126,6 +120,8 @@ preview_providers:
         type: integer
         default: 3000
         description: Request timeout for this provider in milliseconds.
+
+# ─── Per-type preview mode ───────────────────────────────────────────────────
 
 previews_topic_mode:
   default: "auto_only"
@@ -191,6 +187,8 @@ previews_wikipedia_mode:
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no Wikipedia previews at all.
 
+# ─── Visual indicators (apply to all previews, auto and manual) ──────────────
+
 previews_show_icon:
   default: true
   client: true
@@ -221,6 +219,8 @@ previews_underline_always:
   description: >
     When enabled, the dotted underline is always visible.
     When disabled, it only appears on hover.
+
+# ─── General ─────────────────────────────────────────────────────────────────
 
 delay_show:
   default: 300
@@ -265,6 +265,8 @@ mobile_width_percent:
   min: 70
   max: 100
   description: Mobile hover card width as a percentage of the viewport width.
+
+# ─── Thumbnail ───────────────────────────────────────────────────────────────
 
 show_thumbnail:
   default: true
@@ -346,6 +348,8 @@ thumbnail_height_top_bottom_mobile:
   default: auto
   type: string
   description: Used when the thumbnail is placed on top or bottom on mobile. Accepts valid CSS height values such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem).
+
+# ─── Content ─────────────────────────────────────────────────────────────────
 
 show_title:
   default: true
@@ -461,6 +465,8 @@ show_activity_mobile:
   type: bool
   description: Show the last activity date on mobile.
 
+# ─── Where to enable ─────────────────────────────────────────────────────────
+
 enable_on_topic_list:
   default: true
   type: bool
@@ -506,6 +512,8 @@ enable_on_kanban_boards:
   default: false
   description: Enable hover cards in kanban board views.
 
+# ─── Filtering ───────────────────────────────────────────────────────────────
+
 included_tags:
   type: list
   list_type: compact
@@ -534,6 +542,8 @@ excerpt_excluded_selectors:
   default: iframe|pre|code|.onebox|.footnote|.inline-footnote|[data-tip]|.lazyYT|.youtube-onebox
   type: list
   description: Optional exclude-list. Hover cards display a simplified version of the topic's body content with some formatting and interactive elements removed. Prevent any unwanted elements appearing in your excerpts by adding their selectors here.
+
+# ─── Wikipedia ───────────────────────────────────────────────────────────────
 
 wikipedia_previews_base_url:
   default: en.wikipedia.org
@@ -570,6 +580,8 @@ wikipedia_density_mobile:
     - dense
   description: Controls Wikipedia preview density on mobile.
 
+# ─── User preferences ────────────────────────────────────────────────────────
+
 user_preference_field_name:
   default: disable_topic_hover_cards
   type: string
@@ -579,6 +591,8 @@ resolve_user_field_id_for_admins:
   default: true
   type: bool
   description: When enabled, staff can configure the preference field by name or user_field_X and the component will resolve the numeric user-field ID from the admin endpoint.
+
+# ─── Performance ─────────────────────────────────────────────────────────────
 
 prefetch_enabled:
   default: true
@@ -605,6 +619,8 @@ topic_cache_max:
   min: 10
   max: 500
   description: Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session.
+
+# ─── Debug ───────────────────────────────────────────────────────────────────
 
 debug_mode:
   default: false
