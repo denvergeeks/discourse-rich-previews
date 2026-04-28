@@ -4,6 +4,20 @@ import {
   renderInlineProviderGlyph,
 } from "./rich-preview-utils";
 
+const WRAP_TYPE_CLASSES = [
+  "rich-preview-wrap--topic",
+  "rich-preview-wrap--remote_topic",
+  "rich-preview-wrap--external",
+  "rich-preview-wrap--wikipedia",
+];
+
+const WRAP_MODE_CLASSES = [
+  "rich-preview-wrap--underline-always",
+  "rich-preview-wrap--underline-hover",
+  "rich-preview-wrap--icon-before",
+  "rich-preview-wrap--icon-after",
+];
+
 function removeInlineGlyphNode(link) {
   link?.querySelector(":scope > .thc-inline-glyph")?.remove();
 }
@@ -87,12 +101,12 @@ function applyInlineProviderPresentation(link, providerKey, config) {
     return;
   }
 
-  const color = providerColor(providerKey, config);
+  const color = providerColor(providerKey, config, "var(--tertiary)");
 
   if (color) {
     link.style.setProperty("--rp-color", color);
   } else {
-    link.style.removeProperty("--rp-color");
+    link.style.setProperty("--rp-color", "var(--tertiary)");
   }
 
   if (config?.previewsShowIcon === false) {
@@ -127,7 +141,7 @@ function applyInlineProviderPresentation(link, providerKey, config) {
 
 function normalizeUnderlineMode(config) {
   if (!config?.previewsShowUnderline) {
-    return "none";
+    return null;
   }
 
   return config?.previewsUnderlineAlways ? "always" : "hover";
@@ -135,7 +149,7 @@ function normalizeUnderlineMode(config) {
 
 function normalizeIconMode(config, providerKey) {
   if (!providerKey || config?.previewsShowIcon === false) {
-    return "none";
+    return null;
   }
 
   return normalizeInlineGlyphPosition(config);
@@ -146,9 +160,22 @@ function applySharedLinkState(link, providerKey, config) {
     return;
   }
 
+  const underlineMode = normalizeUnderlineMode(config);
+  const iconMode = normalizeIconMode(config, providerKey);
+
   link.dataset.richPreviewType = providerKey;
-  link.dataset.richPreviewUnderline = normalizeUnderlineMode(config);
-  link.dataset.richPreviewIcon = normalizeIconMode(config, providerKey);
+
+  if (underlineMode) {
+    link.dataset.richPreviewUnderline = underlineMode;
+  } else {
+    delete link.dataset.richPreviewUnderline;
+  }
+
+  if (iconMode) {
+    link.dataset.richPreviewIcon = iconMode;
+  } else {
+    delete link.dataset.richPreviewIcon;
+  }
 }
 
 function clearSharedLinkState(link) {
@@ -159,6 +186,41 @@ function clearSharedLinkState(link) {
   delete link.dataset.richPreviewType;
   delete link.dataset.richPreviewUnderline;
   delete link.dataset.richPreviewIcon;
+}
+
+function clearWrapperState(wrapper) {
+  if (!wrapper) {
+    return;
+  }
+
+  wrapper.classList.remove(...WRAP_TYPE_CLASSES, ...WRAP_MODE_CLASSES);
+  wrapper.style.removeProperty("--rp-color");
+}
+
+function applyWrapperState(wrapper, link, providerKey) {
+  if (!wrapper || !link || !providerKey) {
+    return;
+  }
+
+  clearWrapperState(wrapper);
+
+  wrapper.classList.add(`rich-preview-wrap--${providerKey}`);
+  wrapper.classList.toggle(
+    "rich-preview-wrap--underline-always",
+    link.dataset.richPreviewUnderline === "always"
+  );
+  wrapper.classList.toggle(
+    "rich-preview-wrap--underline-hover",
+    link.dataset.richPreviewUnderline === "hover"
+  );
+  wrapper.classList.toggle(
+    "rich-preview-wrap--icon-before",
+    link.dataset.richPreviewIcon === "before"
+  );
+  wrapper.classList.toggle(
+    "rich-preview-wrap--icon-after",
+    link.dataset.richPreviewIcon === "after"
+  );
 }
 
 export function decorateAutoDetectedLink(link, target, config) {
@@ -180,53 +242,17 @@ export function decorateWrappedPreviewLink(wrapper, link, target, config) {
   if (!providerKey) {
     clearInlineProviderPresentation(link);
     clearSharedLinkState(link);
+    clearWrapperState(wrapper);
     return;
   }
 
   applyInlineProviderPresentation(link, providerKey, config);
   applySharedLinkState(link, providerKey, config);
-
-  if (wrapper) {
-    wrapper.classList.remove(
-      "rich-preview-wrap--topic",
-      "rich-preview-wrap--remote_topic",
-      "rich-preview-wrap--external",
-      "rich-preview-wrap--wikipedia"
-    );
-    wrapper.classList.add(`rich-preview-wrap--${providerKey}`);
-    wrapper.classList.toggle(
-      "rich-preview-wrap--underline-always",
-      link.dataset.richPreviewUnderline === "always"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--underline-hover",
-      link.dataset.richPreviewUnderline === "hover"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--icon-before",
-      link.dataset.richPreviewIcon === "before"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--icon-after",
-      link.dataset.richPreviewIcon === "after"
-    );
-  }
+  applyWrapperState(wrapper, link, providerKey);
 }
 
 export function clearDecoratedLink(link, wrapper = null) {
   clearInlineProviderPresentation(link);
   clearSharedLinkState(link);
-
-  if (wrapper) {
-    wrapper.classList.remove(
-      "rich-preview-wrap--topic",
-      "rich-preview-wrap--remote_topic",
-      "rich-preview-wrap--external",
-      "rich-preview-wrap--wikipedia",
-      "rich-preview-wrap--underline-always",
-      "rich-preview-wrap--underline-hover",
-      "rich-preview-wrap--icon-before",
-      "rich-preview-wrap--icon-after"
-    );
-  }
+  clearWrapperState(wrapper);
 }
