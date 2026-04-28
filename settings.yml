@@ -179,18 +179,6 @@ previews_wikipedia_mode:
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no Wikipedia previews at all.
 
-# ─── BBCode tag name ─────────────────────────────────────────────────────────
-
-previews_tag_name:
-  default: "preview"
-  client: true
-  description: >
-    The BBCode tag name used for manually wrapping links.
-    Default is [preview]...[/preview].
-    WARNING: Changing this after posts have been written with the
-    old tag name will break those existing wrapped links until
-    those posts are re-saved.
-
 # ─── Visual indicators (apply to all previews, auto and manual) ──────────────
 
 previews_show_icon:
