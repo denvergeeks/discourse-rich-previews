@@ -18,6 +18,18 @@ const WRAP_MODE_CLASSES = [
   "rich-preview-wrap--icon-after",
 ];
 
+function resolveLink(wrapper, link) {
+  if (link instanceof HTMLElement && link.tagName === "A") {
+    return link;
+  }
+
+  if (wrapper instanceof HTMLElement) {
+    return wrapper.querySelector(":scope > a");
+  }
+
+  return null;
+}
+
 function removeInlineGlyphNode(link) {
   link?.querySelector(":scope > .thc-inline-glyph")?.remove();
 }
@@ -26,13 +38,18 @@ function getInlineGlyphNode(link) {
   return link?.querySelector(":scope > .thc-inline-glyph") || null;
 }
 
-function clearInlineProviderPresentation(link) {
-  if (!link) {
-    return;
+function clearInlineProviderPresentation(link, wrapper = null) {
+  if (link) {
+    link.style.removeProperty("--rp-color");
+    removeInlineGlyphNode(link);
+    delete link.dataset.richPreviewType;
+    delete link.dataset.richPreviewUnderline;
+    delete link.dataset.richPreviewIcon;
   }
 
-  link.style.removeProperty("--rp-color");
-  removeInlineGlyphNode(link);
+  if (wrapper) {
+    wrapper.style.removeProperty("--rp-color");
+  }
 }
 
 function buildInlineGlyphFragment(providerKey, config) {
@@ -96,17 +113,29 @@ function placeInlineGlyphNode(link, glyphNode, position = "after") {
   }
 }
 
-function applyInlineProviderPresentation(link, providerKey, config) {
-  if (!link || !providerKey) {
+function applyInlineProviderPresentation(link, wrapper, providerKey, config) {
+  if (!providerKey) {
     return;
   }
 
   const color = providerColor(providerKey, config, "var(--tertiary)");
 
+  if (wrapper) {
+    if (color) {
+      wrapper.style.setProperty("--rp-color", color);
+    } else {
+      wrapper.style.removeProperty("--rp-color");
+    }
+  }
+
+  if (!link) {
+    return;
+  }
+
   if (color) {
     link.style.setProperty("--rp-color", color);
   } else {
-    link.style.setProperty("--rp-color", "var(--tertiary)");
+    link.style.removeProperty("--rp-color");
   }
 
   if (config?.previewsShowIcon === false) {
@@ -131,11 +160,9 @@ function applyInlineProviderPresentation(link, providerKey, config) {
     existingGlyphNode.replaceWith(nextGlyphNode);
   }
 
-  const glyphNode = existingGlyphNode
-    ? getInlineGlyphNode(link)
-    : nextGlyphNode;
-
+  const glyphNode = existingGlyphNode ? getInlineGlyphNode(link) : nextGlyphNode;
   const position = normalizeInlineGlyphPosition(config);
+
   placeInlineGlyphNode(link, glyphNode, position);
 }
 
@@ -160,10 +187,10 @@ function applySharedLinkState(link, providerKey, config) {
     return;
   }
 
+  link.dataset.richPreviewType = providerKey;
+
   const underlineMode = normalizeUnderlineMode(config);
   const iconMode = normalizeIconMode(config, providerKey);
-
-  link.dataset.richPreviewType = providerKey;
 
   if (underlineMode) {
     link.dataset.richPreviewUnderline = underlineMode;
@@ -178,16 +205,6 @@ function applySharedLinkState(link, providerKey, config) {
   }
 }
 
-function clearSharedLinkState(link) {
-  if (!link) {
-    return;
-  }
-
-  delete link.dataset.richPreviewType;
-  delete link.dataset.richPreviewUnderline;
-  delete link.dataset.richPreviewIcon;
-}
-
 function clearWrapperState(wrapper) {
   if (!wrapper) {
     return;
@@ -197,62 +214,60 @@ function clearWrapperState(wrapper) {
   wrapper.style.removeProperty("--rp-color");
 }
 
-function applyWrapperState(wrapper, link, providerKey) {
-  if (!wrapper || !link || !providerKey) {
-    return;
-  }
-
-  clearWrapperState(wrapper);
-
-  wrapper.classList.add(`rich-preview-wrap--${providerKey}`);
-  wrapper.classList.toggle(
-    "rich-preview-wrap--underline-always",
-    link.dataset.richPreviewUnderline === "always"
-  );
-  wrapper.classList.toggle(
-    "rich-preview-wrap--underline-hover",
-    link.dataset.richPreviewUnderline === "hover"
-  );
-  wrapper.classList.toggle(
-    "rich-preview-wrap--icon-before",
-    link.dataset.richPreviewIcon === "before"
-  );
-  wrapper.classList.toggle(
-    "rich-preview-wrap--icon-after",
-    link.dataset.richPreviewIcon === "after"
-  );
-}
-
 export function decorateAutoDetectedLink(link, target, config) {
   const providerKey = providerKeyForTarget(target, null);
 
   if (!providerKey) {
     clearInlineProviderPresentation(link);
-    clearSharedLinkState(link);
     return;
   }
 
-  applyInlineProviderPresentation(link, providerKey, config);
+  applyInlineProviderPresentation(link, null, providerKey, config);
   applySharedLinkState(link, providerKey, config);
 }
 
 export function decorateWrappedPreviewLink(wrapper, link, target, config) {
+  const resolvedLink = resolveLink(wrapper, link);
   const providerKey = providerKeyForTarget(target, null);
 
   if (!providerKey) {
-    clearInlineProviderPresentation(link);
-    clearSharedLinkState(link);
+    clearInlineProviderPresentation(resolvedLink, wrapper);
     clearWrapperState(wrapper);
     return;
   }
 
-  applyInlineProviderPresentation(link, providerKey, config);
-  applySharedLinkState(link, providerKey, config);
-  applyWrapperState(wrapper, link, providerKey);
+  applyInlineProviderPresentation(resolvedLink, wrapper, providerKey, config);
+  applySharedLinkState(resolvedLink, providerKey, config);
+
+  if (wrapper) {
+    wrapper.classList.remove(...WRAP_TYPE_CLASSES);
+    wrapper.classList.add(`rich-preview-wrap--${providerKey}`);
+
+    const underlineMode = normalizeUnderlineMode(config);
+    const iconMode = normalizeIconMode(config, providerKey);
+
+    wrapper.classList.toggle(
+      "rich-preview-wrap--underline-always",
+      underlineMode === "always"
+    );
+    wrapper.classList.toggle(
+      "rich-preview-wrap--underline-hover",
+      underlineMode === "hover"
+    );
+    wrapper.classList.toggle(
+      "rich-preview-wrap--icon-before",
+      iconMode === "before"
+    );
+    wrapper.classList.toggle(
+      "rich-preview-wrap--icon-after",
+      iconMode === "after"
+    );
+  }
 }
 
 export function clearDecoratedLink(link, wrapper = null) {
-  clearInlineProviderPresentation(link);
-  clearSharedLinkState(link);
+  const resolvedLink = resolveLink(wrapper, link);
+
+  clearInlineProviderPresentation(resolvedLink, wrapper);
   clearWrapperState(wrapper);
 }
