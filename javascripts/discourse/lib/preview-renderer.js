@@ -506,6 +506,7 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
   `;
 }
 
+
 function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "external");
   const title = preview?.title || preview?.hostname || preview?.url || "External link";
