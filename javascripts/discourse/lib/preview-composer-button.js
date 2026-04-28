@@ -2,7 +2,7 @@ import I18n from "I18n";
 import RichPreviewLinkModal from "../components/rich-preview-link-modal";
 
 export function registerPreviewComposerButton(api, config) {
-  const tagName = config?.previewsTagName || "preview";
+  const tagName = "preview";
 
   try {
     const locale = I18n.currentLocale();
