@@ -21,7 +21,8 @@ svg_icons:
   type: list
   list_type: compact
   default: "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
-  description: Additional SVG icons used by configured preview providers.
+  description: >
+    Additional SVG icons used by configured preview providers.
 
 preview_providers:
   type: objects
@@ -302,19 +303,25 @@ thumbnail_size_mode:
     - auto_fit_height
     - wrap_excerpt
     - manual
-  description: The auto_fit_height mode matches image height to card height. The wrap_excerpt mode floats the thumbnail so the excerpt text can wrap around it. The manual mode uses the configured width percentage.
+  description: >
+    auto_fit_height mode matches image height to card height.
+    wrap_excerpt mode floats the thumbnail so the excerpt text can wrap around it.
+    manual mode uses the configured width percentage.
 
 thumbnail_auto_fit_max_width:
   default: 10rem
   type: string
-  description: Applies only when Thumbnail size mode above is set to either auto_fit_height or wrap_excerpt. Accepts valid CSS width values such as 8rem, 160px, or 12vw.
+  description: >
+    Applies only when Thumbnail size mode above is set to either auto_fit_height or wrap_excerpt.
+    Accepts valid CSS width values such as 8rem, 160px, or 12vw.
 
 thumbnail_size_percent:
   default: 15
   type: integer
   min: 5
   max: 50
-  description: Applies only when Thumbnail size mode above is set to manual. Sets the thumbnail width as a percentage of the hover card width.
+  description: >
+    Applies only when Thumbnail size mode above is set to manual. Sets the thumbnail width as a percentage of the hover card width.
 
 show_thumbnail_mobile:
   default: true
@@ -335,31 +342,41 @@ thumbnail_size_mode_mobile:
   default: manual
   type: enum
   choices:
-    - manual
     - auto_fit_height
-  description: On mobile, auto-fit-height matches image height to card height. Manual mode uses the configured width percentage.
+    - manual
+  description: On mobile, >
+    auto-fit-height matches image height to card height.
+    manual uses the configured width percentage.
 
 thumbnail_auto_fit_max_width_mobile:
   default: 8rem
   type: string
-  description: Used only in mobile auto-fit-height mode. Accepts valid CSS width values such as 7rem, 140px, or 30vw.
+  description: >
+    Used only in mobile auto-fit-height mode.
+    Accepts valid CSS width values such as 7rem, 140px, or 30vw.
 
 thumbnail_size_percent_mobile:
   default: 33
   type: integer
   min: 15
   max: 60
-  description: Used only in mobile manual mode. Sets the thumbnail width as a percentage of the hover card width.
+  description: >
+    Used only in mobile manual mode.
+    Sets the thumbnail width as a percentage of the hover card width.
 
 thumbnail_height_top_bottom:
   default: auto
   type: string
-  description: Used when the thumbnail is placed on top or bottom on desktop. Accepts valid CSS height values such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem).
+  description: >
+    Used when the thumbnail is placed on top or bottom on desktop.
+    Accepts valid CSS height values such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem).
 
 thumbnail_height_top_bottom_mobile:
   default: auto
   type: string
-  description: Used when the thumbnail is placed on top or bottom on mobile. Accepts valid CSS height values such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem).
+  description: >
+    Used when the thumbnail is placed on top or bottom on mobile.
+    Accepts valid CSS height values such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem).
 
 # ─── Content ─────────────────────────────────────────────────────────────────
 
