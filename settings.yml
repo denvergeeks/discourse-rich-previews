@@ -277,10 +277,10 @@ thumbnail_placement:
   default: left
   type: enum
   choices:
-    - top
-    - right
-    - bottom
     - left
+    - right
+    - top
+    - bottom
   description: Thumbnail placement on desktop.
 
 thumbnail_size_mode:
@@ -295,7 +295,7 @@ thumbnail_size_mode:
 thumbnail_auto_fit_max_width:
   default: 10rem
   type: string
-  description: Applies when Thumbnail size mode above is set to either auto_fit_height or wrap_excerpt. Accepts valid CSS width values such as 8rem, 160px, or 12vw.
+  description: Applies only when Thumbnail size mode above is set to either auto_fit_height or wrap_excerpt. Accepts valid CSS width values such as 8rem, 160px, or 12vw.
 
 thumbnail_size_percent:
   default: 15
@@ -314,9 +314,9 @@ thumbnail_placement_mobile:
   type: enum
   choices:
     - top
-    - right
     - bottom
     - left
+    - right
   description: Thumbnail placement on mobile.
 
 thumbnail_size_mode_mobile:
