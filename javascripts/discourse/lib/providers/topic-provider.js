@@ -22,18 +22,13 @@ async function fetchViaProxy(remoteJsonUrl, signal) {
   });
 
   if (!response.ok) {
-    throw new Error(`Proxy error ${response.status} for ${remoteJsonUrl}`);
+    throw new Error(
+      `Proxy error ${response.status} for ${remoteJsonUrl}`
+    );
   }
 
   const text = await response.text();
   return JSON.parse(text);
-}
-
-function stripBBCode(text) {
-  return String(text ?? "")
-    .replace(/\[[^\]]*\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 export function createTopicProvider(api, config, topicCache, inFlightFetches) {
@@ -103,10 +98,8 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
     const origin = target?.origin || window.location.origin;
     const isRemote = origin !== window.location.origin;
 
-    const rawExcerpt =
+    const excerptSource =
       topic?.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
-
-    const excerptSource = stripBBCode(rawExcerpt);
 
     const imageUrl =
       topic?.image_url ||
