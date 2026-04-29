@@ -636,28 +636,35 @@ export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
   }
 }
 
-export function getJSON(url, options = {}) {
+export async function getJSON(url, options = {}) {
   const parsedUrl = new URL(url, window.location.origin);
   const isCrossOrigin = parsedUrl.origin !== window.location.origin;
 
-  return fetch(parsedUrl.toString(), {
-    method: "GET",
-    mode: isCrossOrigin ? "cors" : "same-origin",
-    credentials: isCrossOrigin ? "omit" : "same-origin",
-    headers: {
-      Accept: "application/json",
-      ...options.headers,
-    },
-    signal: options.signal,
-  }).then((response) => {
+  try {
+    const response = await fetch(parsedUrl.toString(), {
+      method: "GET",
+      mode: isCrossOrigin ? "cors" : "same-origin",
+      credentials: isCrossOrigin ? "omit" : "same-origin",
+      headers: {
+        Accept: "application/json",
+        ...options.headers,
+      },
+      signal: options.signal,
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} for ${parsedUrl.toString()}`);
     }
 
-    return response.json();
-  });
-}
+    return await response.json();
+  } catch (error) {
+    if (error?.name === "AbortError" || options.signal?.aborted) {
+      return null;
+    }
 
+    throw error;
+  }
+}
 export function inCookedPost(el) {
   return !!el?.closest?.(".cooked");
 }
