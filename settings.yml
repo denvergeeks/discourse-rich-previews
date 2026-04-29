@@ -352,7 +352,7 @@ thumbnail_auto_fit_max_width_mobile:
   default: 8rem
   type: string
   description: >
-    Used only in mobile auto-fit-height mode.
+    Used only in mobile auto_fit_height mode.
     Accepts valid CSS width values such as 7rem, 140px, or 30vw.
 
 thumbnail_size_percent_mobile:
