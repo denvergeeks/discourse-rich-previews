@@ -198,23 +198,28 @@ function buildSharedThumbnailHTML(
     isMobile
   );
 
-  let style = "";
+  let wrapStyle = "";
+  let imgClass = "topic-hover-card__thumb";
 
   if (placement === "left" || placement === "right") {
     if (sizeMode === "manual") {
-      style = `style="width:${Number(widthPercent) || 15}%;"`;
+      wrapStyle = `style="--thc-thumbnail-size-percent:${Number(widthPercent) || 15};"`;
     } else {
-      style = `style="max-width:${escapeHTML(String(maxWidth || "10rem"))};"`;
+      wrapStyle = `style="--thc-thumbnail-size-percent:${Number(widthPercent) || 15};--thc-auto-thumb-max-width:${escapeHTML(
+        String(maxWidth || "10rem")
+      )};"`;
+      imgClass += " topic-hover-card__thumb--auto-fit";
     }
   } else if (placement === "top" || placement === "bottom") {
-    style = `style="height:${escapeHTML(String(topBottomHeight || "auto"))};"`;
+    wrapStyle = `style="--thc-thumb-top-bottom-height:${escapeHTML(
+      String(topBottomHeight || "auto")
+    )};"`;
   }
 
   return `
-    <div class="topic-hover-card__thumb topic-hover-card__thumb--${escapeHTML(
-      placement
-    )} topic-hover-card__thumb--${escapeHTML(sizeMode || "auto_fit_height")}" ${style}>
+    <div class="topic-hover-card__thumb-wrap" ${wrapStyle}>
       <img
+        class="${imgClass}"
         src="${safeImage}"
         alt="${escapeHTML(title || "Preview image")}"
         loading="lazy"
