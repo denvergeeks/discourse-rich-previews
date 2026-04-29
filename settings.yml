@@ -277,10 +277,10 @@ thumbnail_placement:
   default: left
   type: enum
   choices:
-    - left
-    - right
     - top
+    - right
     - bottom
+    - left
   description: Thumbnail placement on desktop.
 
 thumbnail_size_mode:
@@ -314,9 +314,9 @@ thumbnail_placement_mobile:
   type: enum
   choices:
     - top
+    - right
     - bottom
     - left
-    - right
   description: Thumbnail placement on mobile.
 
 thumbnail_size_mode_mobile:
