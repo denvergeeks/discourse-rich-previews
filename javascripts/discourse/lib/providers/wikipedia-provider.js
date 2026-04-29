@@ -18,7 +18,6 @@ export function matchesWikipediaTarget(link, config) {
 
   try {
     const url = new URL(link.href, window.location.origin);
-
     return (
       WIKIPEDIA_HOST_RE.test(url.hostname) &&
       url.pathname.startsWith("/wiki/")
@@ -31,11 +30,8 @@ export function matchesWikipediaTarget(link, config) {
 function getWikipediaHost(link, config) {
   try {
     const url = new URL(link.href, window.location.origin);
-
     return (
-      url.hostname ||
-      config?.wikipediaPreviewsBaseUrl ||
-      "en.wikipedia.org"
+      url.hostname || config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org"
     );
   } catch {
     return config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org";
@@ -70,7 +66,6 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
       }
 
       const cacheKey = `wikipedia:${host}:${title}`;
-
       const cached = getCachedValue(previewCache, cacheKey);
       if (cached) {
         return cached;
@@ -90,6 +85,7 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
               config?.topicCacheMax || 100
             );
           }
+
           return data;
         })
         .finally(() => {
@@ -145,11 +141,7 @@ async function fetchWikipediaPreview(host, title, config, signal) {
         ? summary?.extract_html || null
         : null,
     imageUrl:
-      config?.wikipediaPreviewsShowImage !== false
-        ? summary?.thumbnail?.source ||
-          summary?.originalimage?.source ||
-          null
-        : null,
+      summary?.thumbnail?.source || summary?.originalimage?.source || null,
     url:
       summary?.content_urls?.desktop?.page ||
       `https://${host}/wiki/${encodeURIComponent(page.key)}`,
