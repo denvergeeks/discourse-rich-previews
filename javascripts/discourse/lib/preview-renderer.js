@@ -243,7 +243,11 @@ function buildSharedThumbnailHTML(
   isMobile,
   options = {}
 ) {
-  const safeImage = stringValue(imageUrl);
+  const safeImage =
+    typeof imageUrl === "string" && imageUrl.trim().length
+      ? imageUrl.trim()
+      : "";
+
   if (!safeImage) {
     return "";
   }
@@ -285,10 +289,14 @@ function buildSharedThumbnailHTML(
 
   if (placement === "top" || placement === "bottom") {
     wrapStyles.push(
-      `--thc-thumb-top-bottom-height:${escapeHTML(String(thumbTopBottomHeight))};`
+      `--thc-thumb-top-bottom-height:${escapeHTML(
+        String(thumbTopBottomHeight)
+      )};`
     );
     imgStyles.push(
-      `--thc-thumb-top-bottom-height:${escapeHTML(String(thumbTopBottomHeight))};`
+      `--thc-thumb-top-bottom-height:${escapeHTML(
+        String(thumbTopBottomHeight)
+      )};`
     );
   }
 
