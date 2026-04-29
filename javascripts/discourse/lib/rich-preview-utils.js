@@ -112,7 +112,6 @@ function normalizePreviewProviders(rawProviders = []) {
       glyph_mode: "icon",
       icon: "eye",
       emoji: "🔗",
-      // Match legacy previews_color_remote behavior (remote/external)
       color: "var(--success)",
       remote_hosts: [],
       require_https: true,
@@ -1202,8 +1201,14 @@ export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
     });
   });
 
-  const text = temp.textContent || "";
-  return text.replace(/\s+/g, " ").trim();
+  const text = (temp.textContent || "")
+    .replace(/\[rich-preview\b[^\]]*\]/gi, "")
+    .replace(/\[\/rich-preview\]/gi, "")
+    .replace(/\[[^\]]+\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text;
 }
 
 export function normalizeTag(tag) {
