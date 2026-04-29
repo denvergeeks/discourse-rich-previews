@@ -747,12 +747,16 @@ export default apiInitializer((api) => {
   }
 
   function abortCurrentRequest() {
-    try {
-      currentAbortController?.abort();
-    } catch {
-      // no-op
+    if (!currentAbortController) {
+      return;
     }
+
+    const controller = currentAbortController;
     currentAbortController = null;
+
+    if (!controller.signal.aborted) {
+      controller.abort(new DOMException("Preview request canceled", "AbortError"));
+    }
   }
 
   function clearCurrentAnchorDescription() {
@@ -804,7 +808,9 @@ export default apiInitializer((api) => {
   }
 
   async function fetchPreview(target, signal) {
-    if (!target) return null;
+    if (!target) {
+      return null;
+    }
 
     const provider = providerForTarget(target);
     if (!provider) {
@@ -814,7 +820,7 @@ export default apiInitializer((api) => {
     return provider.fetch(target, signal);
   }
 
-  function showCard(target, anchorRect) {
+  async function showCard(target, anchorRect) {
     ensureTooltip();
     cancel(hideTimer);
 
@@ -827,76 +833,103 @@ export default apiInitializer((api) => {
     }
 
     abortCurrentRequest();
-    currentAbortController = new AbortController();
+
+    const controller = new AbortController();
+    currentAbortController = controller;
     currentPreviewKey = target.key;
+
     applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
+
     const loadingAttrs = buildRootAttrsForTarget(
       target,
       config,
       target?.type || "topic"
     );
+
     tooltip.innerHTML = buildLoadingPreviewHTML(loadingAttrs);
     tooltip.classList.add("is-visible");
     positionTooltipNextFrame(anchorRect);
 
-    fetchPreview(target, currentAbortController.signal)
-      .then((preview) => {
-        if (!tooltip || currentPreviewKey !== target.key) {
-          return;
-        }
+    try {
+      const preview = await fetchPreview(target, controller.signal);
 
-        if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode()) {
-          tooltip.classList.remove("is-visible");
-          currentPreviewKey = null;
-          return;
-        }
+      if (
+        controller.signal.aborted ||
+        !tooltip ||
+        currentAbortController !== controller ||
+        currentPreviewKey !== target.key
+      ) {
+        return;
+      }
 
-        if (!preview) {
-          applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
-          const errorAttrs = buildRootAttrsForTarget(
-            target,
-            config,
-            target?.type || "topic"
-          );
-          tooltip.innerHTML = buildErrorPreviewHTML(
-            "No preview available.",
-            errorAttrs
-          );
-          positionTooltipNextFrame(anchorRect);
-          return;
-        }
+      if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode()) {
+        tooltip.classList.remove("is-visible");
+        currentPreviewKey = null;
+        return;
+      }
 
-        applyTooltipProviderColor(
-          preview?.providerKey || preview?.type || target?.providerKey || "topic"
-        );
-        tooltip.innerHTML = getRenderedCard(
-          preview,
-          viewport.isMobileLayout()
-        );
-        positionTooltipNextFrame(anchorRect);
-      })
-      .catch((error) => {
-        if (error?.name === "AbortError") return;
-
-        console.error("[discourse-rich-previews] Could not load preview", {
-          target,
-          error,
-        });
-        logDebug(config, "Could not load preview", { target, error });
-
-        if (!tooltip || currentPreviewKey !== target.key) return;
+      if (!preview) {
         applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
+
         const errorAttrs = buildRootAttrsForTarget(
           target,
           config,
           target?.type || "topic"
         );
+
         tooltip.innerHTML = buildErrorPreviewHTML(
-          "Could not load preview.",
+          "No preview available.",
           errorAttrs
         );
         positionTooltipNextFrame(anchorRect);
+        return;
+      }
+
+      applyTooltipProviderColor(
+        preview?.providerKey || preview?.type || target?.providerKey || "topic"
+      );
+
+      tooltip.innerHTML = getRenderedCard(
+        preview,
+        viewport.isMobileLayout()
+      );
+      positionTooltipNextFrame(anchorRect);
+    } catch (error) {
+      if (
+        error?.name === "AbortError" ||
+        controller.signal.aborted
+      ) {
+        return;
+      }
+
+      console.error("[discourse-rich-previews] Could not load preview", {
+        target,
+        error,
       });
+      logDebug(config, "Could not load preview", { target, error });
+
+      if (
+        !tooltip ||
+        currentAbortController !== controller ||
+        currentPreviewKey !== target.key
+      ) {
+        return;
+      }
+
+      applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
+
+      const errorAttrs = buildRootAttrsForTarget(
+        target,
+        config,
+        target?.type || "topic"
+      );
+
+      tooltip.innerHTML = buildErrorPreviewHTML(
+        "Could not load preview.",
+        errorAttrs
+      );
+      positionTooltipNextFrame(anchorRect);
+    }
   }
 
   async function resolveUserFieldIdForAdmins() {
