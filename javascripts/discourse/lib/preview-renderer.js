@@ -160,6 +160,10 @@ function sizeModeFor(config, isMobile) {
   );
 }
 
+function layoutMode(config) {
+  return config?.previewLayout || "hover_card";
+}
+
 function buildCardClasses(preview, config, isMobile) {
   const density = densityFor(null, config, isMobile, preview.type);
   const placement = placementFor(config, isMobile);
@@ -178,7 +182,8 @@ function buildCardClasses(preview, config, isMobile) {
   classes.push(
     `topic-hover-card--${placement}`,
     `topic-hover-card--density-${density}`,
-    `topic-hover-card--thumb-size-${sizeMode}`
+    `topic-hover-card--thumb-size-${sizeMode}`,
+    `topic-hover-card--layout-${layoutMode(config)}`
   );
 
   if (isMobile) {
@@ -527,6 +532,46 @@ function buildTitleHTML(preview, config, isMobile) {
   `;
 }
 
+function buildOneboxLayoutBody(preview, config, isMobile, options = {}) {
+  const {
+    primaryLabel = "Open link",
+    showSourceRow = true,
+    sourceLabel,
+    titlePreview = preview,
+    excerptPreview = preview,
+  } = options;
+
+  const titleHtml = buildTitleHTML(
+    titlePreview || preview,
+    config,
+    isMobile
+  );
+  const excerptHtml = buildExcerptHTML(
+    excerptPreview || preview,
+    config,
+    isMobile
+  );
+
+  const metaItems = [];
+
+  if (showSourceRow && sourceLabel) {
+    metaItems.push(
+      buildMetaItem("Source", sourceLabel, "topic-hover-card__meta-item--source")
+    );
+  }
+
+  const metaHtml = buildMetaRow(metaItems);
+
+  return `
+    <div class="topic-hover-card__body topic-hover-card__body--onebox">
+      ${buildMobileActionsHTML(preview, isMobile, primaryLabel)}
+      ${titleHtml}
+      ${excerptHtml}
+      ${metaHtml}
+    </div>
+  `;
+}
+
 function buildTopicPreviewHTML(
   preview,
   _provider,
@@ -699,9 +744,23 @@ function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
     config,
     isMobile
   );
+  const cardClasses = buildCardClasses(preview, config, isMobile);
+
+  if (layoutMode(config) === "onebox") {
+    return `
+      <article class="${cardClasses}" ${rootAttrs}>
+        ${thumbHtml}
+        ${buildOneboxLayoutBody(preview, config, isMobile, {
+          primaryLabel: "Open article",
+          showSourceRow: true,
+          sourceLabel: host,
+        })}
+      </article>
+    `;
+  }
+
   const excerptHtml = buildExcerptHTML(preview, config, isMobile);
   const metaHtml = buildMetaRow([buildMetaItem("Source", host)]);
-  const cardClasses = buildCardClasses(preview, config, isMobile);
 
   return `
     <article class="${cardClasses}" ${rootAttrs}>
@@ -738,13 +797,28 @@ function buildExternalPreviewHTML(preview, provider, config, isMobile) {
     excerpt: description,
   };
 
+  const cardClasses = buildCardClasses(preview, config, isMobile);
+
+  if (layoutMode(config) === "onebox") {
+    return `
+      <article class="${cardClasses}" ${rootAttrs}>
+        ${thumbHtml}
+        ${buildOneboxLayoutBody(normalizedPreview, config, isMobile, {
+          primaryLabel: "Open link",
+          showSourceRow: true,
+          sourceLabel: preview?.siteName || preview?.hostname,
+          titlePreview: normalizedPreview,
+          excerptPreview: normalizedPreview,
+        })}
+      </article>
+    `;
+  }
+
   const excerptHtml = buildExcerptHTML(normalizedPreview, config, isMobile);
   const metaHtml = buildMetaRow([
     buildMetaItem("Site", preview?.siteName || preview?.hostname),
     buildMetaItem("URL", preview?.displayUrl || preview?.url),
   ]);
-
-  const cardClasses = buildCardClasses(preview, config, isMobile);
 
   return `
     <article class="${cardClasses}" ${rootAttrs}>

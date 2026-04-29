@@ -254,6 +254,18 @@ density_mobile:
     - dense
   description: Controls hover card density on mobile.
 
+preview_layout:
+  default: "hover_card"
+  type: enum
+  choices:
+    - hover_card
+    - onebox
+  client: true
+  description: >
+    Controls the visual layout of rich previews.
+    hover_card: current floating card layout.
+    onebox: flatter inline layout similar to core Discourse onebox.
+
 card_width:
   default: 32rem
   type: string

@@ -75,6 +75,10 @@ function pick(config, desktopKey, mobileKey, isMobile) {
   return isMobile ? config[mobileKey] : config[desktopKey];
 }
 
+function previewLayout(config) {
+  return config.previewLayout || "hover_card";
+}
+
 function buildThumbnailHTML(topic, config, isMobile = false) {
   const imageUrl = sanitizeURL(topic.image_url);
   if (!imageUrl) {
@@ -396,6 +400,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
 
   const density = pick(config, "densityDesktop", "densityMobile", isMobile);
   const densityClass = `topic-hover-card--density-${density}`;
+  const layoutClass = `topic-hover-card--layout-${previewLayout(config)}`;
 
   const sizeMode = pick(
     config,
@@ -476,7 +481,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
       ${buildBadgesHTML(topic, categories, config, isMobile)}
       ${buildMobileActionsHTML(topic, isMobile)}
     </div>
-  `;
+ `;
 
   const wrapperStyle = `
     --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
@@ -488,7 +493,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     case "left":
       return `
         <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--left ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--left ${densityClass} ${sizeModeClass} ${layoutClass}"
           style="${wrapperStyle}"
         >
           ${outerThumbnail}
@@ -498,7 +503,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     case "right":
       return `
         <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--right ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--right ${densityClass} ${sizeModeClass} ${layoutClass}"
           style="${wrapperStyle}"
         >
           ${bodyInner}
@@ -508,7 +513,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     case "bottom":
       return `
         <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--bottom ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--bottom ${densityClass} ${sizeModeClass} ${layoutClass}"
           style="${wrapperStyle}"
         >
           ${bodyInner}
@@ -519,7 +524,7 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     default:
       return `
         <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--top ${densityClass} ${sizeModeClass}"
+          class="topic-hover-card topic-hover-card--topic topic-hover-card--top ${densityClass} ${sizeModeClass} ${layoutClass}"
           style="${wrapperStyle}"
         >
           ${outerThumbnail}
@@ -1291,6 +1296,7 @@ function applyBodyClasses() {
       previewsExternalMode: config.previewsExternalMode,
       previewsWikipediaMode: config.previewsWikipediaMode,
       wikipediaPreviewsBaseUrl: config.wikipediaPreviewsBaseUrl,
+      previewLayout: config.previewLayout,
     });
   })().catch((error) => {
     console.error("[discourse-rich-previews] Fatal init error:", error);
