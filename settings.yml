@@ -344,8 +344,8 @@ thumbnail_size_mode_mobile:
   choices:
     - auto_fit_height
     - manual
-  description: On mobile, >
-    auto-fit-height matches image height to card height.
+  description: >
+    auto_fit_height matches image height to card height.
     manual uses the configured width percentage.
 
 thumbnail_auto_fit_max_width_mobile:
