@@ -241,86 +241,98 @@ function buildSharedThumbnailHTML(
   title,
   config,
   isMobile,
-  forceShow = false
+  options = {}
 ) {
-  if (!imageUrl) {
-    return "";
-  }
-
-  const safeImage = sanitizeURL(imageUrl);
+  const safeImage = stringValue(imageUrl);
   if (!safeImage) {
     return "";
   }
 
-  const showThumbnail = forceShow
-    ? true
-    : pick(
-        config,
-        "showThumbnailDesktop",
-        "showThumbnailMobile",
-        isMobile
-      );
+  const sizeMode = sizeModeFor(config, isMobile);
+  const placement = placementFor(config, isMobile);
+  const variant = options.variant || "plain";
 
-  if (!showThumbnail) {
-    return "";
+  const sizePercent = isMobile
+    ? config?.thumbnailSizePercentMobile ||
+      config?.imageSizePercentMobile ||
+      config?.thumbnailSizeMobile ||
+      25
+    : config?.thumbnailSizePercent ||
+      config?.imageSizePercent ||
+      config?.thumbnailSize ||
+      15;
+
+  const autoMaxWidth = isMobile
+    ? config?.autoThumbnailMaxWidthMobile || "8rem"
+    : config?.autoThumbnailMaxWidth || "10rem";
+
+  const thumbTopBottomHeight = isMobile
+    ? config?.thumbnailTopBottomHeightMobile || "auto"
+    : config?.thumbnailTopBottomHeight || "auto";
+
+  const imgClasses = ["topic-hover-card__thumb"];
+  const wrapStyles = [
+    `--thc-thumbnail-size-percent:${escapeHTML(String(sizePercent))};`,
+  ];
+  const imgStyles = [];
+
+  if (sizeMode === "auto_fit_height") {
+    imgClasses.push("topic-hover-card__thumb--auto-fit");
+    wrapStyles.push(
+      `--thc-auto-thumb-max-width:${escapeHTML(String(autoMaxWidth))};`
+    );
   }
 
-  const placement = placementFor(config, isMobile);
-  const sizeMode = sizeModeFor(config, isMobile);
+  if (placement === "top" || placement === "bottom") {
+    wrapStyles.push(
+      `--thc-thumb-top-bottom-height:${escapeHTML(String(thumbTopBottomHeight))};`
+    );
+    imgStyles.push(
+      `--thc-thumb-top-bottom-height:${escapeHTML(String(thumbTopBottomHeight))};`
+    );
+  }
 
-  const maxWidth = pick(
-    config,
-    "thumbnailAutoFitMaxWidthDesktop",
-    "thumbnailAutoFitMaxWidthMobile",
-    isMobile
-  );
+  const wrapStyleAttr = wrapStyles.length
+    ? `style="${wrapStyles.join("")}"`
+    : "";
 
-  const widthPercent = pick(
-    config,
-    "thumbnailSizePercentDesktop",
-    "thumbnailSizePercentMobile",
-    isMobile
-  );
+  const imgStyleAttr = imgStyles.length
+    ? `style="${imgStyles.join("")}"`
+    : "";
 
-  const topBottomHeight = pick(
-    config,
-    "thumbnailHeightTopBottomDesktop",
-    "thumbnailHeightTopBottomMobile",
-    isMobile
-  );
+  const safeAlt = escapeHTML(title || "Preview image");
+  const safeSrc = escapeHTML(safeImage);
+  const imgClassAttr = imgClasses.join(" ");
 
-  let wrapStyle = "";
-  let imgStyle = "";
-  let imgClass = "topic-hover-card__thumb";
-
-  if (placement === "left" || placement === "right") {
-    if (sizeMode === "manual") {
-      wrapStyle = `style="--thc-thumbnail-size-percent:${
-        Number(widthPercent) || 15
-      };"`;
-    } else {
-      wrapStyle = `style="--thc-thumbnail-size-percent:${
-        Number(widthPercent) || 15
-      };--thc-auto-thumb-max-width:${escapeHTML(
-        String(maxWidth || "10rem")
-      )};"`;
-      imgClass += " topic-hover-card__thumb--auto-fit";
-    }
-  } else if (placement === "top" || placement === "bottom") {
-    imgStyle = `style="--thc-thumb-top-bottom-height:${escapeHTML(
-      String(topBottomHeight || "auto")
-    )};"`;
+  if (variant === "blur-bg") {
+    return `
+      <div class="topic-hover-card__thumb-wrap" ${wrapStyleAttr}>
+        <div
+          class="topic-hover-card__thumb-bg"
+          style="background-image: url('${safeSrc}');"
+          aria-hidden="true"
+        ></div>
+        <img
+          class="${imgClassAttr}"
+          src="${safeSrc}"
+          alt="${safeAlt}"
+          loading="lazy"
+          decoding="async"
+          ${imgStyleAttr}
+        >
+      </div>
+    `;
   }
 
   return `
-    <div class="topic-hover-card__thumb-wrap" ${wrapStyle}>
+    <div class="topic-hover-card__thumb-wrap" ${wrapStyleAttr}>
       <img
-        class="${imgClass}"
-        src="${safeImage}"
-        alt="${escapeHTML(title || "Preview image")}"
+        class="${imgClassAttr}"
+        src="${safeSrc}"
+        alt="${safeAlt}"
         loading="lazy"
         decoding="async"
-        ${imgStyle}
+        ${imgStyleAttr}
       >
     </div>
   `;
@@ -729,47 +741,62 @@ function buildTopicPreviewHTML(
 
 function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "wikipedia");
-  const title = preview?.title || preview?.pageKey || "Wikipedia";
-  const imageUrl =
-    preview?.imageUrl ||
-    preview?.thumbnail ||
-    preview?.raw?.summary?.thumbnail?.source ||
-    preview?.raw?.summary?.originalimage?.source ||
-    "";
-  const host = preview?.host || "wikipedia.org";
 
+  const title = preview?.title || preview?.pageKey || "Wikipedia";
+  const host = preview?.host || "wikipedia.org";
+  const imageUrl = preview?.image;
+
+  const cardClasses = buildCardClasses(preview, config, isMobile);
+  const placement = placementFor(config, isMobile);
+  const layout = layoutMode(config);
+
+  // Shared thumbnail HTML – we want the same behavior as topic cards
   const thumbHtml = buildSharedThumbnailHTML(
     imageUrl,
     title,
     config,
-    isMobile
+    isMobile,
+    {
+      // use same variant you use for topics (blurred bg, etc.)
+      variant: "blur-bg",
+    }
   );
-  const cardClasses = buildCardClasses(preview, config, isMobile);
 
-  if (layoutMode(config) === "onebox") {
-    return `
-      <article class="${cardClasses}" ${rootAttrs}>
-        ${thumbHtml}
-        ${buildOneboxLayoutBody(preview, config, isMobile, {
-          primaryLabel: "Open article",
-          showSourceRow: true,
-          sourceLabel: host,
-        })}
-      </article>
-    `;
+  const bodyHtml = `
+    <div class="topic-hover-card__body">
+      ${buildMobileActionsHTML(preview, isMobile, "Open article")}
+      ${buildTitleHTML(preview, config, isMobile)}
+      ${buildExcerptHTML(preview, config, isMobile)}
+      ${buildMetaRow([
+        buildMetaItem("Source", host),
+      ])}
+    </div>
+  `;
+
+  // For hover_card layout with left/right placement,
+  // mirror the topic card structure so thumbnail sizing behaves identically.
+  if (layout === "hover_card" && (placement === "left" || placement === "right")) {
+    if (placement === "left") {
+      return `
+        <article class="${cardClasses}" ${rootAttrs}>
+          ${thumbHtml}
+          ${bodyHtml}
+        </article>
+      `;
+    } else {
+      return `
+        <article class="${cardClasses}" ${rootAttrs}>
+          ${bodyHtml}
+          ${thumbHtml}
+        </article>
+      `;
+    }
   }
 
-  const excerptHtml = buildExcerptHTML(preview, config, isMobile);
-  const metaHtml = buildMetaRow([buildMetaItem("Source", host)]);
-
+  // For other layouts (top/bottom, onebox, etc.), keep body-first ordering
   return `
     <article class="${cardClasses}" ${rootAttrs}>
-      <div class="topic-hover-card__body">
-        ${buildMobileActionsHTML(preview, isMobile, "Open article")}
-        ${buildTitleHTML(preview, config, isMobile)}
-        ${excerptHtml}
-        ${metaHtml}
-      </div>
+      ${bodyHtml}
       ${thumbHtml}
     </article>
   `;
