@@ -76,7 +76,7 @@ function pick(config, desktopKey, mobileKey, isMobile) {
 }
 
 function previewLayout(config) {
-  return config.previewLayout || config.preview_layout || "hover_card";
+  return config.previewLayout || "hover_card";
 }
 
 function buildThumbnailHTML(topic, config, isMobile = false) {
