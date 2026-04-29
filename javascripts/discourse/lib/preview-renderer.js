@@ -165,17 +165,21 @@ function buildCardClasses(preview, config, isMobile) {
   const placement = placementFor(config, isMobile);
   const sizeMode = sizeModeFor(config, isMobile);
 
-  const typeClass = preview.type
-    ? `topic-hover-card--${preview.type}`
-    : "topic-hover-card--topic";
+  const classes = ["topic-hover-card"];
 
-  const classes = [
-    "topic-hover-card",
-    typeClass,
+  if (preview.type === "wikipedia") {
+    classes.push("topic-hover-card--topic", "topic-hover-card--wikipedia");
+  } else if (preview.type) {
+    classes.push(`topic-hover-card--${preview.type}`);
+  } else {
+    classes.push("topic-hover-card--topic");
+  }
+
+  classes.push(
     `topic-hover-card--${placement}`,
     `topic-hover-card--density-${density}`,
-    `topic-hover-card--thumb-size-${sizeMode}`,
-  ];
+    `topic-hover-card--thumb-size-${sizeMode}`
+  );
 
   if (isMobile) {
     classes.push("topic-hover-card--mobile");
@@ -640,7 +644,6 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
   const title = preview?.title || preview?.pageKey || "Wikipedia";
   const imageUrl =
     preview?.imageUrl ||
-    preview?.imageUlr ||
     preview?.thumbnail ||
     preview?.raw?.summary?.thumbnail?.source ||
     preview?.raw?.summary?.originalimage?.source ||
@@ -654,18 +657,54 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
     isMobile
   );
   const excerptHtml = buildExcerptHTML(preview, config, isMobile);
-  const metaHtml = buildMetaRow([buildMetaItem("Source", host)]);
+  const metaHtml = buildMetaRow([
+    buildMetaItem("Source", host),
+  ]);
 
   const cardClasses = buildCardClasses(preview, config, isMobile);
+  const placement = placementFor(config, isMobile);
+  const thumbFirst = placement !== "bottom" && placement !== "right";
 
   return `
-    <article class="${cardClasses}" ${rootAttrs}>
-      ${thumbHtml}
+    <article
+      class="${cardClasses}"
+      ${rootAttrs}
+      style="
+        --thc-thumbnail-size-percent:${pick(
+          config,
+          "thumbnailSizePercentDesktop",
+          "thumbnailSizePercentMobile",
+          isMobile
+        )};
+        --thc-auto-thumb-max-width:${escapeHTML(
+          String(
+            pick(
+              config,
+              "thumbnailAutoFitMaxWidthDesktop",
+              "thumbnailAutoFitMaxWidthMobile",
+              isMobile
+            ) || "10rem"
+          )
+        )};
+        --thc-thumb-top-bottom-height:${escapeHTML(
+          String(
+            pick(
+              config,
+              "thumbnailHeightTopBottomDesktop",
+              "thumbnailHeightTopBottomMobile",
+              isMobile
+            ) || "auto"
+          )
+        )};
+      "
+    >
+      ${thumbFirst ? thumbHtml : ""}
       <div class="topic-hover-card__body">
         ${metaHtml}
         ${buildTitleHTML(preview, config, isMobile)}
         ${excerptHtml}
       </div>
+      ${thumbFirst ? "" : thumbHtml}
     </article>
   `;
 }

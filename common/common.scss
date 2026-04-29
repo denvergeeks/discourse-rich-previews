@@ -310,6 +310,7 @@
 
 /* Wikipedia preview tweaks */
 
+/*
 .topic-hover-card.topic-hover-card--wikipedia {
   .topic-hover-card__excerpt {
     overflow-wrap: anywhere;
@@ -343,6 +344,7 @@
     color: var(--primary);
   }
 }
+*/
 
 .topic-hover-card__meta-item {
   display: inline-flex;
@@ -973,7 +975,8 @@ a.rich-preview-link {
   .topic-hover-card--topic.topic-hover-card--density-dense .topic-hover-card__badge {
     padding: 0.08rem 0.28rem;
   }
-
+  
+  /*
   .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__body {
     gap: 0.85rem;
     padding: 1rem 1.05rem;
@@ -1056,6 +1059,7 @@ a.rich-preview-link {
     font-size: var(--font-down-2);
     gap: 0.12rem 0.24rem;
   }
+  */
 }
 
 // ─── Rich Preview Link Modal ─────────────────────────────────────────────────
