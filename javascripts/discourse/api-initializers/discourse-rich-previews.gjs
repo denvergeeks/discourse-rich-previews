@@ -414,9 +414,9 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
 
   const sizeModeClass =
     sizeMode === "auto_fit_height"
-      ? "topic-hover-card--thumb-size-auto-fit-height"
+      ? "topic-hover-card--thumb-size-auto_fit_height"
       : sizeMode === "wrap_excerpt"
-      ? "topic-hover-card--thumb-size-wrap-excerpt"
+      ? "topic-hover-card--thumb-size-wrap_excerpt"
       : "topic-hover-card--thumb-size-manual";
 
   const thumbnailPercent = pick(
