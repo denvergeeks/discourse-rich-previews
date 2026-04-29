@@ -224,6 +224,8 @@ export function readConfig(settings) {
     densityDesktop: stringSetting(settings.density, "default"),
     densityMobile: stringSetting(settings.density_mobile, "default"),
 
+    previewLayout: stringSetting(settings.preview_layout, "hover_card"),
+
     wikipediaDensityDesktop: stringSetting(
       settings.wikipedia_density,
       "cozy"

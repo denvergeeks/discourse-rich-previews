@@ -1286,6 +1286,7 @@ function applyBodyClasses() {
       currentViewportIsMobile: viewport.isMobileInteractionMode(),
       densityDesktop: config.densityDesktop,
       densityMobile: config.densityMobile,
+      previewLayout: config.previewLayout,
       thumbnailPlacementDesktop: config.thumbnailPlacementDesktop,
       thumbnailPlacementMobile: config.thumbnailPlacementMobile,
       thumbnailSizeModeDesktop: config.thumbnailSizeModeDesktop,
@@ -1296,7 +1297,6 @@ function applyBodyClasses() {
       previewsExternalMode: config.previewsExternalMode,
       previewsWikipediaMode: config.previewsWikipediaMode,
       wikipediaPreviewsBaseUrl: config.wikipediaPreviewsBaseUrl,
-      previewLayout: config.previewLayout,
     });
   })().catch((error) => {
     console.error("[discourse-rich-previews] Fatal init error:", error);
