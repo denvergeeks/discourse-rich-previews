@@ -602,7 +602,12 @@ function buildTopicPreviewHTML(
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "topic");
   const title = preview?.title || "";
   const imageUrl =
-    preview?.imageUrl || preview?.thumbnail || preview?.image || "";
+    preview?.imageUrl ||
+    preview?.thumbnail ||
+    preview?.image ||
+    preview?.thumbnailUrl ||
+    preview?.thumbnail_url ||
+    "";
   const category = preview?.category || preview?.raw?.category || null;
   const tags = preview?.tags || preview?.raw?.tags || [];
 
@@ -646,7 +651,8 @@ function buildTopicPreviewHTML(
     imageUrl,
     title,
     config,
-    isMobile
+    isMobile,
+    { variant: "blur-bg" }
   );
   const authorHtml = buildAuthorHTML(preview, config, isMobile);
   const excerptHtml = buildExcerptHTML(preview, config, isMobile);
@@ -700,48 +706,43 @@ function buildTopicPreviewHTML(
   ]);
 
   const cardClasses = buildCardClasses(preview, config, isMobile);
+  const placement = placementFor(config, isMobile);
+  const layout = layoutMode(config);
+
+  const bodyHtml = `
+    <div class="topic-hover-card__body">
+      ${metaTop}
+      ${buildTitleHTML(preview, config, isMobile)}
+      ${excerptHtml}
+      ${tagsHtml}
+      <div class="topic-hover-card__meta">
+        ${authorHtml}
+        ${metaBottom}
+      </div>
+    </div>
+  `;
+
+  if (layout === "hover_card" && (placement === "left" || placement === "right")) {
+    if (placement === "left") {
+      return `
+        <div class="${cardClasses}" ${rootAttrs}>
+          ${thumbHtml}
+          ${bodyHtml}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="${cardClasses}" ${rootAttrs}>
+        ${bodyHtml}
+        ${thumbHtml}
+      </div>
+    `;
+  }
 
   return `
-    <div class="${cardClasses}" ${rootAttrs}
-      style="
-        --thc-thumbnail-size-percent:${pick(
-          config,
-          "thumbnailSizePercentDesktop",
-          "thumbnailSizePercentMobile",
-          isMobile
-        )};
-        --thc-auto-thumb-max-width:${escapeHTML(
-          String(
-            pick(
-              config,
-              "thumbnailAutoFitMaxWidthDesktop",
-              "thumbnailAutoFitMaxWidthMobile",
-              isMobile
-            ) || "10rem"
-          )
-        )};
-        --thc-thumb-top-bottom-height:${escapeHTML(
-          String(
-            pick(
-              config,
-              "thumbnailHeightTopBottomDesktop",
-              "thumbnailHeightTopBottomMobile",
-              isMobile
-            ) || "auto"
-          )
-        )};
-      "
-    >
-      <div class="topic-hover-card__body">
-        ${metaTop}
-        ${buildTitleHTML(preview, config, isMobile)}
-        ${excerptHtml}
-        ${tagsHtml}
-        <div class="topic-hover-card__meta">
-          ${authorHtml}
-          ${metaBottom}
-        </div>
-      </div>
+    <div class="${cardClasses}" ${rootAttrs}>
+      ${bodyHtml}
       ${thumbHtml}
     </div>
   `;
@@ -752,22 +753,24 @@ function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
 
   const title = preview?.title || preview?.pageKey || "Wikipedia";
   const host = preview?.host || "wikipedia.org";
-  const imageUrl = preview?.image;
+  const imageUrl =
+    preview?.imageUrl ||
+    preview?.thumbnail ||
+    preview?.image ||
+    preview?.thumbnailUrl ||
+    preview?.thumbnail_url ||
+    "";
 
   const cardClasses = buildCardClasses(preview, config, isMobile);
   const placement = placementFor(config, isMobile);
   const layout = layoutMode(config);
 
-  // Shared thumbnail HTML – we want the same behavior as topic cards
   const thumbHtml = buildSharedThumbnailHTML(
     imageUrl,
     title,
     config,
     isMobile,
-    {
-      // use same variant you use for topics (blurred bg, etc.)
-      variant: "blur-bg",
-    }
+    { variant: "blur-bg" }
   );
 
   const bodyHtml = `
@@ -781,8 +784,6 @@ function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
     </div>
   `;
 
-  // For hover_card layout with left/right placement,
-  // mirror the topic card structure so thumbnail sizing behaves identically.
   if (layout === "hover_card" && (placement === "left" || placement === "right")) {
     if (placement === "left") {
       return `
@@ -791,17 +792,16 @@ function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
           ${bodyHtml}
         </article>
       `;
-    } else {
-      return `
-        <article class="${cardClasses}" ${rootAttrs}>
-          ${bodyHtml}
-          ${thumbHtml}
-        </article>
-      `;
     }
+
+    return `
+      <article class="${cardClasses}" ${rootAttrs}>
+        ${bodyHtml}
+        ${thumbHtml}
+      </article>
+      `;
   }
 
-  // For other layouts (top/bottom, onebox, etc.), keep body-first ordering
   return `
     <article class="${cardClasses}" ${rootAttrs}>
       ${bodyHtml}
@@ -812,19 +812,18 @@ function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
 
 function buildExternalPreviewHTML(preview, provider, config, isMobile) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "external");
+
   const title =
     preview?.title || preview?.hostname || preview?.url || "External link";
   const imageUrl =
-    preview?.imageUrl || preview?.thumbnail || preview?.image || "";
+    preview?.imageUrl ||
+    preview?.thumbnail ||
+    preview?.image ||
+    preview?.thumbnailUrl ||
+    preview?.thumbnail_url ||
+    "";
   const description =
     preview?.excerpt || preview?.description || preview?.siteName || "";
-
-  const thumbHtml = buildSharedThumbnailHTML(
-    imageUrl,
-    title,
-    config,
-    isMobile
-  );
 
   const normalizedPreview = {
     ...preview,
@@ -833,8 +832,18 @@ function buildExternalPreviewHTML(preview, provider, config, isMobile) {
   };
 
   const cardClasses = buildCardClasses(preview, config, isMobile);
+  const placement = placementFor(config, isMobile);
+  const layout = layoutMode(config);
 
-  if (layoutMode(config) === "onebox") {
+  const thumbHtml = buildSharedThumbnailHTML(
+    imageUrl,
+    title,
+    config,
+    isMobile,
+    { variant: "blur-bg" }
+  );
+
+  if (layout === "onebox") {
     return `
       <article class="${cardClasses}" ${rootAttrs}>
         ${thumbHtml}
@@ -855,14 +864,36 @@ function buildExternalPreviewHTML(preview, provider, config, isMobile) {
     buildMetaItem("URL", preview?.displayUrl || preview?.url),
   ]);
 
+  const bodyHtml = `
+    <div class="topic-hover-card__body">
+      ${buildMobileActionsHTML(normalizedPreview, isMobile, "Open link")}
+      ${metaHtml}
+      ${buildTitleHTML(normalizedPreview, config, isMobile)}
+      ${excerptHtml}
+    </div>
+  `;
+
+  if (layout === "hover_card" && (placement === "left" || placement === "right")) {
+    if (placement === "left") {
+      return `
+        <article class="${cardClasses}" ${rootAttrs}>
+          ${thumbHtml}
+          ${bodyHtml}
+        </article>
+      `;
+    }
+
+    return `
+      <article class="${cardClasses}" ${rootAttrs}>
+        ${bodyHtml}
+        ${thumbHtml}
+      </article>
+    `;
+  }
+
   return `
     <article class="${cardClasses}" ${rootAttrs}>
-      <div class="topic-hover-card__body">
-        ${buildMobileActionsHTML(normalizedPreview, isMobile, "Open link")}
-        ${metaHtml}
-        ${buildTitleHTML(normalizedPreview, config, isMobile)}
-        ${excerptHtml}
-      </div>
+      ${bodyHtml}
       ${thumbHtml}
     </article>
   `;

@@ -74,12 +74,37 @@
 }
 
 .topic-hover-card__thumb-wrap {
+  position: relative;
   flex: 0 0 auto;
   min-width: 0;
   overflow: hidden;
+  isolation: isolate;
+  background: color-mix(in srgb, var(--thc-bg) 96%, transparent);
+}
+
+.topic-hover-card__thumb-bg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(10px) saturate(1.04);
+  transform: scale(1.14);
+  opacity: 0.7;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.topic-hover-card__thumb-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--thc-bg) 28%, transparent);
 }
 
 .topic-hover-card__thumb {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
@@ -132,6 +157,10 @@
     width: 100%;
   }
 
+  > .topic-hover-card__thumb-wrap .topic-hover-card__thumb-bg {
+    inset: 0;
+  }
+
   > .topic-hover-card__thumb-wrap .topic-hover-card__thumb {
     width: 100%;
     height: var(--thc-thumb-top-bottom-height);
@@ -155,6 +184,11 @@
     display: flex;
     align-items: stretch;
     justify-content: stretch;
+    overflow: hidden;
+  }
+
+  > .topic-hover-card__thumb-wrap .topic-hover-card__thumb-bg {
+    inset: 0;
   }
 
   > .topic-hover-card__thumb-wrap .topic-hover-card__thumb {
@@ -199,26 +233,16 @@
   }
 
   .topic-hover-card__thumb-bg {
-    position: absolute;
-    inset: 0;
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
     filter: blur(5px) saturate(1.05);
     transform: scale(1.25);
     opacity: 0.72;
-    z-index: 0;
   }
 
   .topic-hover-card__thumb-bg::after {
-    content: "";
-    position: absolute;
-    inset: 0;
+    background: color-mix(in srgb, var(--thc-bg) 18%, transparent);
   }
 
   .topic-hover-card__thumb {
-    position: relative;
-    z-index: 1;
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -233,8 +257,7 @@
     max-height: calc(1.38em * var(--thc-wrap-lines, 5) + 0.4em);
   }
 
-  .topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt
-    .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
+  .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
     content: "";
     position: absolute;
     inset-inline: 0;
@@ -260,21 +283,6 @@
 .topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt.topic-hover-card--density-compact,
 .topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt.topic-hover-card--density-dense {
   --thc-wrap-lines: 3;
-}
-
-.topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt
-  .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 1.4em;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--thc-bg)
-  );
 }
 
 .topic-hover-card__title {
@@ -308,9 +316,6 @@
   min-width: 0;
 }
 
-/* Wikipedia preview tweaks */
-
-/*
 .topic-hover-card.topic-hover-card--wikipedia {
   .topic-hover-card__excerpt {
     overflow-wrap: anywhere;
@@ -344,7 +349,6 @@
     color: var(--primary);
   }
 }
-*/
 
 .topic-hover-card__meta-item {
   display: inline-flex;
@@ -699,7 +703,6 @@ a.rich-preview-link {
   top: 0.02em;
 }
 
-
 // ─── Mobile media query ───────────────────────────────────────────────────────
 
 @media (max-width: 767px) {
@@ -734,27 +737,16 @@ a.rich-preview-link {
     }
 
     .topic-hover-card__thumb-bg {
-      position: absolute;
-      inset: 0;
-      background-position: center;
-      background-size: cover;
-      background-repeat: no-repeat;
       filter: blur(12px) saturate(1.02);
       transform: scale(1.1);
       opacity: 0.68;
-      z-index: 0;
     }
 
     .topic-hover-card__thumb-bg::after {
-      content: "";
-      position: absolute;
-      inset: 0;
       background: color-mix(in srgb, var(--thc-bg) 80%, transparent);
     }
 
     .topic-hover-card__thumb {
-      position: relative;
-      z-index: 1;
       width: 100%;
       height: 100% !important;
       object-fit: contain;
@@ -780,8 +772,7 @@ a.rich-preview-link {
       max-height: calc(1.32em * var(--thc-wrap-lines-mobile, 4) + 0.4em);
     }
 
-    .topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt
-      .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
+    .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
       content: "";
       position: absolute;
       inset-inline: 0;
@@ -794,21 +785,6 @@ a.rich-preview-link {
         var(--thc-bg)
       );
     }
-  }
-
-  .topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt
-    .topic-hover-card__excerpt.topic-hover-card__excerpt--overflows::after {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    height: 1.3em;
-    pointer-events: none;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      var(--thc-bg)
-    );
   }
 
   .topic-hover-card--topic.topic-hover-card--thumb-size-wrap_excerpt.topic-hover-card--density-default {
@@ -1060,91 +1036,6 @@ a.rich-preview-link {
   .topic-hover-card--topic.topic-hover-card--density-dense .topic-hover-card__badge {
     padding: 0.08rem 0.28rem;
   }
-
-  /*
-  .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__body {
-    gap: 0.85rem;
-    padding: 1rem 1.05rem;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__body {
-    gap: 0.52rem;
-    padding: 0.76rem 0.84rem;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__body {
-    gap: 0.4rem;
-    padding: 0.64rem 0.72rem;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-dense .topic-hover-card__body {
-    gap: 0.3rem;
-    padding: 0.54rem 0.62rem;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__title {
-    font-size: var(--font-up-1);
-    line-height: 1.32;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__title {
-    font-size: var(--font-0);
-    line-height: 1.26;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__title {
-    font-size: var(--font-down-1);
-    line-height: 1.2;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-dense .topic-hover-card__title {
-    font-size: var(--font-down-1);
-    line-height: 1.14;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__excerpt {
-    font-size: var(--font-0);
-    line-height: 1.5;
-    --thc-excerpt-lines: 5;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__excerpt {
-    font-size: var(--font-down-1);
-    line-height: 1.34;
-    --thc-excerpt-lines: 3;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__excerpt {
-    font-size: var(--font-down-2);
-    line-height: 1.26;
-    --thc-excerpt-lines: 2;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-dense .topic-hover-card__excerpt {
-    font-size: var(--font-down-2);
-    line-height: 1.18;
-    --thc-excerpt-lines: 2;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__meta {
-    font-size: var(--font-down-1);
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-cozy .topic-hover-card__meta {
-    font-size: var(--font-down-2);
-    gap: 0.25rem 0.4rem;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-compact .topic-hover-card__meta {
-    font-size: var(--font-down-2);
-    gap: 0.18rem 0.32rem;
-  }
-
-  .topic-hover-card--wikipedia.topic-hover-card--density-dense .topic-hover-card__meta {
-    font-size: var(--font-down-2);
-    gap: 0.12rem 0.24rem;
-  }
-  */
 }
 
 // ─── Rich Preview Link Modal ─────────────────────────────────────────────────
