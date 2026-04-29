@@ -287,9 +287,9 @@ thumbnail_size_mode:
   default: auto_fit_height
   type: enum
   choices:
-    - manual
     - auto_fit_height
     - wrap_excerpt
+    - manual
   description: The auto_fit_height mode matches image height to card height. The wrap_excerpt mode floats the thumbnail so the excerpt text can wrap around it. The manual mode uses the configured width percentage.
 
 thumbnail_auto_fit_max_width:
