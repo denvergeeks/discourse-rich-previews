@@ -11,24 +11,30 @@ const PROXY_ENDPOINT = "/discourse-proxy-safe";
 async function fetchViaProxy(remoteJsonUrl, signal) {
   const proxyUrl = `${PROXY_ENDPOINT}?url=${encodeURIComponent(remoteJsonUrl)}`;
 
-  const response = await fetch(proxyUrl, {
-    method: "GET",
-    mode: "same-origin",
-    credentials: "same-origin",
-    headers: {
-      Accept: "application/json",
-    },
-    signal,
-  });
+  try {
+    const response = await fetch(proxyUrl, {
+      method: "GET",
+      mode: "same-origin",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+      },
+      signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(
-      `Proxy error ${response.status} for ${remoteJsonUrl}`
-    );
+    if (!response.ok) {
+      throw new Error(`Proxy error ${response.status} for ${remoteJsonUrl}`);
+    }
+
+    const text = await response.text();
+    return JSON.parse(text);
+  } catch (error) {
+    if (error?.name === "AbortError" || signal?.aborted) {
+      return null;
+    }
+
+    throw error;
   }
-
-  const text = await response.text();
-  return JSON.parse(text);
 }
 
 export function createTopicProvider(api, config, topicCache, inFlightFetches) {
@@ -38,6 +44,10 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
     const isRemote = origin !== window.location.origin;
 
     if (!topicId) {
+      return null;
+    }
+
+    if (signal?.aborted) {
       return null;
     }
 
@@ -58,28 +68,46 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
 
     const inflightKey = `topic:${origin}:${topicId}`;
     if (inFlightFetches.has(inflightKey)) {
-      return inFlightFetches.get(inflightKey);
+      try {
+        return await inFlightFetches.get(inflightKey);
+      } catch (error) {
+        if (error?.name === "AbortError" || signal?.aborted) {
+          return null;
+        }
+
+        throw error;
+      }
     }
 
     const jsonUrl = isRemote
       ? `${origin}/t/${topicId}.json`
       : `/t/${topicId}.json`;
 
-    const promise = (
-      isRemote
-        ? fetchViaProxy(jsonUrl, signal)
-        : getJSON(jsonUrl, { signal })
-    )
-      .then((data) => {
+    const promise = (async () => {
+      try {
+        const data = isRemote
+          ? await fetchViaProxy(jsonUrl, signal)
+          : await getJSON(jsonUrl, { signal });
+
+        if (!data || signal?.aborted) {
+          return null;
+        }
+
         setCachedValue(topicCache, cacheKey, data, config.topicCacheMax);
         return data;
-      })
-      .finally(() => {
+      } catch (error) {
+        if (error?.name === "AbortError" || signal?.aborted) {
+          return null;
+        }
+
+        throw error;
+      } finally {
         inFlightFetches.delete(inflightKey);
-      });
+      }
+    })();
 
     inFlightFetches.set(inflightKey, promise);
-    return promise;
+    return await promise;
   }
 
   function extractFirstImageURLFromCooked(cooked) {
@@ -132,16 +160,25 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
 
   return {
     async fetch(target, signal) {
-      if (!target?.topicId) {
+      if (!target?.topicId || signal?.aborted) {
         return null;
       }
 
-      const topic = await fetchTopic(target, signal);
-      if (!topic) {
-        return null;
-      }
+      try {
+        const topic = await fetchTopic(target, signal);
 
-      return normalizeTopic(topic, target);
+        if (!topic || signal?.aborted) {
+          return null;
+        }
+
+        return normalizeTopic(topic, target);
+      } catch (error) {
+        if (error?.name === "AbortError" || signal?.aborted) {
+          return null;
+        }
+
+        throw error;
+      }
     },
   };
 }
