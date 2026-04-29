@@ -786,7 +786,44 @@ a.rich-preview-link {
   }
 
   .topic-hover-card--left,
-  .topic-hover-card--right,
+  .topic-hover-card--right {
+    flex-direction: row;
+    align-items: stretch;
+
+    > .topic-hover-card__thumb-wrap {
+      width: calc(var(--thc-thumbnail-size-percent) * 1%) !important;
+      min-width: calc(var(--thc-thumbnail-size-percent) * 1%) !important;
+      max-width: calc(var(--thc-thumbnail-size-percent) * 1%) !important;
+    }
+
+    &.topic-hover-card--thumb-size-auto-fit-height > .topic-hover-card__thumb-wrap {
+      width: min(
+        calc(var(--thc-thumbnail-size-percent) * 1%),
+        var(--thc-auto-thumb-max-width)
+      ) !important;
+      min-width: min(
+        calc(var(--thc-thumbnail-size-percent) * 1%),
+        var(--thc-auto-thumb-max-width)
+      ) !important;
+      max-width: min(
+        calc(var(--thc-thumbnail-size-percent) * 1%),
+        var(--thc-auto-thumb-max-width)
+      ) !important;
+    }
+
+    > .topic-hover-card__thumb-wrap .topic-hover-card__thumb {
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      object-fit: cover;
+    }
+
+    > .topic-hover-card__body {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
   .topic-hover-card--top,
   .topic-hover-card--bottom {
     flex-direction: column;
@@ -803,6 +840,10 @@ a.rich-preview-link {
       max-height: 34vh;
       object-fit: cover;
     }
+  }
+
+  .topic-hover-card--bottom {
+    flex-direction: column-reverse;
   }
 
   .topic-hover-card__body {
@@ -975,7 +1016,7 @@ a.rich-preview-link {
   .topic-hover-card--topic.topic-hover-card--density-dense .topic-hover-card__badge {
     padding: 0.08rem 0.28rem;
   }
-  
+
   /*
   .topic-hover-card--wikipedia.topic-hover-card--density-default .topic-hover-card__body {
     gap: 0.85rem;
