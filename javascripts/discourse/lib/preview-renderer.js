@@ -188,6 +188,49 @@ function buildCardClasses(preview, config, isMobile) {
   return classes.join(" ");
 }
 
+function buildMobileActionsHTML(preview, isMobile, primaryLabel = "Open link") {
+  if (!isMobile) {
+    return "";
+  }
+
+  const safeUrl = sanitizeURL(preview?.url);
+  if (!safeUrl) {
+    return "";
+  }
+
+  const mobileCloseButton = `
+    <button
+      class="topic-hover-card__mobile-x"
+      type="button"
+      aria-label="Close preview"
+      data-thc-close
+    >
+      &times;
+    </button>
+  `;
+
+  const actions = `
+    <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
+      <a
+        class="btn btn-primary topic-hover-card__open-topic"
+        href="${escapeHTML(safeUrl)}"
+        data-thc-open-topic
+      >
+        ${escapeHTML(primaryLabel)}
+      </a>
+      <button
+        class="btn btn-default topic-hover-card__close"
+        type="button"
+        data-thc-close
+      >
+        Close
+      </button>
+    </div>
+  `;
+
+  return mobileCloseButton + actions;
+}
+
 function buildSharedThumbnailHTML(
   imageUrl,
   title,
@@ -639,7 +682,7 @@ function buildTopicPreviewHTML(
   `;
 }
 
-function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
+function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "wikipedia");
   const title = preview?.title || preview?.pageKey || "Wikipedia";
   const imageUrl =
@@ -657,59 +700,23 @@ function buildWikipediaPreviewHTML(preview, _provider, config, isMobile) {
     isMobile
   );
   const excerptHtml = buildExcerptHTML(preview, config, isMobile);
-  const metaHtml = buildMetaRow([
-    buildMetaItem("Source", host),
-  ]);
-
+  const metaHtml = buildMetaRow([buildMetaItem("Source", host)]);
   const cardClasses = buildCardClasses(preview, config, isMobile);
-  const placement = placementFor(config, isMobile);
-  const thumbFirst = placement !== "bottom" && placement !== "right";
 
   return `
-    <article
-      class="${cardClasses}"
-      ${rootAttrs}
-      style="
-        --thc-thumbnail-size-percent:${pick(
-          config,
-          "thumbnailSizePercentDesktop",
-          "thumbnailSizePercentMobile",
-          isMobile
-        )};
-        --thc-auto-thumb-max-width:${escapeHTML(
-          String(
-            pick(
-              config,
-              "thumbnailAutoFitMaxWidthDesktop",
-              "thumbnailAutoFitMaxWidthMobile",
-              isMobile
-            ) || "10rem"
-          )
-        )};
-        --thc-thumb-top-bottom-height:${escapeHTML(
-          String(
-            pick(
-              config,
-              "thumbnailHeightTopBottomDesktop",
-              "thumbnailHeightTopBottomMobile",
-              isMobile
-            ) || "auto"
-          )
-        )};
-      "
-    >
-      ${thumbFirst ? thumbHtml : ""}
+    <article class="${cardClasses}" ${rootAttrs}>
       <div class="topic-hover-card__body">
-        ${metaHtml}
+        ${buildMobileActionsHTML(preview, isMobile, "Open article")}
         ${buildTitleHTML(preview, config, isMobile)}
         ${excerptHtml}
+        ${metaHtml}
       </div>
-      ${thumbFirst ? "" : thumbHtml}
+      ${thumbHtml}
     </article>
   `;
 }
 
-function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
+function buildExternalPreviewHTML(preview, provider, config, isMobile) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "external");
   const title =
     preview?.title || preview?.hostname || preview?.url || "External link";
@@ -732,7 +739,6 @@ function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
   };
 
   const excerptHtml = buildExcerptHTML(normalizedPreview, config, isMobile);
-
   const metaHtml = buildMetaRow([
     buildMetaItem("Site", preview?.siteName || preview?.hostname),
     buildMetaItem("URL", preview?.displayUrl || preview?.url),
@@ -742,12 +748,13 @@ function buildExternalPreviewHTML(preview, _provider, config, isMobile) {
 
   return `
     <article class="${cardClasses}" ${rootAttrs}>
-      ${thumbHtml}
       <div class="topic-hover-card__body">
+        ${buildMobileActionsHTML(normalizedPreview, isMobile, "Open link")}
         ${metaHtml}
         ${buildTitleHTML(normalizedPreview, config, isMobile)}
         ${excerptHtml}
       </div>
+      ${thumbHtml}
     </article>
   `;
 }
