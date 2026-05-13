@@ -3,6 +3,4 @@
 To get previews from other Discourse sites, add this plugin to your app.yml
 https://github.com/denvergeeks/discourse-proxy-safe.git
 
-**Theme Summary**
 
-For more information, please see: **url to meta topic**
