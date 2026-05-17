@@ -69,6 +69,7 @@ function clearWrapperState(wrapper) {
   wrapper.classList.remove(...WRAP_TYPE_CLASSES, ...WRAP_MODE_CLASSES);
   wrapper.style.removeProperty("--rp-color");
   delete wrapper.dataset.providerKey;
+  delete wrapper.dataset.richPreview;
   removeWrapperGlyphNode(wrapper);
 }
 

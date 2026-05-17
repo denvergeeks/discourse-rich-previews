@@ -2,33 +2,45 @@
 
 require "rails_helper"
 
-RSpec.describe "Rich preview remote-topic indicators", type: :system do
-  fab!(:user) { Fabricate(:user) }
-  fab!(:topic) { Fabricate(:topic) }
+describe "Rich previews remote topic icon placement", type: :system do
+  let(:theme_id) { upload_theme_component }
 
   before do
-    @theme = upload_theme_component
-    sign_in(user)
+    theme.update_setting(theme_id, :enabled, true)
+    theme.update_setting(theme_id, :previews_show_icon, true)
+    theme.update_setting(theme_id, :previews_icon_position, "after")
+    theme.update_setting(theme_id, :previews_show_underline, true)
+    theme.update_setting(theme_id, :previews_underline_always, true)
+    theme.update_setting(theme_id, :remote_hosts, "noobish.me")
 
-    @theme.update_setting(:previews_remote_topic_mode, "auto_and_composer")
-    @theme.update_setting(:previews_show_icon, true)
-    @theme.update_setting(:previews_icon_position, "after")
-    @theme.save!
+    sign_in(Fabricate(:admin))
   end
 
-  it "adds remote-topic classes to wrapped remote-topic links" do
-    create_post(
-      topic: topic,
-      raw: <<~MD
-        [preview][Remote discussion](https://meta.discourse.org/t/discourse-icon/143374)[/preview]
-      MD
-    )
+  it "renders remote topic preview bbcode as a single decorated anchor with inline icon" do
+    topic = Fabricate(:topic)
+    post =
+      create_post(
+        topic: topic,
+        raw:
+          '[preview="https://noobish.me/t/html-kitchen-sink/770" title="Brief description of the link on hover"]Text for the Link[/preview]'
+      )
 
-    visit topic_path(topic)
+    visit post.url
 
-    expect(page).to have_css(
-      "a.rich-preview-link.rich-preview-link--remote_topic.rich-preview-link--icon-after[data-bbcode='true']"
-    )
-    expect(page).to have_link("Remote discussion")
+    within(".cooked") do
+      expect(page).to have_css(
+        'a.rich-preview-link.rich-preview-link--remote_topic[href="https://noobish.me/t/html-kitchen-sink/770"]'
+      )
+      expect(page).to have_css(
+        'a.rich-preview-link.rich-preview-link--remote_topic[title="Brief description of the link on hover"]',
+        text: "Text for the Link"
+      )
+      expect(page).to have_css(
+        "a.rich-preview-link.rich-preview-link--icon-after > .thc-inline-glyph"
+      )
+      expect(page).to have_no_css(".rich-preview-wrap")
+      expect(page).to have_no_text("[preview]")
+      expect(page).to have_no_text("[/preview]")
+    end
   end
 end

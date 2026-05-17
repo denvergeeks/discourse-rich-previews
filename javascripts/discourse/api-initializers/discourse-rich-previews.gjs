@@ -38,8 +38,12 @@ import {
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 import { createExternalProvider } from "../lib/providers/external-provider";
-import { registerPreviewBBCode } from "../lib/preview-bbcode";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
+import {
+  decorateAutoDetectedLink,
+  decorateWrappedPreviewLink,
+  clearDecoratedLink,
+} from "../lib/link-decorator";
 
 function discourseIcon(name) {
   try {
@@ -565,14 +569,97 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
   }
 }
 
+function isPreviewWrapper(element) {
+  return element?.classList?.contains("rich-preview-wrap");
+}
+
+function findDirectPreviewAnchor(wrapper) {
+  const anchor = wrapper?.querySelector?.(":scope > a[href]");
+  return anchor instanceof HTMLAnchorElement ? anchor : null;
+}
+
+function clearPreviewDecorationForElement(element) {
+  if (!(element instanceof Element)) {
+    return;
+  }
+
+  if (isPreviewWrapper(element)) {
+    const anchor = findDirectPreviewAnchor(element);
+    clearDecoratedLink(anchor, element);
+    return;
+  }
+
+  if (element instanceof HTMLAnchorElement) {
+    clearDecoratedLink(element);
+  }
+}
+
+function decoratePreviewElement(element, config) {
+  if (!(element instanceof Element)) {
+    return;
+  }
+
+  if (isPreviewWrapper(element)) {
+    const anchor = findDirectPreviewAnchor(element);
+    if (!anchor || !linkInSupportedArea(anchor, config)) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    const target = matchPreviewTarget(anchor, config);
+    if (!target) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    decorateWrappedPreviewLink(element, anchor, target, config);
+    return;
+  }
+
+  if (element instanceof HTMLAnchorElement) {
+    if (!linkInSupportedArea(element, config)) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    const target = matchPreviewTarget(element, config);
+    if (!target) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    decorateAutoDetectedLink(element, target, config);
+  }
+}
+
+function decorateCooked(root, config) {
+  if (!(root instanceof Element)) {
+    return;
+  }
+
+  root.querySelectorAll(".rich-preview-wrap").forEach((wrapper) => {
+    decoratePreviewElement(wrapper, config);
+  });
+
+  root.querySelectorAll("a[href]").forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    if (link.closest(".rich-preview-wrap")) {
+      return;
+    }
+
+    decoratePreviewElement(link, config);
+  });
+}
+
 export default apiInitializer((api) => {
   const config = readConfig(settings);
 
   if (!config.enabled) {
     return;
   }
-
-  registerPreviewBBCode(api, config);
 
   if (composerButtonShouldShow(config)) {
     registerPreviewComposerButton(api, config);
@@ -1442,6 +1529,13 @@ export default apiInitializer((api) => {
 
     setupPrefetch();
   }
+
+  api.decorateCookedElement(
+    (element) => {
+      decorateCooked(element, config);
+    },
+    { id: "discourse-rich-previews-cooked" }
+  );
 
   (async () => {
     const disabledForUser = await hoverCardsDisabledForUser();

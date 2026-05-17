@@ -585,59 +585,88 @@
   }
 }
 
-// ─── Rich Preview Inline Links (auto + manual) ──────────────────────────────
-
-.rich-preview-wrap {
-  display: inline;
-  --rp-color: var(--tertiary);
-
-  > a {
-    display: inline;
-    color: inherit;
-    overflow-wrap: anywhere;
-  }
-}
+// ─── Rich Preview Inline Links ───────────────────────────────────────────────
 
 .rich-preview-link {
   --rp-color: var(--tertiary);
+
   display: inline;
   overflow-wrap: anywhere;
+  color: var(--rp-color);
+  text-decoration: none;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1.5px;
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease;
+
+  &:visited {
+    color: var(--rp-color);
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--rp-color);
+  }
+
+  &.rich-preview-link--underline-always {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--rp-color, var(--tertiary)) !important;
+  }
+
+  &.rich-preview-link--underline-hover {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: transparent !important;
+
+    &:hover,
+    &:focus-visible {
+      text-decoration-color: var(--rp-color, var(--tertiary)) !important;
+    }
+  }
+
+  > .thc-inline-glyph {
+    position: relative;
+    top: 0.02em;
+  }
+
+  > .thc-inline-glyph,
+  > .thc-inline-glyph .d-icon,
+  > .thc-inline-glyph svg {
+    color: currentColor;
+    fill: currentColor;
+  }
+
+  &.rich-preview-link--icon-after > .thc-inline-glyph {
+    margin-inline-start: 0.22em;
+    margin-inline-end: 0;
+  }
+
+  &.rich-preview-link--icon-before > .thc-inline-glyph {
+    margin-inline-start: 0;
+    margin-inline-end: 0.22em;
+  }
 }
 
-.rich-preview-wrap--topic,
 .rich-preview-link--topic {
   --rp-color: var(--success);
 }
 
-.rich-preview-wrap--remote_topic,
 .rich-preview-link--remote_topic {
   --rp-color: var(--success);
 }
 
-.rich-preview-wrap--external,
 .rich-preview-link--external {
   --rp-color: var(--tertiary);
 }
 
-.rich-preview-wrap--wikipedia,
 .rich-preview-link--wikipedia {
   --rp-color: var(--love);
 }
 
-// Manual / wrapped underline
-.rich-preview-wrap--underline-always > a,
-.rich-preview-wrap--underline-hover > a:hover {
-  text-decoration-line: underline;
-  text-decoration-style: dotted;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 0.18em;
-  text-decoration-color: var(--rp-color, var(--tertiary));
-  transition:
-    text-decoration-color 120ms ease,
-    color 120ms ease;
-}
-
-// Auto-link underline
 .cooked a.rich-preview-link.rich-preview-link--underline-always,
 .d-editor-preview a.rich-preview-link.rich-preview-link--underline-always,
 a.rich-preview-link.rich-preview-link--underline-always {
@@ -652,8 +681,11 @@ a.rich-preview-link.rich-preview-link--underline-always {
 }
 
 .cooked a.rich-preview-link.rich-preview-link--underline-hover:hover,
+.cooked a.rich-preview-link.rich-preview-link--underline-hover:focus-visible,
 .d-editor-preview a.rich-preview-link.rich-preview-link--underline-hover:hover,
-a.rich-preview-link.rich-preview-link--underline-hover:hover {
+.d-editor-preview a.rich-preview-link.rich-preview-link--underline-hover:focus-visible,
+a.rich-preview-link.rich-preview-link--underline-hover:hover,
+a.rich-preview-link.rich-preview-link--underline-hover:focus-visible {
   text-decoration-line: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1.5px;
@@ -664,7 +696,6 @@ a.rich-preview-link.rich-preview-link--underline-hover:hover {
     color 120ms ease;
 }
 
-// Shared glyph styling
 .thc-inline-glyph,
 .thc-inline-glyph-wrap {
   display: inline-flex;
@@ -687,7 +718,6 @@ a.rich-preview-link.rich-preview-link--underline-hover:hover {
   }
 }
 
-// Glyph spacing for auto links
 a.rich-preview-link.rich-preview-link--icon-after > .thc-inline-glyph {
   margin-inline-start: 0.22em;
 }
@@ -696,7 +726,63 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
 }
 
-// Glyph spacing for wrapped/manual links
+// Backward-tolerant wrapper fallback only; not primary output anymore.
+.rich-preview-wrap {
+  --rp-color: var(--tertiary);
+
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2em;
+  color: var(--rp-color);
+
+  > a {
+    display: inline;
+    color: inherit;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+    text-decoration-skip-ink: auto;
+  }
+}
+
+.rich-preview-wrap--topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--remote_topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--external {
+  --rp-color: var(--tertiary);
+}
+
+.rich-preview-wrap--wikipedia {
+  --rp-color: var(--love);
+}
+
+.rich-preview-wrap--underline-always > a {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rp-color, var(--tertiary));
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
+}
+
+.rich-preview-wrap--underline-hover > a:hover,
+.rich-preview-wrap--underline-hover > a:focus-visible {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rp-color, var(--tertiary));
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
+}
+
 .rich-preview-wrap--icon-after > .thc-inline-glyph-wrap {
   margin-inline-start: 0.22em;
 }
@@ -705,13 +791,11 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
 }
 
-// Inline-onebox protection
 .cooked a.inline-onebox.rich-preview-link,
 .d-editor-preview a.inline-onebox.rich-preview-link {
   text-decoration-skip-ink: auto;
 }
 
-// Fine vertical alignment in compact contexts
 .cooked a.rich-preview-link > .thc-inline-glyph,
 .d-editor-preview a.rich-preview-link > .thc-inline-glyph,
 .rich-preview-wrap > .thc-inline-glyph-wrap {

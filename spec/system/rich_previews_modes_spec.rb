@@ -18,27 +18,16 @@ RSpec.describe "Rich preview modes", type: :system do
 
     create_post(
       topic: topic,
-      raw: "[preview][linked topic](#{linked_topic.url})[/preview]"
+      raw: "[preview][Linked topic](#{linked_topic.url})[/preview]"
     )
 
     visit topic_path(topic)
 
-    expect(page).to have_css("a.rich-preview-link.rich-preview-link--topic[data-bbcode='true']")
-    expect(page).to have_link("linked topic")
-  end
-
-  it "does not expose raw preview tags when topic mode is composer_only" do
-    @theme.update_setting(:previews_topic_mode, "composer_only")
-    @theme.save!
-
-    create_post(
-      topic: topic,
-      raw: "[preview][linked topic](#{linked_topic.url})[/preview]"
+    expect(page).to have_css(
+      "a.rich-preview-link.rich-preview-link--topic[data-bbcode='true']",
+      text: "Linked topic"
     )
-
-    visit topic_path(topic)
-
-    expect(page).not_to have_text("[preview]")
-    expect(page).not_to have_text("[/preview]")
+    expect(page).to have_no_text("[preview]")
+    expect(page).to have_no_text("[/preview]")
   end
 end

@@ -1,7 +1,7 @@
 REPO: discourse-rich-previews
 BRANCH: main
-COMMIT: 792af03a2eeb145ca87683cba69442f1e358536b
-GENERATED: 2026-05-17 15:43:02 -0600
+COMMIT: d6544ad2f21ff0b887da39d98606f3d5d51a3269
+GENERATED: 2026-05-17 16:31:56 -0600
 
 === FILE TREE ===
 .discourse-compatibility
@@ -931,15 +931,38 @@ https://github.com/denvergeeks/discourse-proxy-safe.git
 .rich-preview-wrap {
   display: inline;
   --rp-color: var(--tertiary);
+
+  > a {
+    display: inline;
+    color: inherit;
+    overflow-wrap: anywhere;
+  }
 }
 
 .rich-preview-link {
   --rp-color: var(--tertiary);
+  display: inline;
+  overflow-wrap: anywhere;
 }
 
-// Wrapped links inherit wrapper color
-.rich-preview-wrap > a {
-  color: inherit;
+.rich-preview-wrap--topic,
+.rich-preview-link--topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--remote_topic,
+.rich-preview-link--remote_topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--external,
+.rich-preview-link--external {
+  --rp-color: var(--tertiary);
+}
+
+.rich-preview-wrap--wikipedia,
+.rich-preview-link--wikipedia {
+  --rp-color: var(--love);
 }
 
 // Manual / wrapped underline
@@ -955,7 +978,7 @@ https://github.com/denvergeeks/discourse-proxy-safe.git
     color 120ms ease;
 }
 
-// Auto-link underline — explicit cooked + composer preview selectors
+// Auto-link underline
 .cooked a.rich-preview-link.rich-preview-link--underline-always,
 .d-editor-preview a.rich-preview-link.rich-preview-link--underline-always,
 a.rich-preview-link.rich-preview-link--underline-always {
@@ -1021,13 +1044,6 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
 
 .rich-preview-wrap--icon-before > .thc-inline-glyph-wrap {
   margin-inline-end: 0.22em;
-}
-
-// Keep links stable in cooked content and preview
-.rich-preview-wrap > a,
-a.rich-preview-link {
-  display: inline;
-  overflow-wrap: anywhere;
 }
 
 // Inline-onebox protection
@@ -1596,7 +1612,7 @@ function copyAttrs(token, attrs = {}) {
   });
 }
 
-function buildAnchorTokens(state, startToken, endToken, tagInfo, content) {
+function buildAnchorTokens(startToken, endToken, tagInfo, content) {
   const href = getPreviewHref(tagInfo?.attrs, content);
 
   if (!href) {
@@ -1637,62 +1653,17 @@ function buildAnchorTokens(state, startToken, endToken, tagInfo, content) {
   return false;
 }
 
-function registerPreviewBBCodeRule(md) {
-  md.inline.bbcode.ruler.push("preview", {
-    tag: "preview",
-
-    wrap(startToken, endToken, tagInfo, content) {
-      startToken.type = "html_inline";
-      startToken.tag = "";
-      startToken.nesting = 0;
-      startToken.content =
-        '<span class="rich-preview-wrap" data-rich-preview="true">';
-
-      buildAnchorTokens(startToken, endToken, tagInfo, content);
-
-      const closeToken = endToken;
-      const originalCloseContent = closeToken.content ?? "";
-
-      closeToken.type = "html_inline";
-      closeToken.tag = "";
-      closeToken.nesting = 0;
-      closeToken.content = "</span>";
-
-      if (originalCloseContent) {
-        closeToken.content += originalCloseContent;
-      }
-
-      return false;
-    },
-  });
-}
-
 export function setup(helper) {
   if (!helper?.markdownIt) {
     return;
   }
 
-  helper.allowList([
-    "span.rich-preview-wrap",
-    "span[data-rich-preview=true]",
-  ]);
-
   helper.registerPlugin((md) => {
     md.inline.bbcode.ruler.push("preview", {
       tag: "preview",
-      wrap(startToken, endToken) {
-        startToken.type = "html_inline";
-        startToken.tag = "";
-        startToken.nesting = 0;
-        startToken.content =
-          '<span class="rich-preview-wrap" data-rich-preview="true">';
 
-        endToken.type = "html_inline";
-        endToken.tag = "";
-        endToken.nesting = 0;
-        endToken.content = "</span>";
-
-        return false;
+      wrap(startToken, endToken, tagInfo, content) {
+        return buildAnchorTokens(startToken, endToken, tagInfo, content);
       },
     });
   });
@@ -3547,10 +3518,12 @@ export default class RichPreviewLinkModal extends Component {
 
 === FILE: javascripts/discourse/lib/link-decorator.js ===
 ```js
+import { iconHTML } from "discourse/lib/icon-library";
+
 import {
-  providerKeyForTarget,
   providerColor,
-  renderInlineProviderGlyph,
+  sanitizeURL,
+  getPreviewProvider,
 } from "./rich-preview-utils";
 
 const WRAP_TYPE_CLASSES = [
@@ -3634,6 +3607,28 @@ function clearInlineProviderPresentation(link, wrapper = null) {
     wrapper.style.removeProperty("--rp-color");
     removeWrapperGlyphNode(wrapper);
   }
+}
+
+function renderInlineProviderGlyph(providerKey, config) {
+  const provider = getPreviewProvider(config, providerKey);
+  const iconName = provider?.icon;
+
+  if (!iconName) {
+    return "";
+  }
+
+  let html = "";
+  try {
+    html = iconHTML(iconName) || "";
+  } catch {
+    html = "";
+  }
+
+  if (!html) {
+    return "";
+  }
+
+  return `<span class="thc-inline-glyph" aria-hidden="true">${html}</span>`;
 }
 
 function buildInlineGlyphFragment(providerKey, config, wrapperMode = false) {
@@ -3764,8 +3759,8 @@ function placeWrapperGlyphNode(wrapper, glyphNode, position = "after") {
   }
 }
 
-function applyLinkClasses(link, providerKey, config) {
-  if (!link || !providerKey) {
+function applyLinkDecorationClasses(link, providerKey, underlineMode, iconMode) {
+  if (!link) {
     return;
   }
 
@@ -3773,160 +3768,157 @@ function applyLinkClasses(link, providerKey, config) {
 
   link.classList.add("rich-preview-link", `rich-preview-link--${providerKey}`);
 
-  const underlineMode = normalizeUnderlineMode(config);
-  const iconMode = normalizeIconMode(config, providerKey);
-
-  if (underlineMode === "always") {
-    link.classList.add("rich-preview-link--underline-always");
-  } else if (underlineMode === "hover") {
-    link.classList.add("rich-preview-link--underline-hover");
-  }
-
-  if (iconMode === "before") {
-    link.classList.add("rich-preview-link--icon-before");
-  } else if (iconMode === "after") {
-    link.classList.add("rich-preview-link--icon-after");
-  }
-}
-
-function applyAutoLinkPresentation(link, providerKey, config) {
-  if (!link || !providerKey) {
-    return;
-  }
-
-  const color = providerColor(providerKey, config, "var(--tertiary)");
-
-  if (color) {
-    link.style.setProperty("--rp-color", color);
-  } else {
-    link.style.removeProperty("--rp-color");
-  }
-
-  applyLinkClasses(link, providerKey, config);
-
-  link.dataset.richPreviewType = providerKey;
-
-  const underlineMode = normalizeUnderlineMode(config);
-  const iconMode = normalizeIconMode(config, providerKey);
-
   if (underlineMode) {
+    link.classList.add(`rich-preview-link--underline-${underlineMode}`);
     link.dataset.richPreviewUnderline = underlineMode;
   } else {
     delete link.dataset.richPreviewUnderline;
   }
 
   if (iconMode) {
+    link.classList.add(`rich-preview-link--icon-${iconMode}`);
     link.dataset.richPreviewIcon = iconMode;
   } else {
     delete link.dataset.richPreviewIcon;
   }
 
-  removeInlineGlyphNode(link);
+  link.dataset.richPreviewType = providerKey;
+}
 
-  if (!iconMode) {
+function applyWrapperDecorationClasses(
+  wrapper,
+  providerKey,
+  underlineMode,
+  iconMode
+) {
+  if (!wrapper) {
+    return;
+  }
+
+  clearWrapperState(wrapper);
+
+  wrapper.classList.add("rich-preview-wrap", `rich-preview-wrap--${providerKey}`);
+
+  if (underlineMode) {
+    wrapper.classList.add(`rich-preview-wrap--underline-${underlineMode}`);
+  }
+
+  if (iconMode) {
+    wrapper.classList.add(`rich-preview-wrap--icon-${iconMode}`);
+  }
+
+  wrapper.dataset.providerKey = providerKey;
+  wrapper.dataset.richPreview = "true";
+}
+
+function applyProviderColor(link, wrapper, providerKey, config) {
+  const color = providerColor(providerKey, config, "var(--tertiary)");
+  if (!color) {
+    return;
+  }
+
+  if (link) {
+    link.style.setProperty("--rp-color", color);
+  }
+
+  if (wrapper) {
+    wrapper.style.setProperty("--rp-color", color);
+  }
+}
+
+function ensureInlineGlyph(link, providerKey, config, iconMode) {
+  if (!link || !providerKey || !iconMode) {
+    removeInlineGlyphNode(link);
     return;
   }
 
   if (anchorHasComplexInlineContent(link)) {
+    removeInlineGlyphNode(link);
     return;
   }
 
-  const glyphNode = buildInlineGlyphFragment(providerKey, config);
+  let glyphNode = link.querySelector(":scope > .thc-inline-glyph");
+  if (!glyphNode) {
+    glyphNode = buildInlineGlyphFragment(providerKey, config, false);
+  }
 
   if (!glyphNode) {
     return;
   }
 
-  placeInlineGlyphNode(link, glyphNode, iconMode === "before" ? "before" : "after");
+  placeInlineGlyphNode(link, glyphNode, iconMode);
 }
 
-function applyWrappedLinkPresentation(wrapper, link, providerKey, config) {
-  if (!wrapper || !providerKey) {
+function ensureWrapperGlyph(wrapper, providerKey, config, iconMode) {
+  if (!wrapper || !providerKey || !iconMode) {
+    removeWrapperGlyphNode(wrapper);
     return;
   }
 
-  const color = providerColor(providerKey, config, "var(--tertiary)");
-
-  if (color) {
-    wrapper.style.setProperty("--rp-color", color);
-  } else {
-    wrapper.style.removeProperty("--rp-color");
+  let glyphNode = wrapper.querySelector(":scope > .thc-inline-glyph-wrap");
+  if (!glyphNode) {
+    glyphNode = buildInlineGlyphFragment(providerKey, config, true);
   }
-
-  wrapper.dataset.providerKey = providerKey;
-
-  if (link) {
-    link.style.removeProperty("--rp-color");
-    clearLinkClasses(link);
-    delete link.dataset.richPreviewType;
-    delete link.dataset.richPreviewUnderline;
-    delete link.dataset.richPreviewIcon;
-    removeInlineGlyphNode(link);
-  }
-
-  removeWrapperGlyphNode(wrapper);
-
-  const iconMode = normalizeIconMode(config, providerKey);
-  if (!iconMode) {
-    return;
-  }
-
-  const glyphNode = buildInlineGlyphFragment(providerKey, config, true);
 
   if (!glyphNode) {
     return;
   }
 
-  const position = normalizeInlineGlyphPosition(config);
-  placeWrapperGlyphNode(wrapper, glyphNode, position);
+  placeWrapperGlyphNode(wrapper, glyphNode, iconMode);
+}
+
+function decorateAnchorOnlyPreviewLink(link, target, config) {
+  if (!(link instanceof HTMLAnchorElement) || !target?.providerKey) {
+    return;
+  }
+
+  const providerKey = target.providerKey;
+  const underlineMode = normalizeUnderlineMode(config);
+  const iconMode = normalizeIconMode(config, providerKey);
+
+  clearInlineProviderPresentation(link);
+
+  const href = sanitizeURL(link.getAttribute("href"));
+  if (href) {
+    link.setAttribute("href", href);
+  }
+
+  applyLinkDecorationClasses(link, providerKey, underlineMode, iconMode);
+  applyProviderColor(link, null, providerKey, config);
+  ensureInlineGlyph(link, providerKey, config, iconMode);
 }
 
 export function decorateAutoDetectedLink(link, target, config) {
-  const providerKey = providerKeyForTarget(target, null);
-
-  if (!providerKey) {
-    clearInlineProviderPresentation(link);
-    return;
-  }
-
-  applyAutoLinkPresentation(link, providerKey, config);
+  decorateAnchorOnlyPreviewLink(link, target, config);
 }
 
 export function decorateWrappedPreviewLink(wrapper, link, target, config) {
   const resolvedLink = resolveLink(wrapper, link);
-  const providerKey = providerKeyForTarget(target, null);
-
-  if (!providerKey) {
-    clearInlineProviderPresentation(resolvedLink, wrapper);
-    clearWrapperState(wrapper);
+  if (!(resolvedLink instanceof HTMLAnchorElement) || !target?.providerKey) {
     return;
   }
 
-  applyWrappedLinkPresentation(wrapper, resolvedLink, providerKey, config);
+  const providerKey = target.providerKey;
+  const underlineMode = normalizeUnderlineMode(config);
+  const iconMode = normalizeIconMode(config, providerKey);
 
-  if (wrapper) {
-    wrapper.classList.remove(...WRAP_TYPE_CLASSES);
-    wrapper.classList.add(`rich-preview-wrap--${providerKey}`);
+  clearInlineProviderPresentation(resolvedLink, wrapper);
+  clearWrapperState(wrapper);
 
-    const underlineMode = normalizeUnderlineMode(config);
-    const iconMode = normalizeIconMode(config, providerKey);
+  const href = sanitizeURL(resolvedLink.getAttribute("href"));
+  if (href) {
+    resolvedLink.setAttribute("href", href);
+  }
 
-    wrapper.classList.toggle(
-      "rich-preview-wrap--underline-always",
-      underlineMode === "always"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--underline-hover",
-      underlineMode === "hover"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--icon-before",
-      iconMode === "before"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--icon-after",
-      iconMode === "after"
-    );
+  applyLinkDecorationClasses(resolvedLink, providerKey, underlineMode, iconMode);
+  applyProviderColor(resolvedLink, wrapper, providerKey, config);
+
+  if (wrapper instanceof Element) {
+    applyWrapperDecorationClasses(wrapper, providerKey, underlineMode, iconMode);
+    ensureWrapperGlyph(wrapper, providerKey, config, iconMode);
+    removeInlineGlyphNode(resolvedLink);
+  } else {
+    ensureInlineGlyph(resolvedLink, providerKey, config, iconMode);
   }
 }
 
@@ -3936,158 +3928,202 @@ export function clearDecoratedLink(link, wrapper = null) {
   clearInlineProviderPresentation(resolvedLink, wrapper);
   clearWrapperState(wrapper);
 }
-
 ```
 
 === FILE: javascripts/discourse/lib/preview-bbcode.js ===
 ```js
-/*
-  Registers preview wrapper handling and applies preview decoration to both
-  manual wrapped links and auto-detected eligible links in cooked content.
+import { iconHTML } from "discourse/lib/icon-library";
 
-  Strict mode:
-  - Assumes the markdown-it plugin is authoritative for turning [preview]...[/preview]
-    into .rich-preview-wrap[data-rich-preview="true"].
-  - Does not attempt to repair literal preview tags in cooked HTML.
-*/
-
-import { linkInSupportedArea } from "./rich-preview-utils";
 import { matchPreviewTarget } from "./preview-router";
 import {
-  clearDecoratedLink,
-  decorateAutoDetectedLink,
-  decorateWrappedPreviewLink,
-} from "./link-decorator";
+  escapeHTML,
+  getPreviewProvider,
+  providerColor,
+  sanitizeURL,
+} from "./rich-preview-utils";
 
-const WRAP_SELECTOR = '.rich-preview-wrap[data-rich-preview="true"]';
-
-function clearWrapModifierClasses(wrapEl) {
-  if (!(wrapEl instanceof Element)) {
-    return;
-  }
-
-  [
-    "rich-preview-wrap--topic",
-    "rich-preview-wrap--remote_topic",
-    "rich-preview-wrap--external",
-    "rich-preview-wrap--wikipedia",
-    "rich-preview-wrap--underline-always",
-    "rich-preview-wrap--underline-hover",
-    "rich-preview-wrap--icon-before",
-    "rich-preview-wrap--icon-after",
-  ].forEach((klass) => wrapEl.classList.remove(klass));
-
-  wrapEl.style.removeProperty("--rp-color");
-  delete wrapEl.dataset.providerKey;
-}
-
-function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) {
-    return;
-  }
-
-  root
-    .querySelectorAll(
-      "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
-    )
-    .forEach((link) => {
-      if (!(link instanceof HTMLAnchorElement)) {
-        return;
-      }
-
-      clearDecoratedLink(link);
-    });
-}
-
-function getWrappedAnchor(wrapEl) {
-  if (!(wrapEl instanceof Element)) {
-    return null;
-  }
-
-  const link = wrapEl.querySelector(":scope > a[href]");
-  return link instanceof HTMLAnchorElement ? link : null;
-}
-
-function stampModifierClasses(wrapEl, config) {
-  if (!(wrapEl instanceof Element)) {
-    return;
-  }
-
-  clearWrapModifierClasses(wrapEl);
-
-  const link = getWrappedAnchor(wrapEl);
-  if (!link) {
-    return;
-  }
-
-  if (!linkInSupportedArea(link, config)) {
-    clearDecoratedLink(link, wrapEl);
-    return;
-  }
-
-  const target = matchPreviewTarget(link, config);
-  if (!target) {
-    clearDecoratedLink(link, wrapEl);
-    return;
-  }
-
-  decorateWrappedPreviewLink(wrapEl, link, target, config);
-
-  if (link.dataset.richPreviewType) {
-    wrapEl.dataset.providerKey = link.dataset.richPreviewType;
+function discourseIcon(name) {
+  try {
+    return iconHTML(name) || "";
+  } catch {
+    return "";
   }
 }
 
-function stampAutoLinkIndicators(root, config) {
-  if (!(root instanceof Element) || !config) {
-    return;
+function glyphHTMLForTarget(target, config) {
+  const providerKey = target?.providerKey || target?.type || "external";
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false || provider.glyphMode === "none") {
+    return "";
   }
 
-  clearAutoLinkIndicators(root);
+  if (provider.glyphMode === "emoji") {
+    const emoji = String(provider.emoji || "").trim();
+    return emoji
+      ? `<span class="thc-inline-glyph" aria-hidden="true">${escapeHTML(
+          emoji
+        )}</span>`
+      : "";
+  }
 
-  root.querySelectorAll("a[href]").forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
+  const iconName = String(provider.icon || "").trim();
+  if (!iconName) {
+    return "";
+  }
 
-    if (link.closest(WRAP_SELECTOR)) {
-      return;
-    }
-
-    if (!linkInSupportedArea(link, config)) {
-      clearDecoratedLink(link);
-      return;
-    }
-
-    const target = matchPreviewTarget(link, config);
-    if (!target) {
-      clearDecoratedLink(link);
-      return;
-    }
-
-    decorateAutoDetectedLink(link, target, config);
-  });
+  const icon = discourseIcon(iconName);
+  return icon
+    ? `<span class="thc-inline-glyph" aria-hidden="true">${icon}</span>`
+    : "";
 }
 
-export function applyPreviewWraps(root, tagName = "preview", config = null) {
-  if (!(root instanceof Element)) {
+function shouldDecorateTarget(target, config) {
+  const providerKey = target?.providerKey || target?.type;
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false) {
+    return false;
+  }
+
+  switch (providerKey) {
+    case "topic":
+      return (
+        config.previewsTopicMode === "composer_only" ||
+        config.previewsTopicMode === "auto_and_composer"
+      );
+
+    case "remote_topic":
+      return (
+        config.previewsRemoteTopicMode === "composer_only" ||
+        config.previewsRemoteTopicMode === "auto_and_composer"
+      );
+
+    case "external":
+      return (
+        config.previewsExternalMode === "composer_only" ||
+        config.previewsExternalMode === "auto_and_composer"
+      );
+
+    case "wikipedia":
+      return (
+        config.previewsWikipediaMode === "composer_only" ||
+        config.previewsWikipediaMode === "auto_and_composer"
+      );
+
+    default:
+      return false;
+  }
+}
+
+function applyPreviewClasses(anchor, target, config) {
+  const providerKey = target?.providerKey || target?.type || "external";
+
+  anchor.classList.add("rich-preview-link");
+  anchor.classList.add(`rich-preview-link--${providerKey}`);
+
+  if (config.previewsShowUnderline) {
+    anchor.classList.add(
+      config.previewsUnderlineAlways
+        ? "rich-preview-link--underline-always"
+        : "rich-preview-link--underline-hover"
+    );
+  }
+
+  if (config.previewsShowIcon) {
+    anchor.classList.add(
+      config.previewsIconPosition === "before"
+        ? "rich-preview-link--icon-before"
+        : "rich-preview-link--icon-after"
+    );
+  }
+}
+
+function applyPreviewDataAttributes(anchor, target, config) {
+  const providerKey = target?.providerKey || target?.type || "external";
+  const color = providerColor(providerKey, config, "");
+
+  anchor.dataset.richPreview = "true";
+  anchor.dataset.richPreviewType = providerKey;
+  anchor.dataset.bbcode = "true";
+
+  if (config.previewsShowUnderline) {
+    anchor.dataset.richPreviewUnderline = config.previewsUnderlineAlways
+      ? "always"
+      : "hover";
+  }
+
+  if (config.previewsShowIcon) {
+    anchor.dataset.richPreviewIcon = config.previewsIconPosition;
+  }
+
+  if (color) {
+    anchor.style.setProperty("--rp-color", color);
+  }
+}
+
+function appendGlyph(anchor, target, config) {
+  if (!config.previewsShowIcon) {
     return;
   }
 
-  root.querySelectorAll(WRAP_SELECTOR).forEach((wrapEl) => {
-    stampModifierClasses(wrapEl, config);
-  });
+  if (anchor.querySelector(":scope > .thc-inline-glyph")) {
+    return;
+  }
 
-  stampAutoLinkIndicators(root, config);
+  const glyph = glyphHTMLForTarget(target, config);
+  if (!glyph) {
+    return;
+  }
+
+  if (config.previewsIconPosition === "before") {
+    anchor.insertAdjacentHTML("afterbegin", glyph);
+  } else {
+    anchor.insertAdjacentHTML("beforeend", glyph);
+  }
+}
+
+function decoratePreviewAnchor(anchor, config) {
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return;
+  }
+
+  if (anchor.dataset.richPreviewDecorated === "true") {
+    return;
+  }
+
+  if (anchor.closest(".onebox, .inline-onebox")) {
+    return;
+  }
+
+  const href = sanitizeURL(anchor.getAttribute("href"));
+  if (!href) {
+    return;
+  }
+
+  const target = matchPreviewTarget(href, config);
+  if (!target || !shouldDecorateTarget(target, config)) {
+    return;
+  }
+
+  applyPreviewClasses(anchor, target, config);
+  applyPreviewDataAttributes(anchor, target, config);
+  appendGlyph(anchor, target, config);
+
+  anchor.dataset.richPreviewDecorated = "true";
+}
+
+function decorateCooked(container, config) {
+  const anchors = container.querySelectorAll('a[data-bbcode="true"]');
+  anchors.forEach((anchor) => decoratePreviewAnchor(anchor, config));
 }
 
 export function registerPreviewBBCode(api, config) {
   api.decorateCookedElement(
-    (element) => applyPreviewWraps(element, "preview", config),
-    {
-      id: "rich-preview-bbcode-decorator",
-      onlyStream: false,
-    }
+    (element) => {
+      decorateCooked(element, config);
+    },
+    { id: "discourse-rich-previews-bbcode" }
   );
 }
 ```
@@ -11220,6 +11256,41 @@ previews_external_mode:
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no generic external previews at all.
 
+external_screenshot_fallback_enabled:
+  default: false
+  type: bool
+  client: true
+  description: Enables screenshot-thumbnail fallback for external link previews when metadata does not provide a usable image.
+
+external_screenshot_fallback_mode:
+  default: "missing_image"
+  type: enum
+  choices:
+    - missing_image
+    - missing_metadata
+    - always
+  client: true
+  description: >
+    Controls when screenshot-thumbnail fallback is used for external previews.
+    missing_image: use it only when no metadata image is available.
+    missing_metadata: use it when the metadata preview is too sparse.
+    always: always prefer the screenshot thumbnail.
+
+external_screenshot_service_url:
+  default: ""
+  type: string
+  client: true
+  description: >
+    Base URL template for the screenshot service. Use %{url} where the encoded
+    target URL should be inserted, for example
+    https://image.thum.io/get/width/800/%{url}
+
+external_screenshot_cache_buster:
+  default: false
+  type: bool
+  client: true
+  description: Appends a timestamp query parameter to screenshot fallback URLs to bypass stale thumbnail caches when supported by the screenshot service.
+
 previews_wikipedia_mode:
   default: "auto_only"
   type: enum
@@ -12013,7 +12084,7 @@ RSpec.describe "Rich preview modes", type: :system do
     sign_in(user)
   end
 
-  it "still renders manual preview wraps when topic mode is composer_only" do
+  it "still renders manual preview links when topic mode is composer_only" do
     @theme.update_setting(:previews_topic_mode, "composer_only")
     @theme.save!
 
@@ -12024,7 +12095,7 @@ RSpec.describe "Rich preview modes", type: :system do
 
     visit topic_path(topic)
 
-    expect(page).to have_css(".rich-preview-wrap[data-rich-preview='true']")
+    expect(page).to have_css("a.rich-preview-link.rich-preview-link--topic[data-bbcode='true']")
     expect(page).to have_link("linked topic")
   end
 
@@ -12043,7 +12114,6 @@ RSpec.describe "Rich preview modes", type: :system do
     expect(page).not_to have_text("[/preview]")
   end
 end
-
 ```
 
 === FILE: spec/system/rich_previews_remote_topic_icon_spec.rb ===
@@ -12060,12 +12130,13 @@ RSpec.describe "Rich preview remote-topic indicators", type: :system do
     @theme = upload_theme_component
     sign_in(user)
 
+    @theme.update_setting(:previews_remote_topic_mode, "auto_and_composer")
     @theme.update_setting(:previews_show_icon, true)
     @theme.update_setting(:previews_icon_position, "after")
     @theme.save!
   end
 
-  it "adds the remote_topic wrapper class for wrapped remote-topic links" do
+  it "adds remote-topic classes to wrapped remote-topic links" do
     create_post(
       topic: topic,
       raw: <<~MD
@@ -12075,12 +12146,12 @@ RSpec.describe "Rich preview remote-topic indicators", type: :system do
 
     visit topic_path(topic)
 
-    expect(page).to have_css(".rich-preview-wrap--remote_topic")
-    expect(page).to have_css(".rich-preview-wrap--icon-after")
+    expect(page).to have_css(
+      "a.rich-preview-link.rich-preview-link--remote_topic.rich-preview-link--icon-after[data-bbcode='true']"
+    )
     expect(page).to have_link("Remote discussion")
   end
 end
-
 ```
 
 === FILE: spec/system/rich_previews_settings_spec.rb ===
