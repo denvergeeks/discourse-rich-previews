@@ -1,4 +1,6 @@
 import {
+  getCachedValue,
+  setCachedValue,
   getPreviewProvider,
   sanitizeExcerpt,
   sanitizeURL,
@@ -80,8 +82,7 @@ function parseExternalHTML(html, target) {
       meta('meta[name="description"]') ||
       "",
     siteName:
-      meta('meta[property="og:site_name"]') ||
-      normalizedHostname(target.url),
+      meta('meta[property="og:site_name"]') || normalizedHostname(target.url),
     image:
       meta('meta[property="og:image"]') ||
       meta('meta[name="twitter:image"]') ||
@@ -180,7 +181,7 @@ export function matchesExternalTarget(link, config) {
   }
 }
 
-export function createExternalProvider(config) {
+export function createExternalProvider(config, previewCache, inFlightFetches) {
   return {
     key: "external",
 
@@ -188,53 +189,73 @@ export function createExternalProvider(config) {
       return matchesExternalTarget(link, config);
     },
 
-    async fetch(target, signal) {          // ← accept signal directly, not destructured
+    async fetch(target, signal) {
       if (!target?.url) {
         throw new Error("Missing external preview target URL.");
       }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        externalTimeoutMs(config)
-      );
-
-      // Wire parent signal → inner controller
-      const abortHandler = () => {
-        clearTimeout(timeout);             // ← also clear timeout on parent abort
-        controller.abort();
-      };
-      signal?.addEventListener?.("abort", abortHandler, { once: true });
-
-      try {
-        const response = await fetch(buildProxyUrl(target), {
-          method: "GET",
-          credentials: "same-origin",
-          headers: {
-            Accept: "application/json, text/plain;q=0.9, text/html;q=0.8",
-          },
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status} for ${target.url}`);
-        }
-
-        const contentType = response.headers.get("content-type") || "";
-        let payload;
-
-        if (contentType.includes("application/json")) {
-          payload = await response.json();
-        } else {
-          const html = await response.text();
-          payload = parseExternalHTML(html, target);
-        }
-
-        return normalizeExternalPreview(target, payload, config);
-      } finally {
-        clearTimeout(timeout);
-        signal?.removeEventListener?.("abort", abortHandler);
+      if (signal?.aborted) {
+        return null;
       }
+
+      const cacheKey = `external:${target.url}`;
+      const cached = getCachedValue(previewCache, cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const inFlightKey = `external:${target.url}`;
+      if (inFlightFetches?.has(inFlightKey)) {
+        return inFlightFetches.get(inFlightKey);
+      }
+
+      const promise = (async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), externalTimeoutMs(config));
+
+        const abortHandler = () => {
+          clearTimeout(timeout);
+          controller.abort();
+        };
+
+        signal?.addEventListener?.("abort", abortHandler, { once: true });
+
+        try {
+          const response = await fetch(buildProxyUrl(target), {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+              Accept: "application/json, text/plain;q=0.9, text/html;q=0.8",
+            },
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status} for ${target.url}`);
+          }
+
+          const contentType = response.headers.get("content-type") || "";
+          let payload;
+
+          if (contentType.includes("application/json")) {
+            payload = await response.json();
+          } else {
+            const html = await response.text();
+            payload = parseExternalHTML(html, target);
+          }
+
+          const normalized = normalizeExternalPreview(target, payload, config);
+          setCachedValue(previewCache, cacheKey, normalized);
+          return normalized;
+        } finally {
+          clearTimeout(timeout);
+          signal?.removeEventListener?.("abort", abortHandler);
+          inFlightFetches?.delete(inFlightKey);
+        }
+      })();
+
+      inFlightFetches?.set(inFlightKey, promise);
+      return promise;
     },
   };
 }

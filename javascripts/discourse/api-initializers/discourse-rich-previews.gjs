@@ -359,9 +359,7 @@ function buildMobileActionsHTML(topic, isMobile) {
 
   const slug = escapeHTML(String(topic.slug || topic.id || ""));
   const id = escapeHTML(String(topic.id || ""));
-  const topicUrl = sanitizeURL(
-    `${window.location.origin}/t/${slug}/${id}`
-  );
+  const topicUrl = sanitizeURL(`${window.location.origin}/t/${slug}/${id}`);
 
   return `
     <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
@@ -416,8 +414,8 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     sizeMode === "auto_fit_height"
       ? "topic-hover-card--thumb-size-auto_fit_height"
       : sizeMode === "wrap_excerpt"
-      ? "topic-hover-card--thumb-size-wrap_excerpt"
-      : "topic-hover-card--thumb-size-manual";
+        ? "topic-hover-card--thumb-size-wrap_excerpt"
+        : "topic-hover-card--thumb-size-manual";
 
   const thumbnailPercent = pick(
     config,
@@ -652,7 +650,6 @@ export default apiInitializer((api) => {
     );
   }
 
-
   function applyTooltipProviderColor(providerKey) {
     ensureTooltip();
 
@@ -818,6 +815,38 @@ export default apiInitializer((api) => {
     }
 
     return provider.fetch(target, signal);
+  }
+
+  function getPreviewCacheKey(target) {
+    return `${target.providerKey}:${target.key ?? target.url ?? target.topicId ?? ""}`;
+  }
+
+  async function prefetchTarget(target) {
+    if (!target) {
+      return;
+    }
+
+    const cacheKey = getPreviewCacheKey(target);
+    if (getCachedValue(previewCache, cacheKey)) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutMs = providerTimeoutMs(target?.providerKey, config, 3000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const preview = await fetchPreview(target, controller.signal);
+      if (preview) {
+        setCachedValue(previewCache, cacheKey, preview, config.topicCacheMax);
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        logDebug(config, "Prefetch failed", { target, error });
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async function showCard(target, anchorRect) {
@@ -1195,9 +1224,7 @@ export default apiInitializer((api) => {
           const target = matchPreviewTarget(link, config);
           if (!target) continue;
 
-          const controller = new AbortController();
-          const timeoutMs = providerTimeoutMs(target?.providerKey, config, 3000);
-          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          prefetchTarget(target);
         }
       },
       {
@@ -1262,33 +1289,33 @@ export default apiInitializer((api) => {
     setupPrefetch();
   }
 
-function applyBodyClasses() {
-  const body = document.body;
-  if (!body) return;
+  function applyBodyClasses() {
+    const body = document.body;
+    if (!body) return;
 
-  body.classList.remove(
-    "previews-underline-always",
-    "previews-underline-hover",
-    "previews-icon-before",
-    "previews-icon-after"
-  );
-
-  if (config.previewsShowUnderline) {
-    body.classList.add(
-      config.previewsUnderlineAlways
-        ? "previews-underline-always"
-        : "previews-underline-hover"
+    body.classList.remove(
+      "previews-underline-always",
+      "previews-underline-hover",
+      "previews-icon-before",
+      "previews-icon-after"
     );
-  }
 
-  if (config.previewsShowIcon) {
-    body.classList.add(
-      config.previewsIconPosition === "before"
-        ? "previews-icon-before"
-        : "previews-icon-after"
-    );
+    if (config.previewsShowUnderline) {
+      body.classList.add(
+        config.previewsUnderlineAlways
+          ? "previews-underline-always"
+          : "previews-underline-hover"
+      );
+    }
+
+    if (config.previewsShowIcon) {
+      body.classList.add(
+        config.previewsIconPosition === "before"
+          ? "previews-icon-before"
+          : "previews-icon-after"
+      );
+    }
   }
-}
 
   (async () => {
     const disabledForUser = await hoverCardsDisabledForUser();
