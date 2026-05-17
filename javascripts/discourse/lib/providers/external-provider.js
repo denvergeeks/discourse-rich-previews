@@ -188,7 +188,8 @@ export function createExternalProvider(config) {
       return matchesExternalTarget(link, config);
     },
 
-    async fetch(target, { signal } = {}) {
+    async fetch(target, signalOrOptions) {
+      const signal = signalOrOptions?.signal ?? signalOrOptions ?? undefined;
       if (!target?.url) {
         throw new Error("Missing external preview target URL.");
       }
