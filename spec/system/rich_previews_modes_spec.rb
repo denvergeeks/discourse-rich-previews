@@ -12,7 +12,7 @@ RSpec.describe "Rich preview modes", type: :system do
     sign_in(user)
   end
 
-  it "still renders manual preview wraps when topic mode is composer_only" do
+  it "renders manual preview links when topic mode is composer_only" do
     @theme.update_setting(:previews_topic_mode, "composer_only")
     @theme.save!
 
@@ -23,8 +23,8 @@ RSpec.describe "Rich preview modes", type: :system do
 
     visit topic_path(topic)
 
-    expect(page).to have_css(".rich-preview-wrap[data-rich-preview='true']")
     expect(page).to have_link("linked topic")
+    expect(page).to have_css("a[data-rich-preview='true'][data-bbcode='true']")
   end
 
   it "does not expose raw preview tags when topic mode is composer_only" do
@@ -38,6 +38,25 @@ RSpec.describe "Rich preview modes", type: :system do
 
     visit topic_path(topic)
 
+    expect(page).not_to have_text("[preview]")
+    expect(page).not_to have_text("[/preview]")
+  end
+
+  it "preserves markdown link title attributes inside preview bbcode" do
+    @theme.update_setting(:previews_topic_mode, "composer_only")
+    @theme.save!
+
+    create_post(
+      topic: topic,
+      raw: %[ [preview][linked topic](#{linked_topic.url} "Hover title")[/preview] ]
+    )
+
+    visit topic_path(topic)
+
+    expect(page).to have_css(
+      "a[data-rich-preview='true'][data-bbcode='true'][title='Hover title']"
+    )
+    expect(page).to have_link("linked topic")
     expect(page).not_to have_text("[preview]")
     expect(page).not_to have_text("[/preview]")
   end

@@ -590,15 +590,38 @@
 .rich-preview-wrap {
   display: inline;
   --rp-color: var(--tertiary);
+
+  > a {
+    display: inline;
+    color: inherit;
+    overflow-wrap: anywhere;
+  }
 }
 
 .rich-preview-link {
   --rp-color: var(--tertiary);
+  display: inline;
+  overflow-wrap: anywhere;
 }
 
-// Wrapped links inherit wrapper color
-.rich-preview-wrap > a {
-  color: inherit;
+.rich-preview-wrap--topic,
+.rich-preview-link--topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--remote_topic,
+.rich-preview-link--remote_topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--external,
+.rich-preview-link--external {
+  --rp-color: var(--tertiary);
+}
+
+.rich-preview-wrap--wikipedia,
+.rich-preview-link--wikipedia {
+  --rp-color: var(--love);
 }
 
 // Manual / wrapped underline
@@ -614,7 +637,7 @@
     color 120ms ease;
 }
 
-// Auto-link underline — explicit cooked + composer preview selectors
+// Auto-link underline
 .cooked a.rich-preview-link.rich-preview-link--underline-always,
 .d-editor-preview a.rich-preview-link.rich-preview-link--underline-always,
 a.rich-preview-link.rich-preview-link--underline-always {
@@ -680,13 +703,6 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
 
 .rich-preview-wrap--icon-before > .thc-inline-glyph-wrap {
   margin-inline-end: 0.22em;
-}
-
-// Keep links stable in cooked content and preview
-.rich-preview-wrap > a,
-a.rich-preview-link {
-  display: inline;
-  overflow-wrap: anywhere;
 }
 
 // Inline-onebox protection

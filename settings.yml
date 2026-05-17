@@ -172,6 +172,41 @@ previews_external_mode:
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no generic external previews at all.
 
+external_screenshot_fallback_enabled:
+  default: false
+  type: bool
+  client: true
+  description: Enables screenshot-thumbnail fallback for external link previews when metadata does not provide a usable image.
+
+external_screenshot_fallback_mode:
+  default: "missing_image"
+  type: enum
+  choices:
+    - missing_image
+    - missing_metadata
+    - always
+  client: true
+  description: >
+    Controls when screenshot-thumbnail fallback is used for external previews.
+    missing_image: use it only when no metadata image is available.
+    missing_metadata: use it when the metadata preview is too sparse.
+    always: always prefer the screenshot thumbnail.
+
+external_screenshot_service_url:
+  default: ""
+  type: string
+  client: true
+  description: >
+    Base URL template for the screenshot service. Use %{url} where the encoded
+    target URL should be inserted, for example
+    https://image.thum.io/get/width/800/%{url}
+
+external_screenshot_cache_buster:
+  default: false
+  type: bool
+  client: true
+  description: Appends a timestamp query parameter to screenshot fallback URLs to bypass stale thumbnail caches when supported by the screenshot service.
+
 previews_wikipedia_mode:
   default: "auto_only"
   type: enum

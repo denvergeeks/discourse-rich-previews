@@ -1,11 +1,12 @@
 /*
-  Registers preview wrapper handling and applies preview decoration to both
-  manual wrapped links and auto-detected eligible links in cooked content.
+  Applies preview decoration to both manual wrapped links and auto-detected
+  eligible links in cooked content.
 
-  Strict mode:
-  - Assumes the markdown-it plugin is authoritative for turning [preview]...[/preview]
-    into .rich-preview-wrap[data-rich-preview="true"].
-  - Does not attempt to repair literal preview tags in cooked HTML.
+  The markdown-it plugin is authoritative for parsing:
+    [preview][label](url "title")[/preview]
+  into a normal anchor in cooked HTML.
+
+  This decorator layer only styles and augments those cooked anchors.
 */
 
 import { linkInSupportedArea } from "./rich-preview-utils";
@@ -89,10 +90,6 @@ function stampModifierClasses(wrapEl, config) {
   }
 
   decorateWrappedPreviewLink(wrapEl, link, target, config);
-
-  if (link.dataset.richPreviewType) {
-    wrapEl.dataset.providerKey = link.dataset.richPreviewType;
-  }
 }
 
 function stampAutoLinkIndicators(root, config) {
@@ -126,7 +123,7 @@ function stampAutoLinkIndicators(root, config) {
   });
 }
 
-export function applyPreviewWraps(root, tagName = "preview", config = null) {
+export function applyPreviewWraps(root, _tagName = "preview", config = null) {
   if (!(root instanceof Element)) {
     return;
   }
