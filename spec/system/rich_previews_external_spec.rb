@@ -20,8 +20,8 @@ RSpec.describe "Rich preview external links", type: :system do
     theme.save!
   end
 
-  it "auto-detects eligible external links when external mode is autoonly" do
-    update_theme_setting(:previewsexternalmode, "autoonly")
+  it "auto-detects eligible external links when external mode is auto_only" do
+    update_theme_setting(:previews_external_mode, "auto_only")
 
     create_post(
       topic: topic,
@@ -37,12 +37,12 @@ RSpec.describe "Rich preview external links", type: :system do
     expect(page).to have_css("a.rich-preview-link--external")
   end
 
-  it "renders manual preview wraps for external links when external mode is composeronly" do
-    update_theme_setting(:previewsexternalmode, "composeronly")
+  it "renders manual preview wraps for external links when external mode is composer_only" do
+    update_theme_setting(:previews_external_mode, "composer_only")
 
     create_post(
       topic: topic,
-      raw: "preview[Example external site](https://example.com/articles/preview-target)preview"
+      raw: "[preview][Example external site](https://example.com/articles/preview-target)[/preview]"
     )
 
     visit topic_path(topic)
@@ -53,11 +53,12 @@ RSpec.describe "Rich preview external links", type: :system do
       "Example external site",
       href: "https://example.com/articles/preview-target"
     )
-    expect(page).not_to have_text("preview[")
+    expect(page).not_to have_text("[preview]")
+    expect(page).not_to have_text("[/preview]")
   end
 
-  it "does not auto-detect plain external links when external mode is composeronly" do
-    update_theme_setting(:previewsexternalmode, "composeronly")
+  it "does not auto-detect plain external links when external mode is composer_only" do
+    update_theme_setting(:previews_external_mode, "composer_only")
 
     create_post(
       topic: topic,
@@ -73,15 +74,15 @@ RSpec.describe "Rich preview external links", type: :system do
     expect(page).not_to have_css("a.rich-preview-link--external")
   end
 
-  it "supports both auto and manual external previews when external mode is autoandcomposer" do
-    update_theme_setting(:previewsexternalmode, "autoandcomposer")
+  it "supports both auto and manual external previews when external mode is auto_and_composer" do
+    update_theme_setting(:previews_external_mode, "auto_and_composer")
 
     create_post(
       topic: topic,
       raw: <<~MD
-        Plain external link: https://example.com/articles/preview-target
+        Plain external link: [https://example.com/articles/preview-target](https://example.com/articles/preview-target)
 
-        preview[Wrapped external](https://example.com/articles/second-target)preview
+        [preview][Wrapped external](https://example.com/articles/second-target)[/preview]
       MD
     )
 
@@ -96,14 +97,14 @@ RSpec.describe "Rich preview external links", type: :system do
   end
 
   it "disables both auto and manual external preview treatment when external mode is disabled" do
-    update_theme_setting(:previewsexternalmode, "disabled")
+    update_theme_setting(:previews_external_mode, "disabled")
 
     create_post(
       topic: topic,
       raw: <<~MD
-        Plain external link: https://example.com/articles/preview-target
+        Plain external link: [https://example.com/articles/preview-target](https://example.com/articles/preview-target)
 
-        preview[Wrapped external](https://example.com/articles/second-target)preview
+        [preview][Wrapped external](https://example.com/articles/second-target)[/preview]
       MD
     )
 
