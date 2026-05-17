@@ -3,13 +3,12 @@ function normalizeAttrValue(value) {
 }
 
 function getPreviewHref(attrs, content) {
-  const explicitHref = normalizeAttrValue(attrs?._default);
+  const explicitHref = normalizeAttrValue(attrs?.default);
   const fallbackHref = normalizeAttrValue(content);
-
   return explicitHref || fallbackHref;
 }
 
-function copyAttrs(token, attrs = {}) {
+function copyAttrs(token, attrs) {
   Object.entries(attrs).forEach(([name, value]) => {
     if (value === null || value === undefined || value === "") {
       return;
@@ -19,43 +18,35 @@ function copyAttrs(token, attrs = {}) {
   });
 }
 
-function buildAnchorTokens(startToken, endToken, tagInfo, content) {
+function buildFallbackTextToken(token, content) {
+  token.type = "text";
+  token.tag = "";
+  token.nesting = 0;
+  token.attrs = null;
+  token.content = content;
+  token.children = null;
+}
+
+function buildPreviewWrapperTokens(startToken, endToken, tagInfo, content) {
   const href = getPreviewHref(tagInfo?.attrs, content);
 
   if (!href) {
-    startToken.type = "text";
-    startToken.tag = "";
-    startToken.nesting = 0;
-    startToken.content = "";
-
-    endToken.type = "text";
-    endToken.tag = "";
-    endToken.nesting = 0;
-    endToken.content = "";
-
+    buildFallbackTextToken(startToken, content);
+    buildFallbackTextToken(endToken, "");
     return false;
   }
 
-  startToken.type = "link_open";
-  startToken.tag = "a";
-  startToken.nesting = 1;
-  startToken.content = "";
-  startToken.attrs = [];
+  startToken.type = "html_inline";
+  startToken.tag = "";
+  startToken.nesting = 0;
+  startToken.attrs = null;
+  startToken.content = `<span class="rich-preview-wrap" data-rich-preview="true" data-bbcode="true" data-preview-href="${href.replace(/"/g, "&quot;")}">`;
 
-  copyAttrs(startToken, {
-    href,
-    "data-bbcode": "true",
-  });
-
-  const title = normalizeAttrValue(tagInfo?.attrs?.title);
-  if (title) {
-    startToken.attrSet("title", title);
-  }
-
-  endToken.type = "link_close";
-  endToken.tag = "a";
-  endToken.nesting = -1;
-  endToken.content = "";
+  endToken.type = "html_inline";
+  endToken.tag = "";
+  endToken.nesting = 0;
+  endToken.attrs = null;
+  endToken.content = "</span>";
 
   return false;
 }
@@ -65,12 +56,24 @@ export function setup(helper) {
     return;
   }
 
+  helper.allowList([
+    "span.rich-preview-wrap",
+    "span[data-rich-preview]",
+    "span[data-bbcode]",
+    "span[data-preview-href]",
+  ]);
+
   helper.registerPlugin((md) => {
     md.inline.bbcode.ruler.push("preview", {
       tag: "preview",
 
       wrap(startToken, endToken, tagInfo, content) {
-        return buildAnchorTokens(startToken, endToken, tagInfo, content);
+        return buildPreviewWrapperTokens(
+          startToken,
+          endToken,
+          tagInfo,
+          content
+        );
       },
     });
   });
