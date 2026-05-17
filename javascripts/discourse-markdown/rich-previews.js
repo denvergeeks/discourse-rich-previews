@@ -19,7 +19,7 @@ function copyAttrs(token, attrs = {}) {
   });
 }
 
-function buildAnchorTokens(state, startToken, endToken, tagInfo, content) {
+function buildAnchorTokens(startToken, endToken, tagInfo, content) {
   const href = getPreviewHref(tagInfo?.attrs, content);
 
   if (!href) {
@@ -60,62 +60,17 @@ function buildAnchorTokens(state, startToken, endToken, tagInfo, content) {
   return false;
 }
 
-function registerPreviewBBCodeRule(md) {
-  md.inline.bbcode.ruler.push("preview", {
-    tag: "preview",
-
-    wrap(startToken, endToken, tagInfo, content) {
-      startToken.type = "html_inline";
-      startToken.tag = "";
-      startToken.nesting = 0;
-      startToken.content =
-        '<span class="rich-preview-wrap" data-rich-preview="true">';
-
-      buildAnchorTokens(startToken, endToken, tagInfo, content);
-
-      const closeToken = endToken;
-      const originalCloseContent = closeToken.content ?? "";
-
-      closeToken.type = "html_inline";
-      closeToken.tag = "";
-      closeToken.nesting = 0;
-      closeToken.content = "</span>";
-
-      if (originalCloseContent) {
-        closeToken.content += originalCloseContent;
-      }
-
-      return false;
-    },
-  });
-}
-
 export function setup(helper) {
   if (!helper?.markdownIt) {
     return;
   }
 
-  helper.allowList([
-    "span.rich-preview-wrap",
-    "span[data-rich-preview=true]",
-  ]);
-
   helper.registerPlugin((md) => {
     md.inline.bbcode.ruler.push("preview", {
       tag: "preview",
-      wrap(startToken, endToken) {
-        startToken.type = "html_inline";
-        startToken.tag = "";
-        startToken.nesting = 0;
-        startToken.content =
-          '<span class="rich-preview-wrap" data-rich-preview="true">';
 
-        endToken.type = "html_inline";
-        endToken.tag = "";
-        endToken.nesting = 0;
-        endToken.content = "</span>";
-
-        return false;
+      wrap(startToken, endToken, tagInfo, content) {
+        return buildAnchorTokens(startToken, endToken, tagInfo, content);
       },
     });
   });
