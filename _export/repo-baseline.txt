@@ -1,7 +1,7 @@
 REPO: discourse-rich-previews
 BRANCH: main
-COMMIT: 50e33d2eb2b9a72981aa788786bf638dfce9caba
-GENERATED: 2026-05-17 12:16:14 -0600
+COMMIT: 792af03a2eeb145ca87683cba69442f1e358536b
+GENERATED: 2026-05-17 15:43:02 -0600
 
 === FILE TREE ===
 .discourse-compatibility
@@ -38,7 +38,6 @@ javascripts/discourse/lib/preview-markup.js
 javascripts/discourse/lib/preview-renderer.js
 javascripts/discourse/lib/preview-router.js
 javascripts/discourse/lib/providers/external-provider.js
-javascripts/discourse/lib/providers/index.js
 javascripts/discourse/lib/providers/topic-provider.js
 javascripts/discourse/lib/providers/wikipedia-provider.js
 javascripts/discourse/lib/rich-preview-utils.js
@@ -326,20 +325,16 @@ https://github.com/denvergeeks/discourse-proxy-safe.git
 === FILE: about.json ===
 ```json
 {
-  "name": "Discourse Rich Previews",
+  "name": "discourse-rich-previews",
   "component": true,
-  "authors": "@denvergeeks",
   "about_url": "https://github.com/denvergeeks/discourse-rich-previews",
   "license_url": "https://github.com/denvergeeks/discourse-rich-previews/blob/main/LICENSE",
-  "theme_version": "0.0.1",
-  "minimum_discourse_version": "3.3.0",
-  "maximum_discourse_version": null,
+  "authors": "Denver Geeks",
+  "theme_version": "0.1.0",
   "assets": {
-    "icons-sprite": "/assets/tooltip-icon.svg"
-  },
-  "modifiers": {}
+    "tooltip-icon": "assets/tooltip-icon.svg"
+  }
 }
-
 ```
 
 === FILE: common/common.scss ===
@@ -1580,53 +1575,128 @@ export default [...DiscourseRecommendedTheme];
 
 === FILE: javascripts/discourse-markdown/rich-previews.js ===
 ```js
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function normalizeAttrValue(value) {
+  return String(value ?? "").trim();
 }
 
-function wrapPreviewTags(source, tagName = "preview") {
-  const openTag = `[${tagName}]`;
-  const closeTag = `[/${tagName}]`;
+function getPreviewHref(attrs, content) {
+  const explicitHref = normalizeAttrValue(attrs?._default);
+  const fallbackHref = normalizeAttrValue(content);
 
-  if (!source?.includes(openTag)) {
-    return source;
+  return explicitHref || fallbackHref;
+}
+
+function copyAttrs(token, attrs = {}) {
+  Object.entries(attrs).forEach(([name, value]) => {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
+
+    token.attrSet(name, String(value));
+  });
+}
+
+function buildAnchorTokens(state, startToken, endToken, tagInfo, content) {
+  const href = getPreviewHref(tagInfo?.attrs, content);
+
+  if (!href) {
+    startToken.type = "text";
+    startToken.tag = "";
+    startToken.nesting = 0;
+    startToken.content = "";
+
+    endToken.type = "text";
+    endToken.tag = "";
+    endToken.nesting = 0;
+    endToken.content = "";
+
+    return false;
   }
 
-  const pattern = new RegExp(
-    `${escapeRegExp(openTag)}([\\s\\S]*?)${escapeRegExp(closeTag)}`,
-    "gi"
-  );
+  startToken.type = "link_open";
+  startToken.tag = "a";
+  startToken.nesting = 1;
+  startToken.content = "";
+  startToken.attrs = [];
 
-  return source.replace(pattern, (_match, inner) => {
-    return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
+  copyAttrs(startToken, {
+    href,
+    "data-bbcode": "true",
+  });
+
+  const title = normalizeAttrValue(tagInfo?.attrs?.title);
+  if (title) {
+    startToken.attrSet("title", title);
+  }
+
+  endToken.type = "link_close";
+  endToken.tag = "a";
+  endToken.nesting = -1;
+  endToken.content = "";
+
+  return false;
+}
+
+function registerPreviewBBCodeRule(md) {
+  md.inline.bbcode.ruler.push("preview", {
+    tag: "preview",
+
+    wrap(startToken, endToken, tagInfo, content) {
+      startToken.type = "html_inline";
+      startToken.tag = "";
+      startToken.nesting = 0;
+      startToken.content =
+        '<span class="rich-preview-wrap" data-rich-preview="true">';
+
+      buildAnchorTokens(startToken, endToken, tagInfo, content);
+
+      const closeToken = endToken;
+      const originalCloseContent = closeToken.content ?? "";
+
+      closeToken.type = "html_inline";
+      closeToken.tag = "";
+      closeToken.nesting = 0;
+      closeToken.content = "</span>";
+
+      if (originalCloseContent) {
+        closeToken.content += originalCloseContent;
+      }
+
+      return false;
+    },
   });
 }
 
 export function setup(helper) {
-  if (!helper.markdownIt) {
+  if (!helper?.markdownIt) {
     return;
   }
 
   helper.allowList([
     "span.rich-preview-wrap",
-    "span[data-rich-preview]",
+    "span[data-rich-preview=true]",
   ]);
 
   helper.registerPlugin((md) => {
-    md.core.ruler.push("rich-previews-bbcode", (state) => {
-      state.tokens.forEach((token) => {
-        if (token.type !== "inline" || !token.content) {
-          return;
-        }
+    md.inline.bbcode.ruler.push("preview", {
+      tag: "preview",
+      wrap(startToken, endToken) {
+        startToken.type = "html_inline";
+        startToken.tag = "";
+        startToken.nesting = 0;
+        startToken.content =
+          '<span class="rich-preview-wrap" data-rich-preview="true">';
 
-        token.content = wrapPreviewTags(token.content, "preview");
-      });
+        endToken.type = "html_inline";
+        endToken.tag = "";
+        endToken.nesting = 0;
+        endToken.content = "</span>";
 
-      return false;
+        return false;
+      },
     });
   });
 }
-
 ```
 
 === FILE: javascripts/discourse/api-initializers/discourse-rich-previews.gjs ===
@@ -1684,7 +1754,9 @@ function discourseIcon(name) {
 
 function joinMetadataGroups(items, separator = "·") {
   const filtered = items.filter(Boolean);
-  if (!filtered.length) return "";
+  if (!filtered.length) {
+    return "";
+  }
 
   return filtered
     .map((item, index) =>
@@ -1700,7 +1772,10 @@ function getSiteCategories(api) {
 }
 
 function findCategoryById(categories, categoryId) {
-  if (!categories?.length || !categoryId) return null;
+  if (!categories?.length || !categoryId) {
+    return null;
+  }
+
   return categories.find((c) => Number(c.id) === Number(categoryId)) || null;
 }
 
@@ -1749,7 +1824,9 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
     return "";
   }
 
-  if (!topic.category_id) return "";
+  if (!topic.category_id) {
+    return "";
+  }
 
   const category = findCategoryById(categories, topic.category_id);
   const name =
@@ -1762,7 +1839,9 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
   const rawColor = category?.color || topic.category_color || null;
   const color = rawColor ? `#${String(rawColor).replace(/^#/, "")}` : null;
 
-  if (!name) return "";
+  if (!name) {
+    return "";
+  }
 
   return `
     <span class="topic-hover-card__badge topic-hover-card__badge--category"${
@@ -1774,12 +1853,19 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
 }
 
 function buildTagsHTML(topic, config, isMobile) {
-  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
-  if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
+  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) {
+    return "";
+  }
+
+  if (!Array.isArray(topic.tags) || !topic.tags.length) {
+    return "";
+  }
 
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
 
-  if (!tags.length) return "";
+  if (!tags.length) {
+    return "";
+  }
 
   return `
     <div class="topic-hover-card__tags">
@@ -1800,7 +1886,9 @@ function buildBadgesHTML(topic, categories, config, isMobile) {
   const categoryHTML = buildCategoryHTML(topic, categories, config, isMobile);
   const tagsHTML = buildTagsHTML(topic, config, isMobile);
 
-  if (!categoryHTML && !tagsHTML) return "";
+  if (!categoryHTML && !tagsHTML) {
+    return "";
+  }
 
   return `
     <div class="topic-hover-card__badges">
@@ -1811,7 +1899,10 @@ function buildBadgesHTML(topic, categories, config, isMobile) {
 }
 
 function buildTitleHTML(topic, config, isMobile) {
-  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) return "";
+  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) {
+    return "";
+  }
+
   const title = topic.fancy_title ?? topic.title ?? "(no title)";
 
   return `
@@ -1841,7 +1932,9 @@ function buildExcerptHTML(topic, config, isMobile) {
   topic.__thc_excerpt = cleanedExcerpt;
 
   const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
-  if (!finalExcerpt) return "";
+  if (!finalExcerpt) {
+    return "";
+  }
 
   const CHARS_PER_LINE = 90;
   const isLikelyMultiLine = finalExcerpt.length > CHARS_PER_LINE;
@@ -1860,7 +1953,9 @@ function buildExcerptHTML(topic, config, isMobile) {
 }
 
 function buildOpHTML(topic, config, isMobile) {
-  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) return "";
+  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) {
+    return "";
+  }
 
   const op =
     topic.details?.created_by ||
@@ -1870,11 +1965,12 @@ function buildOpHTML(topic, config, isMobile) {
     }) ||
     topic.posters?.[0]?.user;
 
-  if (!op?.username) return "";
+  if (!op?.username) {
+    return "";
+  }
 
   const avatarUrl =
-    topic.op_avatar_url ||
-    safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
+    topic.op_avatar_url || safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
   const avatarImg = avatarUrl
     ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
         avatarUrl
@@ -1894,9 +1990,14 @@ function buildPublishDateHTML(topic, config, isMobile) {
     return "";
   }
 
-  if (!topic.created_at) return "";
+  if (!topic.created_at) {
+    return "";
+  }
+
   const d = new Date(topic.created_at);
-  if (Number.isNaN(d.getTime())) return "";
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
 
   const fmt = d.toLocaleDateString(undefined, {
     year: "numeric",
@@ -1988,13 +2089,13 @@ function buildMetadataHTML(topic, config, isMobile) {
 }
 
 function buildMobileActionsHTML(topic, isMobile) {
-  if (!isMobile) return "";
+  if (!isMobile) {
+    return "";
+  }
 
   const slug = escapeHTML(String(topic.slug || topic.id || ""));
   const id = escapeHTML(String(topic.id || ""));
-  const topicUrl = sanitizeURL(
-    `${window.location.origin}/t/${slug}/${id}`
-  );
+  const topicUrl = sanitizeURL(`${window.location.origin}/t/${slug}/${id}`);
 
   return `
     <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
@@ -2049,8 +2150,8 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     sizeMode === "auto_fit_height"
       ? "topic-hover-card--thumb-size-auto_fit_height"
       : sizeMode === "wrap_excerpt"
-      ? "topic-hover-card--thumb-size-wrap_excerpt"
-      : "topic-hover-card--thumb-size-manual";
+        ? "topic-hover-card--thumb-size-wrap_excerpt"
+        : "topic-hover-card--thumb-size-manual";
 
   const thumbnailPercent = pick(
     config,
@@ -2170,7 +2271,9 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
 export default apiInitializer((api) => {
   const config = readConfig(settings);
 
-  if (!config.enabled) return;
+  if (!config.enabled) {
+    return;
+  }
 
   registerPreviewBBCode(api, config);
 
@@ -2261,7 +2364,9 @@ export default apiInitializer((api) => {
   }
 
   function ensureTooltip() {
-    if (tooltip?.isConnected) return;
+    if (tooltip?.isConnected) {
+      return;
+    }
 
     tooltip = document.querySelector(TOOLTIP_SELECTOR);
 
@@ -2273,7 +2378,9 @@ export default apiInitializer((api) => {
       document.body.appendChild(tooltip);
 
       cleanupFns.push(() => {
-        if (tooltip?.isConnected) tooltip.remove();
+        if (tooltip?.isConnected) {
+          tooltip.remove();
+        }
         tooltip = null;
       });
     }
@@ -2284,7 +2391,6 @@ export default apiInitializer((api) => {
       `${config.mobileWidthPercent}vw`
     );
   }
-
 
   function applyTooltipProviderColor(providerKey) {
     ensureTooltip();
@@ -2298,8 +2404,40 @@ export default apiInitializer((api) => {
     }
   }
 
+  function applyBodyClasses() {
+    const body = document.body;
+    if (!body) {
+      return;
+    }
+
+    body.classList.remove(
+      "previews-underline-always",
+      "previews-underline-hover",
+      "previews-icon-before",
+      "previews-icon-after"
+    );
+
+    if (config.previewsShowUnderline) {
+      body.classList.add(
+        config.previewsUnderlineAlways
+          ? "previews-underline-always"
+          : "previews-underline-hover"
+      );
+    }
+
+    if (config.previewsShowIcon) {
+      body.classList.add(
+        config.previewsIconPosition === "before"
+          ? "previews-icon-before"
+          : "previews-icon-after"
+      );
+    }
+  }
+
   function positionTooltip(anchorRect) {
-    if (!tooltip) return;
+    if (!tooltip) {
+      return;
+    }
 
     if (viewport.isMobileInteractionMode()) {
       const left = Math.max(
@@ -2365,7 +2503,9 @@ export default apiInitializer((api) => {
   function getRenderedCard(preview, isMobile) {
     const key = getRenderCacheKey(preview, isMobile);
     const cached = getCachedValue(renderCache, key);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
 
     let html;
 
@@ -2402,7 +2542,9 @@ export default apiInitializer((api) => {
   function hideCard() {
     abortCurrentRequest();
 
-    if (!tooltip) return;
+    if (!tooltip) {
+      return;
+    }
 
     tooltip.classList.remove("is-visible");
     tooltip.style.removeProperty("--thc-provider-color");
@@ -2418,7 +2560,9 @@ export default apiInitializer((api) => {
   function scheduleHide() {
     cancel(hideTimer);
     hideTimer = later(() => {
-      if (!isInsideCard) hideCard();
+      if (!isInsideCard) {
+        hideCard();
+      }
       suppressNextClick = false;
     }, DELAY_HIDE);
   }
@@ -2451,6 +2595,47 @@ export default apiInitializer((api) => {
     }
 
     return provider.fetch(target, signal);
+  }
+
+  function previewCacheKeyForTarget(target) {
+    if (!target) {
+      return null;
+    }
+
+    return `${target.providerKey}:${target.key ?? target.url ?? target.topicId ?? ""}`;
+  }
+
+  async function prefetchTarget(target) {
+    if (!target) {
+      return null;
+    }
+
+    const cacheKey = previewCacheKeyForTarget(target);
+    if (cacheKey) {
+      const cached = getCachedValue(previewCache, cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const controller = new AbortController();
+    const timeoutMs = providerTimeoutMs(target?.providerKey, config, 3000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const data = await fetchPreview(target, controller.signal);
+      if (data && cacheKey) {
+        setCachedValue(previewCache, cacheKey, data, config.topicCacheMax);
+      }
+      return data;
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        logDebug(config, "Prefetch failed", { target, error });
+      }
+      return null;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   async function showCard(target, anchorRect) {
@@ -2522,16 +2707,10 @@ export default apiInitializer((api) => {
         preview?.providerKey || preview?.type || target?.providerKey || "topic"
       );
 
-      tooltip.innerHTML = getRenderedCard(
-        preview,
-        viewport.isMobileLayout()
-      );
+      tooltip.innerHTML = getRenderedCard(preview, viewport.isMobileLayout());
       positionTooltipNextFrame(anchorRect);
     } catch (error) {
-      if (
-        error?.name === "AbortError" ||
-        controller.signal.aborted
-      ) {
+      if (error?.name === "AbortError" || controller.signal.aborted) {
         return;
       }
 
@@ -2566,16 +2745,30 @@ export default apiInitializer((api) => {
   }
 
   async function resolveUserFieldIdForAdmins() {
-    if (!config.resolveUserFieldIdForAdmins) return null;
-    if (!currentUserIsStaffLike(currentUser)) return null;
-    if (!config.userPreferenceFieldName) return null;
+    if (!config.resolveUserFieldIdForAdmins) {
+      return null;
+    }
+    if (!currentUserIsStaffLike(currentUser)) {
+      return null;
+    }
+    if (!config.userPreferenceFieldName) {
+      return null;
+    }
 
     const raw = String(config.userPreferenceFieldName).trim();
-    if (/^\d+$/.test(raw)) return raw;
-    if (/^user_field_\d+$/i.test(raw)) return raw.match(/\d+/)?.[0] ?? null;
+    if (/^\d+$/.test(raw)) {
+      return raw;
+    }
+    if (/^user_field_\d+$/i.test(raw)) {
+      return raw.match(/\d+/)?.[0] ?? null;
+    }
 
-    if (resolvedUserFieldId !== null) return resolvedUserFieldId;
-    if (resolvedUserFieldIdPromise) return resolvedUserFieldIdPromise;
+    if (resolvedUserFieldId !== null) {
+      return resolvedUserFieldId;
+    }
+    if (resolvedUserFieldIdPromise) {
+      return resolvedUserFieldIdPromise;
+    }
 
     resolvedUserFieldIdPromise = getJSON("/admin/config/user-fields.json")
       .then((result) => {
@@ -2615,7 +2808,9 @@ export default apiInitializer((api) => {
   }
 
   async function fetchFullCurrentUser() {
-    if (!currentUser?.username) return null;
+    if (!currentUser?.username) {
+      return null;
+    }
 
     try {
       const store = api.container.lookup("service:store");
@@ -2627,7 +2822,9 @@ export default apiInitializer((api) => {
   }
 
   async function hoverCardsDisabledForUser() {
-    if (!currentUser || !config.userPreferenceFieldName) return false;
+    if (!currentUser || !config.userPreferenceFieldName) {
+      return false;
+    }
 
     const directCandidates = normalizedFieldKeyVariants(
       config.userPreferenceFieldName
@@ -2640,7 +2837,9 @@ export default apiInitializer((api) => {
       findTruthyFieldMatch(currentUserCustomFields, directCandidates) ||
       findTruthyFieldMatch(currentUserUserFields, directCandidates);
 
-    if (match) return true;
+    if (match) {
+      return true;
+    }
 
     const resolvedId = await resolveUserFieldIdForAdmins();
     const resolvedCandidates = resolvedId
@@ -2652,7 +2851,9 @@ export default apiInitializer((api) => {
         findTruthyFieldMatch(currentUserCustomFields, resolvedCandidates) ||
         findTruthyFieldMatch(currentUserUserFields, resolvedCandidates);
 
-      if (match) return true;
+      if (match) {
+        return true;
+      }
     }
 
     const fullUser = await fetchFullCurrentUser();
@@ -2663,14 +2864,18 @@ export default apiInitializer((api) => {
       findTruthyFieldMatch(fullUserFields, directCandidates) ||
       findTruthyFieldMatch(fullUserCustomFields, directCandidates);
 
-    if (match) return true;
+    if (match) {
+      return true;
+    }
 
     if (resolvedCandidates.length) {
       match =
         findTruthyFieldMatch(fullUserFields, resolvedCandidates) ||
         findTruthyFieldMatch(fullUserCustomFields, resolvedCandidates);
 
-      if (match) return true;
+      if (match) {
+        return true;
+      }
     }
 
     return false;
@@ -2689,10 +2894,14 @@ export default apiInitializer((api) => {
 
   function onTooltipClick(event) {
     const target = event.target;
-    if (!(target instanceof Element)) return;
+    if (!(target instanceof Element)) {
+      return;
+    }
 
     const inCard = target.closest(".topic-hover-card");
-    if (!inCard) return;
+    if (!inCard) {
+      return;
+    }
 
     const closeBtn = target.closest("[data-thc-close]");
     if (closeBtn) {
@@ -2718,25 +2927,39 @@ export default apiInitializer((api) => {
   }
 
   function onMouseOver(event) {
-    if (viewport.isMobileInteractionMode()) return;
-    if (!(event.target instanceof Element)) return;
+    if (viewport.isMobileInteractionMode()) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const target = matchPreviewTarget(link, config);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     mouseIsOverAnchor = true;
     scheduleShow(target, link.getBoundingClientRect(), link);
   }
 
   function onMouseOut(event) {
-    if (viewport.isMobileInteractionMode()) return;
-    if (!(event.target instanceof Element)) return;
+    if (viewport.isMobileInteractionMode()) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     mouseIsOverAnchor = false;
     cancel(showTimer);
@@ -2744,15 +2967,25 @@ export default apiInitializer((api) => {
   }
 
   function onTouchStart(event) {
-    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
-    if (!(event.target instanceof Element)) return;
-    if (event.target.closest(TOOLTIP_SELECTOR)) return;
+    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+    if (event.target.closest(TOOLTIP_SELECTOR)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const target = matchPreviewTarget(link, config);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     currentAnchor = link;
     event.preventDefault();
@@ -2763,8 +2996,12 @@ export default apiInitializer((api) => {
   }
 
   function onDocumentClick(event) {
-    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
-    if (!(event.target instanceof Element)) return;
+    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     if (event.target.closest("[data-thc-open-topic]")) {
       suppressNextClick = false;
@@ -2785,9 +3022,13 @@ export default apiInitializer((api) => {
       }
     }
 
-    if (event.target.closest(TOOLTIP_SELECTOR)) return;
+    if (event.target.closest(TOOLTIP_SELECTOR)) {
+      return;
+    }
 
-    if (tooltip?.classList.contains("is-visible")) hideCard();
+    if (tooltip?.classList.contains("is-visible")) {
+      hideCard();
+    }
     suppressNextClick = false;
   }
 
@@ -2809,28 +3050,36 @@ export default apiInitializer((api) => {
   }
 
   function setupPrefetch() {
-    if (!config.prefetchEnabled) return;
+    if (!config.prefetchEnabled) {
+      return;
+    }
 
     const prefetched = new Set();
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
+          if (!entry.isIntersecting) {
+            continue;
+          }
 
           const link = entry.target;
           const href = link?.href;
-          if (!href || prefetched.has(href)) continue;
-
-          prefetched.add(href);
-          observer.unobserve(link);
+          if (!href || prefetched.has(href)) {
+            observer.unobserve(link);
+            continue;
+          }
 
           const target = matchPreviewTarget(link, config);
-          if (!target) continue;
+          observer.unobserve(link);
 
-          const controller = new AbortController();
-          const timeoutMs = providerTimeoutMs(target?.providerKey, config, 3000);
-          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          if (!target) {
+            prefetched.add(href);
+            continue;
+          }
+
+          prefetched.add(href);
+          prefetchTarget(target);
         }
       },
       {
@@ -2852,7 +3101,9 @@ export default apiInitializer((api) => {
     const mutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (!(node instanceof Element)) continue;
+          if (!(node instanceof Element)) {
+            continue;
+          }
 
           if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
             observer.observe(node);
@@ -2894,34 +3145,6 @@ export default apiInitializer((api) => {
 
     setupPrefetch();
   }
-
-function applyBodyClasses() {
-  const body = document.body;
-  if (!body) return;
-
-  body.classList.remove(
-    "previews-underline-always",
-    "previews-underline-hover",
-    "previews-icon-before",
-    "previews-icon-after"
-  );
-
-  if (config.previewsShowUnderline) {
-    body.classList.add(
-      config.previewsUnderlineAlways
-        ? "previews-underline-always"
-        : "previews-underline-hover"
-    );
-  }
-
-  if (config.previewsShowIcon) {
-    body.classList.add(
-      config.previewsIconPosition === "before"
-        ? "previews-icon-before"
-        : "previews-icon-after"
-    );
-  }
-}
 
   (async () => {
     const disabledForUser = await hoverCardsDisabledForUser();
@@ -2969,7 +3192,6 @@ function applyBodyClasses() {
     runCleanup();
   });
 });
-
 ```
 
 === FILE: javascripts/discourse/components/rich-preview-link-modal.gjs ===
@@ -3719,21 +3941,25 @@ export function clearDecoratedLink(link, wrapper = null) {
 
 === FILE: javascripts/discourse/lib/preview-bbcode.js ===
 ```js
-/**
- * Registers the [preview]...[/preview] wrapper handling and applies
- * preview decoration to both manual wrapped links and auto-detected
- * eligible links in cooked content.
- */
+/*
+  Registers preview wrapper handling and applies preview decoration to both
+  manual wrapped links and auto-detected eligible links in cooked content.
+
+  Strict mode:
+  - Assumes the markdown-it plugin is authoritative for turning [preview]...[/preview]
+    into .rich-preview-wrap[data-rich-preview="true"].
+  - Does not attempt to repair literal preview tags in cooked HTML.
+*/
 
 import { linkInSupportedArea } from "./rich-preview-utils";
 import { matchPreviewTarget } from "./preview-router";
 import {
+  clearDecoratedLink,
   decorateAutoDetectedLink,
   decorateWrappedPreviewLink,
-  clearDecoratedLink,
 } from "./link-decorator";
 
-const WRAP_SELECTOR = ".rich-preview-wrap[data-rich-preview='true']";
+const WRAP_SELECTOR = '.rich-preview-wrap[data-rich-preview="true"]';
 
 function clearWrapModifierClasses(wrapEl) {
   if (!(wrapEl instanceof Element)) {
@@ -3756,14 +3982,19 @@ function clearWrapModifierClasses(wrapEl) {
 }
 
 function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   root
     .querySelectorAll(
       "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
     )
     .forEach((link) => {
-      if (!(link instanceof HTMLAnchorElement)) return;
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
       clearDecoratedLink(link);
     });
 }
@@ -3838,42 +4069,8 @@ function stampAutoLinkIndicators(root, config) {
   });
 }
 
-function wrapLiteralPreviewTags(root, tagName = "preview") {
-  if (!(root instanceof Element)) {
-    return;
-  }
-
-  const openTag = `[${tagName}]`;
-  const closeTag = `[/${tagName}]`;
-
-  root.querySelectorAll("p, li, td, div, blockquote").forEach((container) => {
-    if (!(container instanceof Element)) {
-      return;
-    }
-
-    const html = container.innerHTML;
-    if (!html || !html.includes(openTag) || !html.includes(closeTag)) {
-      return;
-    }
-
-    container.innerHTML = html.replaceAll(
-      new RegExp(
-        `\\[${tagName}\\]([\\s\\S]*?)\\[\\/${tagName}\\]`,
-        "gi"
-      ),
-      `<span class="rich-preview-wrap" data-rich-preview="true">$1</span>`
-    );
-  });
-}
-
 export function applyPreviewWraps(root, tagName = "preview", config = null) {
   if (!(root instanceof Element)) {
-    return;
-  }
-
-  wrapLiteralPreviewTags(root, tagName);
-
-  if (!config) {
     return;
   }
 
@@ -3886,16 +4083,13 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
 
 export function registerPreviewBBCode(api, config) {
   api.decorateCookedElement(
-    (element) => {
-      applyPreviewWraps(element, "preview", config);
-    },
+    (element) => applyPreviewWraps(element, "preview", config),
     {
       id: "rich-preview-bbcode-decorator",
       onlyStream: false,
     }
   );
 }
-
 ```
 
 === FILE: javascripts/discourse/lib/preview-composer-button.js ===
@@ -3959,21 +4153,49 @@ export function registerPreviewComposerButton(api, config) {
 
 === FILE: javascripts/discourse/lib/preview-markup.js ===
 ```js
-export function buildPreviewWrappedMarkdown(url, linkText, title = "") {
-  if (!url) {
+function escapeMarkdownText(text) {
+  return String(text ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]")
+    .replace(/\r?\n/g, " ")
+    .trim();
+}
+
+function escapeMarkdownLinkDestination(url) {
+  return String(url ?? "")
+    .replace(/[<>\r\n]/g, "")
+    .trim();
+}
+
+function escapeMarkdownLinkTitle(title) {
+  return String(title ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, " ")
+    .trim();
+}
+
+function normalizeDisplayText(url, linkText) {
+  const text = String(linkText ?? "").trim();
+  return text || String(url ?? "").trim();
+}
+
+export function buildPreviewWrappedMarkdown(url, linkText = "", title = "") {
+  const safeUrl = escapeMarkdownLinkDestination(url);
+  if (!safeUrl) {
     return "";
   }
 
-  const displayText = linkText?.trim() || url;
-  const trimmedTitle = title?.trim();
+  const displayText = escapeMarkdownText(normalizeDisplayText(safeUrl, linkText));
+  const safeTitle = escapeMarkdownLinkTitle(title);
 
-  const mdLink = trimmedTitle
-    ? `[${displayText}](${url} "${trimmedTitle}")`
-    : `[${displayText}](${url})`;
+  const markdownLink = safeTitle
+    ? `[${displayText}](${safeUrl} "${safeTitle}")`
+    : `[${displayText}](${safeUrl})`;
 
-  return `[preview]${mdLink}[/preview]`;
+  return `[preview]${markdownLink}[/preview]`;
 }
-
 ```
 
 === FILE: javascripts/discourse/lib/preview-renderer.js ===
@@ -4883,12 +5105,12 @@ function buildExternalPreviewHTML(preview, provider, config, isMobile) {
 === FILE: javascripts/discourse/lib/preview-router.js ===
 ```js
 import {
-  parseTopicUrl,
+  matchesExternalTarget,
   parseRemoteDiscourseTopicUrl,
+  parseTopicUrl,
   providerEnabled,
 } from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
-import { matchesExternalTarget } from "./providers/external-provider";
 
 function normalizeWikipediaPageKey(pathname) {
   return decodeURIComponent(pathname.replace(/^\/wiki\//, ""))
@@ -4920,7 +5142,7 @@ function matchTopicPreview(link, config) {
       glyphProviderKey: "topic",
       key: `topic:${window.location.origin}:${local.topicId}`,
       topicId: local.topicId,
-      slug: local.slug || "",
+      slug: local.slug,
       postNumber: local.postNumber ?? null,
       origin: window.location.origin,
       hostname: window.location.hostname,
@@ -4938,7 +5160,7 @@ function matchTopicPreview(link, config) {
       glyphProviderKey: "remote_topic",
       key: `topic:${remote.origin}:${remote.topicId}`,
       topicId: remote.topicId,
-      slug: remote.slug || "",
+      slug: remote.slug,
       postNumber: remote.postNumber ?? null,
       origin: remote.origin,
       hostname: remote.hostname,
@@ -5017,6 +5239,7 @@ function matchExternalPreview(link, config) {
 ```js
 import {
   getPreviewProvider,
+  matchesExternalTarget,
   sanitizeExcerpt,
   sanitizeURL,
 } from "../rich-preview-utils";
@@ -5032,20 +5255,15 @@ function firstNonEmpty(...values) {
       return normalized;
     }
   }
-
   return "";
 }
 
 function externalProviderConfig(config) {
-  return getPreviewProvider(config, "external") || {};
-}
-
-function externalRequireHttps(config) {
-  return externalProviderConfig(config)?.require_https !== false;
+  return getPreviewProvider(config, "external");
 }
 
 function externalTimeoutMs(config) {
-  return externalProviderConfig(config)?.timeout_ms || 3000;
+  return externalProviderConfig(config)?.timeoutMs || 3000;
 }
 
 function normalizedHostname(url) {
@@ -5081,9 +5299,8 @@ function normalizeImageUrl(rawUrl, baseUrl) {
 
 function parseExternalHTML(html, target) {
   const doc = new DOMParser().parseFromString(html, "text/html");
-
   const meta = (selector) =>
-    doc.querySelector(selector)?.getAttribute("content")?.trim() || "";
+    doc.querySelector(selector)?.getAttribute("content")?.trim();
 
   return {
     title:
@@ -5097,8 +5314,7 @@ function parseExternalHTML(html, target) {
       meta('meta[name="description"]') ||
       "",
     siteName:
-      meta('meta[property="og:site_name"]') ||
-      normalizedHostname(target.url),
+      meta('meta[property="og:site_name"]') || normalizedHostname(target.url),
     image:
       meta('meta[property="og:image"]') ||
       meta('meta[name="twitter:image"]') ||
@@ -5129,7 +5345,7 @@ function normalizeExternalPreview(target, payload, config) {
       payload?.twitterDescription,
       payload?.metaDescription
     ),
-    config?.excerptExcludedSelectors || []
+    config?.excerptExcludedSelectors
   );
 
   const imageUrl = firstNonEmpty(
@@ -5154,47 +5370,8 @@ function normalizeExternalPreview(target, payload, config) {
     imageUrl,
     thumbnail: imageUrl,
     fetchedAt: Date.now(),
-    raw: payload || {},
+    raw: payload,
   };
-}
-
-export function matchesExternalTarget(link, config) {
-  if (!(link instanceof HTMLAnchorElement)) {
-    return false;
-  }
-
-  const href = link.getAttribute("href") || "";
-  if (!href || href.startsWith("#")) {
-    return false;
-  }
-
-  try {
-    const url = new URL(link.href, window.location.origin);
-
-    if (url.origin === window.location.origin) {
-      return false;
-    }
-
-    if (!/^https?:$/i.test(url.protocol)) {
-      return false;
-    }
-
-    if (externalRequireHttps(config) && url.protocol !== "https:") {
-      return false;
-    }
-
-    if (/(^|\.)wikipedia\.org$/i.test(url.hostname)) {
-      return false;
-    }
-
-    if (/^\/t\//.test(url.pathname) || /^\/t\//.test(href)) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export function createExternalProvider(config) {
@@ -5205,7 +5382,7 @@ export function createExternalProvider(config) {
       return matchesExternalTarget(link, config);
     },
 
-    async fetch(target, { signal } = {}) {
+    async fetch(target, signal) {
       if (!target?.url) {
         throw new Error("Missing external preview target URL.");
       }
@@ -5216,7 +5393,11 @@ export function createExternalProvider(config) {
         externalTimeoutMs(config)
       );
 
-      const abortHandler = () => controller.abort();
+      const abortHandler = () => {
+        clearTimeout(timeout);
+        controller.abort();
+      };
+
       signal?.addEventListener?.("abort", abortHandler, { once: true });
 
       try {
@@ -5251,11 +5432,6 @@ export function createExternalProvider(config) {
     },
   };
 }
-```
-
-=== FILE: javascripts/discourse/lib/providers/index.js ===
-```js
-
 ```
 
 === FILE: javascripts/discourse/lib/providers/topic-provider.js ===
@@ -5618,7 +5794,6 @@ async function fetchWikipediaPreview(host, title, config, signal) {
 === FILE: javascripts/discourse/lib/rich-preview-utils.js ===
 ```js
 import { iconHTML } from "discourse/lib/icon-library";
-import { matchesExternalTarget } from "./providers/external-provider";
 
 export const DELAY_HIDE = 120;
 export const VIEWPORT_MARGIN = 8;
@@ -5627,40 +5802,25 @@ export const TOOLTIP_SELECTOR = `#${TOOLTIP_ID}`;
 
 function intSetting(value, fallback, min = null, max = null) {
   const n = Number.parseInt(value, 10);
-
-  if (!Number.isFinite(n)) {
-    return fallback;
-  }
+  if (!Number.isFinite(n)) return fallback;
 
   let result = n;
-
-  if (min !== null && result < min) {
-    result = min;
-  }
-
-  if (max !== null && result > max) {
-    result = max;
-  }
-
+  if (min !== null) result = Math.max(result, min);
+  if (max !== null) result = Math.min(result, max);
   return result;
 }
 
-function stringSetting(value, fallback = "") {
-  if (value === null || value === undefined) {
-    return fallback;
-  }
-
+function stringSetting(value, fallback) {
+  if (value === null || value === undefined) return fallback;
   const str = String(value).trim();
   return str.length ? str : fallback;
 }
 
-function cssEscape(value) {
+export function cssEscape(value) {
   const str = String(value ?? "");
-
   if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
     return CSS.escape(str);
   }
-
   return str.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
 
@@ -5680,151 +5840,166 @@ function normalizeListSetting(value) {
 }
 
 function normalizeProviderKey(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value ?? "").trim().toLowerCase();
 }
 
 function normalizePipeList(value) {
-  if (!value) {
-    return [];
-  }
-
+  if (!value) return [];
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);
   }
-
   return String(value)
     .split("|")
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-function normalizePreviewProviders(rawProviders = []) {
+function normalizePreviewProviders(rawProviders) {
   const defaults = {
     topic: {
       key: "topic",
       enabled: true,
-      label: "Local Topic",
-      glyph_mode: "icon",
-      icon: "comment",
-      emoji: "💬",
       color: "var(--tertiary)",
-      remote_hosts: [],
-      require_https: true,
-      timeout_ms: 3000,
+      glyphMode: "icon",
+      icon: "link",
+      emoji: "↗",
+      timeoutMs: 3000,
+      requireHttps: false,
     },
     remote_topic: {
       key: "remote_topic",
       enabled: true,
-      label: "Remote Discourse Topic",
-      glyph_mode: "icon",
-      icon: "fab-discourse",
-      emoji: "🌐",
-      color: "var(--success)",
-      remote_hosts: [],
-      require_https: true,
-      timeout_ms: 3000,
+      color: "var(--tertiary)",
+      glyphMode: "icon",
+      icon: "discourse-other",
+      emoji: "↗",
+      timeoutMs: 3500,
+      requireHttps: true,
     },
     external: {
       key: "external",
       enabled: true,
-      label: "External Link",
-      glyph_mode: "icon",
-      icon: "eye",
-      emoji: "🔗",
-      color: "var(--success)",
-      remote_hosts: [],
-      require_https: true,
-      timeout_ms: 3000,
+      color: "var(--tertiary)",
+      glyphMode: "icon",
+      icon: "globe",
+      emoji: "↗",
+      timeoutMs: 3000,
+      requireHttps: true,
     },
     wikipedia: {
       key: "wikipedia",
       enabled: true,
-      label: "Wikipedia",
-      glyph_mode: "icon",
-      icon: "fab-wikipedia-w",
-      emoji: "📚",
-      color: "#808080",
-      remote_hosts: [],
-      require_https: true,
-      timeout_ms: 3000,
+      color: "var(--tertiary)",
+      glyphMode: "icon",
+      icon: "wikipedia-w",
+      emoji: "Ⓦ",
+      timeoutMs: 3000,
+      requireHttps: true,
     },
   };
 
-  const map = { ...defaults };
+  const normalized = { ...defaults };
 
-  (rawProviders || []).forEach((provider) => {
-    const key = normalizeProviderKey(provider?.key);
+  if (!rawProviders) {
+    return normalized;
+  }
 
-    if (!key) {
-      return;
+  let parsed = rawProviders;
+  if (typeof rawProviders === "string") {
+    try {
+      parsed = JSON.parse(rawProviders);
+    } catch {
+      return normalized;
     }
+  }
 
-    map[key] = {
-      ...defaults[key],
-      ...provider,
-      key,
-      enabled: provider?.enabled !== false,
-      label: String(provider?.label || defaults[key]?.label || key).trim(),
-      glyph_mode: String(
-        provider?.glyph_mode || defaults[key]?.glyph_mode || "none"
-      )
-        .trim()
-        .toLowerCase(),
-      icon: String(provider?.icon || defaults[key]?.icon || "").trim(),
-      emoji: String(provider?.emoji || defaults[key]?.emoji || "").trim(),
-      color: String(provider?.color || defaults[key]?.color || "").trim(),
-      remote_hosts: normalizePipeList(provider?.remote_hosts).map((host) =>
-        host.toLowerCase()
-      ),
-      require_https: provider?.require_https !== false,
-      timeout_ms: Math.max(
-        250,
-        Math.min(
-          Number.parseInt(provider?.timeout_ms, 10) ||
-            defaults[key]?.timeout_ms ||
-            3000,
-          10000
-        )
-      ),
-    };
-  });
+  if (Array.isArray(parsed)) {
+    parsed.forEach((provider) => {
+      const key = normalizeProviderKey(provider?.key);
+      if (!key) return;
 
-  return map;
+      normalized[key] = {
+        ...defaults[key],
+        ...provider,
+        key,
+        enabled: provider?.enabled !== false,
+        color: String(provider?.color ?? defaults[key]?.color ?? "var(--tertiary)").trim(),
+        glyphMode: String(provider?.glyphMode ?? provider?.glyph_mode ?? defaults[key]?.glyphMode ?? "icon")
+          .trim()
+          .toLowerCase(),
+        icon: String(provider?.icon ?? defaults[key]?.icon ?? "").trim(),
+        emoji: String(provider?.emoji ?? defaults[key]?.emoji ?? "").trim(),
+        requireHttps:
+          provider?.requireHttps ??
+          provider?.require_https ??
+          defaults[key]?.requireHttps ??
+          true,
+        timeoutMs: Math.max(
+          250,
+          Math.min(
+            Number.parseInt(
+              provider?.timeoutMs ?? provider?.timeout_ms ?? defaults[key]?.timeoutMs ?? 3000,
+              10
+            ),
+            10000
+          )
+        ),
+      };
+    });
+  } else if (parsed && typeof parsed === "object") {
+    Object.entries(parsed).forEach(([rawKey, provider]) => {
+      const key = normalizeProviderKey(rawKey);
+      if (!key) return;
+
+      normalized[key] = {
+        ...defaults[key],
+        ...provider,
+        key,
+        enabled: provider?.enabled !== false,
+        color: String(provider?.color ?? defaults[key]?.color ?? "var(--tertiary)").trim(),
+        glyphMode: String(provider?.glyphMode ?? provider?.glyph_mode ?? defaults[key]?.glyphMode ?? "icon")
+          .trim()
+          .toLowerCase(),
+        icon: String(provider?.icon ?? defaults[key]?.icon ?? "").trim(),
+        emoji: String(provider?.emoji ?? defaults[key]?.emoji ?? "").trim(),
+        requireHttps:
+          provider?.requireHttps ??
+          provider?.require_https ??
+          defaults[key]?.requireHttps ??
+          true,
+        timeoutMs: Math.max(
+          250,
+          Math.min(
+            Number.parseInt(
+              provider?.timeoutMs ?? provider?.timeout_ms ?? defaults[key]?.timeoutMs ?? 3000,
+              10
+            ),
+            10000
+          )
+        ),
+      };
+    });
+  }
+
+  return normalized;
 }
 
 export function readConfig(settings) {
   return {
     enabled: settings.enabled !== false,
     debugMode: !!settings.debug_mode,
-
     prefetchEnabled: settings.prefetch_enabled !== false,
-    prefetchViewportMargin: stringSetting(
-      settings.prefetch_viewport_margin,
-      "200px"
-    ),
+    prefetchViewportMargin: stringSetting(settings.prefetch_viewport_margin, "200px"),
 
     previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
-    previewsRemoteTopicMode: stringSetting(
-      settings.previews_remote_topic_mode,
-      "auto_only"
-    ),
-    previewsExternalMode: stringSetting(
-      settings.previews_external_mode,
-      "auto_only"
-    ),
-    previewsWikipediaMode: stringSetting(
-      settings.previews_wikipedia_mode,
-      "auto_only"
-    ),
+    previewsRemoteTopicMode: stringSetting(settings.previews_remote_topic_mode, "auto_only"),
+    previewsExternalMode: stringSetting(settings.previews_external_mode, "auto_only"),
+    previewsWikipediaMode: stringSetting(settings.previews_wikipedia_mode, "auto_only"),
 
-    composerButtonGroup: stringSetting(
-      settings.composer_button_group,
-      "insertions"
-    ),
+    composerButtonGroup: stringSetting(settings.composer_button_group, "insertions"),
 
     previewsShowUnderline: settings.previews_show_underline !== false,
     previewsUnderlineAlways: settings.previews_underline_always !== false,
-
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
 
@@ -5832,163 +6007,76 @@ export function readConfig(settings) {
 
     delayShow: intSetting(settings.delay_show, 300, 0, 2000),
     cardWidth: stringSetting(settings.card_width, "32rem"),
-    mobileWidthPercent: intSetting(
-      settings.mobile_width_percent,
-      100,
-      70,
-      100
-    ),
+    mobileWidthPercent: intSetting(settings.mobile_width_percent, 100, 70, 100),
     mobileEnabled: settings.mobile_enabled !== false,
 
     densityDesktop: stringSetting(settings.density, "default"),
     densityMobile: stringSetting(settings.density_mobile, "default"),
-
     previewLayout: stringSetting(settings.preview_layout, "hover_card"),
 
-    wikipediaDensityDesktop: stringSetting(
-      settings.wikipedia_density,
-      "cozy"
-    ),
-    wikipediaDensityMobile: stringSetting(
-      settings.wikipedia_density_mobile,
-      "compact"
-    ),
+    thumbnailPlacementDesktop: stringSetting(settings.thumbnail_placement_desktop, "left"),
+    thumbnailPlacementMobile: stringSetting(settings.thumbnail_placement_mobile, "top"),
+    thumbnailSizeModeDesktop: stringSetting(settings.thumbnail_size_mode_desktop, "autofitheight"),
+    thumbnailSizeModeMobile: stringSetting(settings.thumbnail_size_mode_mobile, "autofitheight"),
+    thumbnailSizePercentDesktop: intSetting(settings.thumbnail_size_percent_desktop, 15, 10, 60),
+    thumbnailSizePercentMobile: intSetting(settings.thumbnail_size_percent_mobile, 25, 10, 100),
+    thumbnailAutoFitMaxWidthDesktop: stringSetting(settings.thumbnail_auto_fit_max_width_desktop, "10rem"),
+    thumbnailAutoFitMaxWidthMobile: stringSetting(settings.thumbnail_auto_fit_max_width_mobile, "8rem"),
+    thumbnailHeightTopBottomDesktop: stringSetting(settings.thumbnail_height_top_bottom_desktop, "auto"),
+    thumbnailHeightTopBottomMobile: stringSetting(settings.thumbnail_height_top_bottom_mobile, "auto"),
 
-    showThumbnailDesktop: settings.show_thumbnail !== false,
-    thumbnailPlacementDesktop: stringSetting(
-      settings.thumbnail_placement,
-      "left"
-    ),
-    thumbnailSizeModeDesktop: stringSetting(
-      settings.thumbnail_size_mode,
-      "auto_fit_height"
-    ),
-    thumbnailAutoFitMaxWidthDesktop: stringSetting(
-      settings.thumbnail_auto_fit_max_width,
-      "10rem"
-    ),
-    thumbnailSizePercentDesktop: intSetting(
-      settings.thumbnail_size_percent,
-      15,
-      5,
-      50
-    ),
+    wikipediaPreviewsEnabled: settings.wikipedia_previews_enabled !== false,
+    wikipediaPreviewsBaseUrl: stringSetting(settings.wikipedia_previews_base_url, "en.wikipedia.org"),
+    wikipediaPreviewsShowImage: settings.wikipedia_previews_show_image !== false,
+    wikipediaPreviewsUseExtractHtml: settings.wikipedia_previews_use_extract_html !== false,
+    wikipediaDensityDesktop: stringSetting(settings.wikipedia_density_desktop, "cozy"),
+    wikipediaDensityMobile: stringSetting(settings.wikipedia_density_mobile, "compact"),
 
+    showThumbnailDesktop: settings.show_thumbnail_desktop !== false,
     showThumbnailMobile: settings.show_thumbnail_mobile !== false,
-    thumbnailPlacementMobile: stringSetting(
-      settings.thumbnail_placement_mobile,
-      "top"
-    ),
-    thumbnailSizeModeMobile: stringSetting(
-      settings.thumbnail_size_mode_mobile,
-      "manual"
-    ),
-    thumbnailAutoFitMaxWidthMobile: stringSetting(
-      settings.thumbnail_auto_fit_max_width_mobile,
-      "8rem"
-    ),
-    thumbnailSizePercentMobile: intSetting(
-      settings.thumbnail_size_percent_mobile,
-      33,
-      15,
-      60
-    ),
-
-    thumbnailHeightTopBottomDesktop: stringSetting(
-      settings.thumbnail_height_top_bottom,
-      "auto"
-    ),
-    thumbnailHeightTopBottomMobile: stringSetting(
-      settings.thumbnail_height_top_bottom_mobile,
-      "auto"
-    ),
-
-    showTitleDesktop: settings.show_title !== false,
+    showTitleDesktop: settings.show_title_desktop !== false,
     showTitleMobile: settings.show_title_mobile !== false,
-
-    showExcerptDesktop: settings.show_excerpt !== false,
-    excerptLengthDesktop: intSetting(settings.excerpt_length, 3, 1, 12),
-
+    showExcerptDesktop: settings.show_excerpt_desktop !== false,
     showExcerptMobile: settings.show_excerpt_mobile !== false,
-    excerptLengthMobile: intSetting(
-      settings.excerpt_length_mobile,
-      3,
-      1,
-      12
-    ),
-
-    showCategoryDesktop: settings.show_category !== false,
+    showCategoryDesktop: settings.show_category_desktop !== false,
     showCategoryMobile: settings.show_category_mobile !== false,
-
-    showTagsDesktop: settings.show_tags !== false,
+    showTagsDesktop: settings.show_tags_desktop !== false,
     showTagsMobile: settings.show_tags_mobile !== false,
-
-    showOpDesktop: settings.show_op !== false,
+    showOpDesktop: settings.show_op_desktop !== false,
     showOpMobile: settings.show_op_mobile !== false,
-
-    showPublishDateDesktop: settings.show_publish_date !== false,
+    showPublishDateDesktop: settings.show_publish_date_desktop !== false,
     showPublishDateMobile: settings.show_publish_date_mobile !== false,
-
-    showViewsDesktop: settings.show_views !== false,
+    showViewsDesktop: settings.show_views_desktop !== false,
     showViewsMobile: settings.show_views_mobile !== false,
-
-    showReplyCountDesktop: settings.show_reply_count !== false,
+    showReplyCountDesktop: settings.show_reply_count_desktop !== false,
     showReplyCountMobile: settings.show_reply_count_mobile !== false,
-
-    showLikesDesktop: settings.show_likes !== false,
+    showLikesDesktop: settings.show_likes_desktop !== false,
     showLikesMobile: settings.show_likes_mobile !== false,
-
-    showActivityDesktop: settings.show_activity !== false,
+    showActivityDesktop: settings.show_activity_desktop !== false,
     showActivityMobile: settings.show_activity_mobile !== false,
 
-    enableOnTopicList: settings.enable_on_topic_list !== false,
-    enableOnLatest: settings.enable_on_latest !== false,
-    enableOnCategories: settings.enable_on_categories !== false,
-    enableOnTags: settings.enable_on_tags !== false,
-    enableOnSearch: settings.enable_on_search !== false,
-    enableOnTopicPage: settings.enable_on_topic_page !== false,
-    enableOnUserProfile: settings.enable_on_user_profile !== false,
-    enableOnOther: settings.enable_on_other !== false,
-    enableOnKanbanBoards: settings.enable_on_kanban_boards === true,
+    excerptLengthDesktop: intSetting(settings.excerpt_length_desktop, 3, 1, 12),
+    excerptLengthMobile: intSetting(settings.excerpt_length_mobile, 4, 1, 12),
 
     includedTags: normalizeListSetting(settings.included_tags),
-    includedClasses: normalizeListSetting(settings.included_classes),
     excludedTags: normalizeListSetting(settings.excluded_tags),
-    excludedClasses: normalizeListSetting(settings.excluded_classes),
+    includedClasses: normalizePipeList(settings.included_classes),
+    excludedClasses: normalizePipeList(settings.excluded_classes),
 
-    wikipediaPreviewsBaseUrl: stringSetting(
-      settings.wikipedia_previews_base_url,
-      "en.wikipedia.org"
-    ),
-    wikipediaPreviewsShowImage:
-      settings.wikipedia_previews_show_image !== false,
-    wikipediaPreviewsUseExtractHtml:
-      settings.wikipedia_previews_use_extract_html !== false,
-
-    userPreferenceFieldName: stringSetting(
-      settings.user_preference_field_name,
-      ""
-    ),
-    resolveUserFieldIdForAdmins:
-      settings.resolve_user_field_id_for_admins !== false,
-
-    excerptExcludedSelectors: normalizeListSetting(
-      settings.excerpt_excluded_selectors
-    ),
-
+    userPreferenceFieldName: stringSetting(settings.user_preference_field_name, ""),
+    resolveUserFieldIdForAdmins: settings.resolve_user_field_id_for_admins !== false,
+    excerptExcludedSelectors: normalizeListSetting(settings.excerpt_excluded_selectors),
     topicCacheMax: intSetting(settings.topic_cache_max, 100, 10, 500),
   };
 }
 
 export function logDebug(config, message, data = null) {
-  if (!config?.debugMode) {
-    return;
-  }
+  if (!config?.debugMode) return;
 
   if (data !== null && data !== undefined) {
-    console.debug(`[discourse-rich-previews] ${message}`, data);
+    console.debug("[discourse-rich-previews]", message, data);
   } else {
-    console.debug(`[discourse-rich-previews] ${message}`);
+    console.debug("[discourse-rich-previews]", message);
   }
 }
 
@@ -6006,10 +6094,7 @@ export function escapeHTML(value) {
 }
 
 export function sanitizeURL(url) {
-  if (!url) {
-    return "";
-  }
-
+  if (!url) return "";
   try {
     const parsed = new URL(String(url), window.location.origin);
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
@@ -6018,38 +6103,81 @@ export function sanitizeURL(url) {
   } catch {
     return "";
   }
-
   return "";
 }
 
 export function isElementVisible(el) {
-  if (!(el instanceof Element)) {
-    return false;
-  }
-
+  if (!(el instanceof Element)) return false;
   const rect = el.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
 }
 
 export function createViewportState() {
+  const MOBILE_LAYOUT_QUERY = "(max-width: 767px)";
+  const MOBILE_INTERACTION_QUERY = "(hover: none), (pointer: coarse)";
+
+  const mobileLayoutMql = window.matchMedia(MOBILE_LAYOUT_QUERY);
+  const mobileInteractionMql = window.matchMedia(MOBILE_INTERACTION_QUERY);
+
+  function matches(mql) {
+    return !!mql?.matches;
+  }
+
+  function isMobileLayout() {
+    return matches(mobileLayoutMql);
+  }
+
+  function isMobileInteractionMode() {
+    return isMobileLayout() || matches(mobileInteractionMql);
+  }
+
+  function mode() {
+    return {
+      isMobileLayout: isMobileLayout(),
+      isMobileInteractionMode: isMobileInteractionMode(),
+    };
+  }
+
+  function onChange(callback) {
+    if (typeof callback !== "function") {
+      return () => {};
+    }
+
+    const handler = () => callback(mode());
+
+    if (typeof mobileLayoutMql?.addEventListener === "function") {
+      mobileLayoutMql.addEventListener("change", handler);
+      mobileInteractionMql?.addEventListener?.("change", handler);
+
+      return () => {
+        mobileLayoutMql.removeEventListener("change", handler);
+        mobileInteractionMql?.removeEventListener?.("change", handler);
+      };
+    }
+
+    if (typeof mobileLayoutMql?.addListener === "function") {
+      mobileLayoutMql.addListener(handler);
+      mobileInteractionMql?.addListener?.(handler);
+
+      return () => {
+        mobileLayoutMql.removeListener(handler);
+        mobileInteractionMql?.removeListener?.(handler);
+      };
+    }
+
+    return () => {};
+  }
+
   return {
-    isMobileLayout() {
-      return window.matchMedia("(max-width: 767px)").matches;
-    },
-    isMobileInteractionMode() {
-      return (
-        window.matchMedia("(max-width: 767px)").matches ||
-        window.matchMedia("(hover: none), (pointer: coarse)").matches
-      );
-    },
+    isMobileLayout,
+    isMobileInteractionMode,
+    mode,
+    onChange,
   };
 }
 
 export function getCachedValue(map, key) {
-  if (!map?.has(key)) {
-    return null;
-  }
-
+  if (!map?.has(key)) return null;
   const value = map.get(key);
   map.delete(key);
   map.set(key, value);
@@ -6057,14 +6185,8 @@ export function getCachedValue(map, key) {
 }
 
 export function setCachedValue(map, key, value, maxSize = 100) {
-  if (!map) {
-    return value;
-  }
-
-  if (map.has(key)) {
-    map.delete(key);
-  }
-
+  if (!map) return value;
+  if (map.has(key)) map.delete(key);
   map.set(key, value);
 
   while (map.size > maxSize) {
@@ -6079,10 +6201,8 @@ export function getPreviewProvider(config, key) {
   return config?.previewProviders?.[key] || null;
 }
 
-export function providerColor(providerKey, config, fallback = "") {
-  return String(
-    getPreviewProvider(config, providerKey)?.color || fallback || ""
-  ).trim();
+export function providerColor(providerKey, config, fallback = "var(--tertiary)") {
+  return String(getPreviewProvider(config, providerKey)?.color ?? fallback).trim();
 }
 
 export function providerEnabled(config, key) {
@@ -6090,13 +6210,9 @@ export function providerEnabled(config, key) {
 }
 
 export function providerTimeoutMs(providerKey, config, fallback = 3000) {
-  const timeout = getPreviewProvider(config, providerKey)?.timeout_ms;
+  const timeout = getPreviewProvider(config, providerKey)?.timeoutMs;
   const parsed = Number.parseInt(timeout, 10);
-
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-
+  if (!Number.isFinite(parsed)) return fallback;
   return Math.max(250, Math.min(parsed, 10000));
 }
 
@@ -6138,313 +6254,291 @@ export function getTopicProviderConfig(config) {
 }
 
 export function providerKeyForTarget(target, preview = null) {
-  if (target?.providerKey) {
-    return target.providerKey;
-  }
-
-  if (preview?.providerKey) {
-    return preview.providerKey;
-  }
-
-  if (target?.type === "wikipedia" || preview?.type === "wikipedia") {
-    return "wikipedia";
-  }
-
-  if (
-    target?.type === "topic" &&
-    (target?.isRemote || preview?.raw?.is_remote_discourse_topic)
-  ) {
-    return "remote_topic";
-  }
-
-  if (target?.type === "topic" || preview?.type === "topic") {
-    return "topic";
-  }
-
-  if (target?.type === "external" || preview?.type === "external") {
-    return "external";
-  }
-
+  if (target?.providerKey) return target.providerKey;
+  if (preview?.providerKey) return preview.providerKey;
+  if (target?.type === "wikipedia" || preview?.type === "wikipedia") return "wikipedia";
+  if (target?.type === "topic" && target?.isRemote) return "remote_topic";
+  if (preview?.raw?.isRemoteDiscourseTopic) return "remote_topic";
+  if (target?.type === "topic" || preview?.type === "topic") return "topic";
+  if (target?.type === "external" || preview?.type === "external") return "external";
   return null;
 }
 
 const FALLBACK_GLYPHS = {
-  topic: "🔗",
-  remote_topic: "🌐",
-  external: "🌐",
-  wikipedia: "📖",
+  topic: "↗",
+  remote_topic: "↗",
+  external: "↗",
+  wikipedia: "Ⓦ",
 };
 
 export function renderProviderGlyph(providerKey, config) {
   const provider = getPreviewProvider(config, providerKey);
+  if (!provider || provider.enabled === false) return "";
 
-  if (!provider || provider.enabled === false) {
-    return "";
-  }
-
-  const mode = String(provider.glyph_mode || "emoji").trim().toLowerCase();
+  const mode = String(provider.glyphMode ?? "emoji").trim().toLowerCase();
 
   if (mode === "none") {
     return "";
   }
 
   if (mode === "emoji") {
-    const emoji = String(provider.emoji || FALLBACK_GLYPHS[providerKey] || "").trim();
+    const emoji = String(provider.emoji ?? FALLBACK_GLYPHS[providerKey] ?? "").trim();
     return emoji ? escapeHTML(emoji) : "";
   }
 
-  const iconName = String(provider.icon || "").trim();
-  if (!iconName) {
+  const iconName = String(provider.icon ?? "").trim();
+  if (!iconName) return "";
+
+  try {
+    return iconHTML(iconName) || "";
+  } catch {
     return "";
   }
-
-  return iconHTML(iconName, {
-    class: "thc-link-glyph thc-link-glyph--icon",
-    "aria-hidden": true,
-  });
 }
 
 export function renderInlineProviderGlyph(providerKey, config) {
-  const glyphHTML = renderProviderGlyph(providerKey, config);
+  const glyph = renderProviderGlyph(providerKey, config);
+  if (!glyph) return "";
+  return `<span class="thc-inline-glyph" aria-hidden="true">${glyph}</span>`;
+}
 
-  if (!glyphHTML) {
-    return "";
+export function normalizeTag(tag) {
+  return String(tag ?? "").trim();
+}
+
+export function formatNumber(value) {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return "0";
+  return new Intl.NumberFormat().format(n);
+}
+
+export function safeAvatarURL(template, size = 48) {
+  if (!template) return "";
+  return sanitizeURL(template.replace("{size}", size));
+}
+
+export function safeRemoteAvatarURL(url) {
+  return sanitizeURL(url);
+}
+
+export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
+  const raw = String(htmlOrText ?? "").trim();
+  if (!raw) return "";
+
+  const hasTags = /<[^>]+>/.test(raw);
+  if (!hasTags) {
+    return raw.replace(/\s+/g, " ").trim();
   }
 
-  return `<span class="thc-inline-glyph" aria-hidden="true">${glyphHTML}</span>`;
-}
+  const doc = new DOMParser().parseFromString(raw, "text/html");
 
-export function isAllowedRemoteDiscourseHost(hostname, config) {
-  const host = String(hostname || "").trim().toLowerCase();
-  const remoteProvider = getRemoteTopicProvider(config);
-  const allowedHosts = remoteProvider?.remote_hosts || [];
-
-  return !!host && allowedHosts.includes(host);
-}
-
-export function remoteDiscourseRequireHttps(config) {
-  const remoteProvider = getRemoteTopicProvider(config);
-  return remoteProvider?.require_https !== false;
-}
-
-export function remoteDiscourseTimeoutMs(config) {
-  const remoteProvider = getRemoteTopicProvider(config);
-  return remoteProvider?.timeout_ms || 3000;
-}
-
-export function safeAvatarURL(avatarTemplate, size = 24) {
-  if (!avatarTemplate) {
-    return "";
+  if (Array.isArray(excludedSelectors)) {
+    excludedSelectors.forEach((selector) => {
+      try {
+        doc.querySelectorAll(selector).forEach((node) => node.remove());
+      } catch {
+      }
+    });
   }
 
-  const replaced = String(avatarTemplate).replace("{size}", String(size));
-  return sanitizeURL(replaced);
-}
-
-export function safeRemoteAvatarURL(origin, avatarTemplate, size = 24) {
-  if (!avatarTemplate || !origin) {
-    return "";
-  }
-
-  const replaced = String(avatarTemplate).replace("{size}", String(size));
-
-  try {
-    return sanitizeURL(new URL(replaced, origin).toString());
-  } catch {
-    return "";
-  }
+  return doc.body.textContent?.replace(/\s+/g, " ").trim() || "";
 }
 
 export async function getJSON(url, options = {}) {
-  const parsedUrl = new URL(url, window.location.origin);
-  const isCrossOrigin = parsedUrl.origin !== window.location.origin;
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      ...(options.headers || {}),
+    },
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} for ${url}`);
+  }
+
+  return response.json();
+}
+
+export function normalizedFieldKeyVariants(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return [];
+
+  const variants = new Set([raw, raw.toLowerCase()]);
+
+  const numeric = raw.match(/\d+/)?.[0];
+  if (numeric) {
+    variants.add(numeric);
+    variants.add(`user_field_${numeric}`);
+    variants.add(`user-field-${numeric}`);
+    variants.add(`userField${numeric}`);
+  }
+
+  return [...variants];
+}
+
+export function findTruthyFieldMatch(fields, candidates = []) {
+  if (!fields || !candidates.length) return null;
+
+  for (const candidate of candidates) {
+    const value = fields[candidate];
+    if (
+      value === true ||
+      value === "true" ||
+      value === "1" ||
+      value === 1 ||
+      value === "yes" ||
+      value === "on"
+    ) {
+      return { key: candidate, value };
+    }
+  }
+
+  return null;
+}
+
+export function currentUserIsStaffLike(user) {
+  return !!(user?.admin || user?.moderator || user?.staff);
+}
+
+export function parseTopicUrl(url) {
+  if (!url) return null;
 
   try {
-    const response = await fetch(parsedUrl.toString(), {
-      method: "GET",
-      mode: isCrossOrigin ? "cors" : "same-origin",
-      credentials: isCrossOrigin ? "omit" : "same-origin",
-      headers: {
-        Accept: "application/json",
-        ...options.headers,
-      },
-      signal: options.signal,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} for ${parsedUrl.toString()}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    if (error?.name === "AbortError" || options.signal?.aborted) {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.origin !== window.location.origin) {
       return null;
     }
 
-    throw error;
-  }
-}
-export function inCookedPost(el) {
-  return !!el?.closest?.(".cooked");
-}
-
-export function isCookedPostFragmentLink(link) {
-  if (!(link instanceof HTMLAnchorElement)) {
-    return false;
-  }
-
-  const href = link.getAttribute("href") || "";
-  if (!href) {
-    return false;
-  }
-
-  if (href.startsWith("#")) {
-    return true;
-  }
-
-  try {
-    const url = new URL(link.href, window.location.origin);
-    return url.hash.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-export function parseTopicUrl(href) {
-  if (!href) {
-    return null;
-  }
-
-  try {
-    const url = new URL(href, window.location.origin);
-
-    if (url.origin !== window.location.origin) {
-      return null;
-    }
-
-    const path = url.pathname.replace(/\/+$/, "");
-    const match = path.match(/^\/t\/([^/]+)\/(\d+)(?:\/(\d+))?$/);
-
-    if (!match) {
-      return null;
-    }
+    const match = parsed.pathname.match(/^\/t\/([^/]+)\/(\d+)(?:\/(\d+))?/);
+    if (!match) return null;
 
     return {
       slug: match[1],
       topicId: Number.parseInt(match[2], 10),
       postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
-      url,
-      origin: url.origin,
-      hostname: url.hostname,
-      isRemote: false,
     };
   } catch {
     return null;
   }
 }
 
-export function parseRemoteDiscourseTopicUrl(href, config) {
-  if (!href) {
+export function parseRemoteDiscourseTopicUrl(url, config) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.origin === window.location.origin) {
+      return null;
+    }
+
+    const match = parsed.pathname.match(/^\/t\/([^/]+)\/(\d+)(?:\/(\d+))?(?:\.json)?$/);
+    if (!match) return null;
+
+    const remoteProvider = getRemoteTopicProvider(config);
+    if (remoteProvider?.requireHttps !== false && parsed.protocol !== "https:") {
+      return null;
+    }
+
+    return {
+      origin: parsed.origin,
+      hostname: parsed.hostname.toLowerCase(),
+      slug: match[1],
+      topicId: Number.parseInt(match[2], 10),
+      postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
+      jsonUrl: `${parsed.origin}/t/${match[1]}/${match[2]}.json`,
+    };
+  } catch {
     return null;
+  }
+}
+
+export function isWikipediaArticleLink(link) {
+  try {
+    const url = new URL(link.href, window.location.origin);
+    return /\.wikipedia\.org$/i.test(url.hostname) && url.pathname.startsWith("/wiki/");
+  } catch {
+    return false;
+  }
+}
+
+export function matchesExternalTarget(link, config) {
+  if (!(link instanceof HTMLAnchorElement)) {
+    return false;
+  }
+
+  const href = link.getAttribute("href");
+  if (!href || href.startsWith("#")) {
+    return false;
   }
 
   try {
-    const url = new URL(href, window.location.origin);
+    const url = new URL(link.href, window.location.origin);
 
     if (url.origin === window.location.origin) {
-      return null;
+      return false;
     }
 
-    if (remoteDiscourseRequireHttps(config) && url.protocol !== "https:") {
-      return null;
+    if (!/^https?:$/i.test(url.protocol)) {
+      return false;
     }
 
-    if (!isAllowedRemoteDiscourseHost(url.hostname, config)) {
-      return null;
+    const externalProvider = getPreviewProvider(config, "external");
+    const requireHttps = externalProvider?.requireHttps !== false;
+
+    if (requireHttps && url.protocol !== "https:") {
+      return false;
     }
 
-    const path = url.pathname.replace(/\/+$/, "");
-    const match = path.match(/^\/t\/(?:([^/]+)\/)?(\d+)(?:\/(\d+))?$/);
-
-    if (!match) {
-      return null;
+    if (/\.wikipedia\.org$/i.test(url.hostname)) {
+      return false;
     }
 
-    const topicId = Number.parseInt(match[2], 10);
+    if (/^\/t\//.test(url.pathname) || /^\/t\//.test(href)) {
+      return false;
+    }
 
-    return {
-      slug: match[1] || "",
-      topicId,
-      postNumber: match[3] ? Number.parseInt(match[3], 10) : null,
-      url,
-      origin: url.origin,
-      hostname: url.hostname,
-      isRemote: true,
-      jsonUrl: `${url.origin}/t/${topicId}.json`,
-    };
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
 
-export function parsePreviewTopicUrl(href, config) {
-  return parseTopicUrl(href) || parseRemoteDiscourseTopicUrl(href, config);
-}
-
-export function currentTopicIdFromPage() {
-  const bodyTopicId = document.body?.dataset?.topicId;
-  if (bodyTopicId && /^\d+$/.test(bodyTopicId)) {
-    return Number.parseInt(bodyTopicId, 10);
-  }
-
-  const topicEl = document.querySelector("[data-topic-id]");
-  const topicId = topicEl?.getAttribute?.("data-topic-id");
-  if (topicId && /^\d+$/.test(topicId)) {
-    return Number.parseInt(topicId, 10);
-  }
-
-  const topicLink = parseTopicUrl(window.location.href);
-  return topicLink?.topicId ?? null;
-}
-
-export function isCurrentTopicLink(link) {
-  const parsed = parseTopicUrl(link?.href);
-  const currentTopicId = currentTopicIdFromPage();
-
-  return !!(
-    parsed?.topicId &&
-    currentTopicId &&
-    parsed.topicId === currentTopicId
-  );
-}
-
-export function topicIdFromHref(href) {
-  return parseTopicUrl(href)?.topicId ?? null;
-}
-
-function matchesTagList(link, tags) {
-  if (!link || !Array.isArray(tags) || !tags.length) {
+function matchesTagList(link, tags = []) {
+  if (!(link instanceof Element) || !Array.isArray(tags) || !tags.length) {
     return null;
   }
 
-  const selector = tags.join(", ");
-  return selector ? link.closest(selector) : null;
+  const lowered = tags.map((tag) => String(tag).toLowerCase());
+  let node = link;
+
+  while (node && node instanceof Element) {
+    if (lowered.includes(node.tagName.toLowerCase())) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+
+  return null;
 }
 
-function matchesClassList(link, classes) {
-  if (!link || !Array.isArray(classes) || !classes.length) {
+function matchesClassList(link, classes = []) {
+  if (!(link instanceof Element) || !Array.isArray(classes) || !classes.length) {
     return null;
   }
 
-  const selector = classes.map((c) => `.${cssEscape(c)}`).join(", ");
-  const ancestorMatch = selector ? link.closest(selector) : null;
+  const lowered = classes.map((cls) => String(cls).toLowerCase());
 
-  if (ancestorMatch) {
-    return ancestorMatch;
+  for (const className of lowered) {
+    const selector = `.${cssEscape(className)}`;
+    const ancestorMatch = selector ? link.closest(selector) : null;
+    if (ancestorMatch) return ancestorMatch;
   }
 
   for (const cls of link.classList) {
-    if (classes.includes(String(cls).toLowerCase())) {
+    if (lowered.includes(String(cls).toLowerCase())) {
       return link;
     }
   }
@@ -6453,60 +6547,31 @@ function matchesClassList(link, classes) {
 }
 
 function matchesIncludedRules(link, config) {
-  const includedTags = Array.isArray(config?.includedTags)
-    ? config.includedTags
-    : [];
-  const includedClasses = Array.isArray(config?.includedClasses)
-    ? config.includedClasses
-    : [];
+  const includedTags = Array.isArray(config?.includedTags) ? config.includedTags : [];
+  const includedClasses = Array.isArray(config?.includedClasses) ? config.includedClasses : [];
 
   if (!includedTags.length && !includedClasses.length) {
     return true;
   }
 
-  return !!(
-    matchesTagList(link, includedTags) ||
-    matchesClassList(link, includedClasses)
-  );
+  return !!(matchesTagList(link, includedTags) || matchesClassList(link, includedClasses));
 }
 
 function matchesExcludedRules(link, config) {
-  const excludedTags = Array.isArray(config?.excludedTags)
-    ? config.excludedTags
-    : [];
-  const excludedClasses = Array.isArray(config?.excludedClasses)
-    ? config.excludedClasses
-    : [];
+  const excludedTags = Array.isArray(config?.excludedTags) ? config.excludedTags : [];
+  const excludedClasses = Array.isArray(config?.excludedClasses) ? config.excludedClasses : [];
 
   const excludedTagMatch = matchesTagList(link, excludedTags);
   if (excludedTagMatch) {
-    return {
-      type: "tag",
-      match: excludedTagMatch,
-    };
+    return { type: "tag", match: excludedTagMatch };
   }
 
   const excludedClassMatch = matchesClassList(link, excludedClasses);
   if (excludedClassMatch) {
-    return {
-      type: "class",
-      match: excludedClassMatch,
-    };
+    return { type: "class", match: excludedClassMatch };
   }
 
   return null;
-}
-
-export function isWikipediaArticleLink(link) {
-  try {
-    const url = new URL(link.href, window.location.origin);
-    return (
-      /(^|\.)wikipedia\.org$/i.test(url.hostname) &&
-      url.pathname.startsWith("/wiki/")
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function autoPreviewEnabled(type, config) {
@@ -6518,21 +6583,19 @@ export function composerPreviewEnabled(type, config) {
 }
 
 export function previewTypeEnabled(type, config) {
-  const providerKey = {
-    topic: "topic",
-    remote_topic: "remote_topic",
-    external: "external",
-    wikipedia: "wikipedia",
-  }[type];
+  const providerKey =
+    type === "topic"
+      ? "topic"
+      : type === "remote_topic"
+        ? "remote_topic"
+        : type === "external"
+          ? "external"
+          : type === "wikipedia"
+            ? "wikipedia"
+            : null;
 
-  if (!providerKey) {
-    return false;
-  }
-
-  if (providerModeForType(type, config) === "disabled") {
-    return false;
-  }
-
+  if (!providerKey) return false;
+  if (providerModeForType(type, config) === "disabled") return false;
   return providerEnabled(config, providerKey);
 }
 
@@ -6546,325 +6609,51 @@ export function composerButtonShouldShow(config) {
 }
 
 export function isManuallyWrapped(link) {
-  return !!link?.closest?.(".rich-preview-wrap[data-rich-preview='true']");
+  return !!link?.closest?.('.rich-preview-wrap[data-rich-preview="true"]');
 }
 
 export function classifyLink(link, config) {
-  if (isWikipediaArticleLink(link)) {
-    return "wikipedia";
-  }
-
-  if (parseTopicUrl(link?.href)) {
-    return "topic";
-  }
-
-  if (parseRemoteDiscourseTopicUrl(link?.href, config)) {
-    return "remote_topic";
-  }
-
-  if (matchesExternalTarget(link, config)) {
-    return "external";
-  }
-
+  if (isWikipediaArticleLink(link)) return "wikipedia";
+  if (parseTopicUrl(link?.href)) return "topic";
+  if (parseRemoteDiscourseTopicUrl(link?.href, config)) return "remote_topic";
+  if (matchesExternalTarget(link, config)) return "external";
   return null;
 }
 
 export function isEligiblePreviewLink(link, config) {
-  if (!(link instanceof HTMLAnchorElement)) {
-    return false;
-  }
-
-  if (link.closest(`.topic-hover-card, ${TOOLTIP_SELECTOR}`)) {
-    return false;
-  }
+  if (!(link instanceof HTMLAnchorElement)) return false;
+  if (link.closest(".topic-hover-card, #discourse-rich-preview-tooltip")) return false;
 
   const type = classifyLink(link, config);
-  if (!type) {
-    return false;
-  }
+  if (!type) return false;
+  if (!previewTypeEnabled(type, config)) return false;
 
-  if (!previewTypeEnabled(type, config)) {
-    return false;
-  }
-
-  const manually = isManuallyWrapped(link);
-
-  if (manually) {
+  const manuallyWrapped = isManuallyWrapped(link);
+  if (manuallyWrapped) {
     return composerPreviewEnabled(type, config);
   }
 
-  if (!autoPreviewEnabled(type, config)) {
-    return false;
-  }
+  if (!autoPreviewEnabled(type, config)) return false;
 
   if (!matchesIncludedRules(link, config)) {
-    logDebug(config, "Skipping link due to include rules", {
-      href: link.href,
-    });
+    logDebug(config, "Skipping link due to include rules", { href: link.href });
     return false;
   }
 
   const excluded = matchesExcludedRules(link, config);
   if (excluded) {
-    if (excluded.type === "tag") {
-      logDebug(config, "Skipping link due to excluded tag", {
-        href: link.href,
-        tagName: excluded.match?.tagName,
-      });
-    } else {
-      logDebug(config, "Skipping link due to excluded class", {
-        href: link.href,
-        className: excluded.match?.className,
-      });
-    }
+    logDebug(config, "Skipping link due to exclude rules", {
+      href: link.href,
+      reason: excluded.type,
+    });
     return false;
-  }
-
-  if (type === "topic" && inCookedPost(link)) {
-    if (isCurrentTopicLink(link)) {
-      logDebug(config, "Skipping current-topic cooked-post link", {
-        href: link.href,
-      });
-      return false;
-    }
-
-    if (isCookedPostFragmentLink(link)) {
-      logDebug(config, "Skipping cooked-post fragment link", {
-        href: link.href,
-      });
-      return false;
-    }
   }
 
   return true;
 }
 
 export function linkInSupportedArea(link, config) {
-  if (!(link instanceof Element)) {
-    return false;
-  }
-
-  if (!isEligiblePreviewLink(link, config)) {
-    return false;
-  }
-
-  if (isManuallyWrapped(link)) {
-    return true;
-  }
-
-  const inComposerPreview = !!link.closest(
-    ".d-editor-preview, .composer-preview, .preview, .composer .cooked"
-  );
-
-  if (inComposerPreview) {
-    return true;
-  }
-
-  if (config.enableOnKanbanBoards) {
-    const isBoardUrl =
-      window.location.pathname === "/latest" &&
-      new URLSearchParams(window.location.search).has("board");
-
-    const inKanbanUi = !!link.closest(
-      ".kanban-board, .kanban-column, .kanban-card, .kanban-topic-card, [class*='kanban']"
-    );
-
-    if (isBoardUrl || inKanbanUi) {
-      return true;
-    }
-  }
-
-  const inTopicContext = !!link.closest(
-    ".topic-post, .topic-body, .cooked, .suggested-topics"
-  );
-
-  if (config.enableOnTopicPage && inTopicContext) {
-    return true;
-  }
-
-  if (
-    config.enableOnSearch &&
-    link.closest(".search-results, .search-result-topic")
-  ) {
-    return true;
-  }
-
-  if (
-    config.enableOnUserProfile &&
-    link.closest(".user-main, .user-content")
-  ) {
-    return true;
-  }
-
-  if (
-    config.enableOnTopicList &&
-    link.closest(
-      ".topic-list, .latest-topic-list, .top-topic-list, .new-topic-list, .unread-topic-list"
-    )
-  ) {
-    return true;
-  }
-
-  if (config.enableOnLatest && link.closest(".latest-topic-list")) {
-    return true;
-  }
-
-  if (
-    config.enableOnCategories &&
-    link.closest(
-      ".categories-list, .category-list, .category-boxes, .categories-and-latest-topics, .categories-and-featured-topics, .categories-with-featured-topics, .categories-only"
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    config.enableOnTags &&
-    link.closest(".tag-topic-list, .tags-page, .discourse-tag")
-  ) {
-    return true;
-  }
-
-  if (
-    config.enableOnOther &&
-    link.closest(".cooked") &&
-    !inTopicContext &&
-    !inComposerPreview
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-export function normalizedFieldKeyVariants(rawValue) {
-  const raw = String(rawValue ?? "").trim();
-  if (!raw) {
-    return [];
-  }
-
-  const normalized = raw.toLowerCase();
-  const variants = new Set([normalized]);
-
-  if (/^\d+$/.test(normalized)) {
-    variants.add(`user_field_${normalized}`);
-  }
-
-  const userFieldMatch = normalized.match(/^user_field_(\d+)$/);
-  if (userFieldMatch) {
-    variants.add(userFieldMatch[1]);
-  }
-
-  return [...variants];
-}
-
-function isTruthyUserFieldValue(value) {
-  if (value === true || value === 1) {
-    return true;
-  }
-
-  const normalized = String(value ?? "").trim().toLowerCase();
-
-  return ["true", "t", "1", "yes", "y", "on"].includes(normalized);
-}
-
-export function findTruthyFieldMatch(source, candidates) {
-  if (!source || !candidates?.length) {
-    return null;
-  }
-
-  for (const key of candidates) {
-    if (Object.prototype.hasOwnProperty.call(source, key)) {
-      if (isTruthyUserFieldValue(source[key])) {
-        return {
-          key,
-          value: source[key],
-        };
-      }
-    }
-  }
-
-  return null;
-}
-
-export function currentUserIsStaffLike(user) {
-  return !!(user?.admin || user?.moderator || user?.staff);
-}
-
-export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
-  const source = String(htmlOrText ?? "").trim();
-  if (!source) {
-    return "";
-  }
-
-  const temp = document.createElement("div");
-  temp.innerHTML = source;
-
-  temp
-    .querySelectorAll(
-      "script, style, noscript, img, picture, figure, video, audio, source, iframe, svg, canvas, form, button, input, textarea, select"
-    )
-    .forEach((el) => el.remove());
-
-  excludedSelectors.forEach((selector) => {
-    try {
-      temp.querySelectorAll(selector).forEach((el) => el.remove());
-    } catch {
-      // ignore invalid selector
-    }
-  });
-
-  temp.querySelectorAll("a").forEach((el) => {
-    const text = (el.textContent || "").trim();
-    if (!text) {
-      el.remove();
-    }
-  });
-
-  temp.querySelectorAll("*").forEach((el) => {
-    [...el.attributes].forEach((attr) => {
-      if (attr.name.startsWith("data-")) {
-        el.removeAttribute(attr.name);
-      }
-    });
-  });
-
-  const text = (temp.textContent || "")
-    .replace(/\[rich-preview\b[^\]]*\]/gi, "")
-    .replace(/\[\/rich-preview\]/gi, "")
-    .replace(/\[[^\]]+\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return text;
-}
-
-export function normalizeTag(tag) {
-  if (!tag) {
-    return "";
-  }
-
-  if (typeof tag === "string") {
-    return tag.trim();
-  }
-
-  if (typeof tag === "object") {
-    const value =
-      tag.name || tag.text || tag.id || tag.slug || tag.value || "";
-
-    return String(value).trim();
-  }
-
-  return String(tag).trim();
-}
-
-export function formatNumber(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) {
-    return "0";
-  }
-
-  return new Intl.NumberFormat().format(num);
+  return isEligiblePreviewLink(link, config);
 }
 ```
 

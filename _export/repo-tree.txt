@@ -32,7 +32,6 @@ javascripts/discourse/lib/preview-markup.js
 javascripts/discourse/lib/preview-renderer.js
 javascripts/discourse/lib/preview-router.js
 javascripts/discourse/lib/providers/external-provider.js
-javascripts/discourse/lib/providers/index.js
 javascripts/discourse/lib/providers/topic-provider.js
 javascripts/discourse/lib/providers/wikipedia-provider.js
 javascripts/discourse/lib/rich-preview-utils.js
