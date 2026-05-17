@@ -45,6 +45,7 @@ function buildAnchorTokens(startToken, endToken, tagInfo, content) {
   copyAttrs(startToken, {
     href,
     "data-bbcode": "true",
+    "data-rich-preview": "true",
   });
 
   const title = normalizeAttrValue(tagInfo?.attrs?.title);
