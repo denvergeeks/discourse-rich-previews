@@ -1,0 +1,4 @@
+REPO: discourse-rich-previews
+BRANCH: main
+COMMIT: 7131ad21d68d5e0e44c35a401d0a16cf6ac3caae
+GENERATED: 2026-05-17 10:39:03 -0600
