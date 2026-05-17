@@ -83,6 +83,24 @@ function parseExternalHTML(html, target) {
   };
 }
 
+function looksLikeHTMLDocument(text) {
+  const sample = textValue(text).slice(0, 256).toLowerCase();
+  return (
+    sample.startsWith("<!doctype html") ||
+    sample.startsWith("<html") ||
+    sample.includes("<head") ||
+    sample.includes("<body")
+  );
+}
+
+function safeParseJSON(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 function normalizeExternalPreview(target, payload, config) {
   const title = firstNonEmpty(
     payload?.title,
@@ -135,6 +153,46 @@ function normalizeExternalPreview(target, payload, config) {
   };
 }
 
+async function parseProxyResponse(response, target) {
+  const contentType = response.headers.get("content-type") || "";
+  const bodyText = await response.text();
+
+  if (!bodyText.trim()) {
+    return {};
+  }
+
+  if (contentType.includes("application/json")) {
+    const parsed = safeParseJSON(bodyText);
+
+    if (parsed !== null) {
+      return parsed;
+    }
+
+    if (looksLikeHTMLDocument(bodyText)) {
+      return parseExternalHTML(bodyText, target);
+    }
+
+    throw new Error(
+      `Proxy claimed JSON but returned invalid JSON for ${target.url}`
+    );
+  }
+
+  if (
+    contentType.includes("text/html") ||
+    contentType.includes("application/xhtml+xml") ||
+    looksLikeHTMLDocument(bodyText)
+  ) {
+    return parseExternalHTML(bodyText, target);
+  }
+
+  const parsed = safeParseJSON(bodyText);
+  if (parsed !== null) {
+    return parsed;
+  }
+
+  return parseExternalHTML(bodyText, target);
+}
+
 export function createExternalProvider(config) {
   return {
     key: "external",
@@ -175,16 +233,7 @@ export function createExternalProvider(config) {
           throw new Error(`HTTP ${response.status} for ${target.url}`);
         }
 
-        const contentType = response.headers.get("content-type") || "";
-        let payload;
-
-        if (contentType.includes("application/json")) {
-          payload = await response.json();
-        } else {
-          const html = await response.text();
-          payload = parseExternalHTML(html, target);
-        }
-
+        const payload = await parseProxyResponse(response, target);
         return normalizeExternalPreview(target, payload, config);
       } finally {
         clearTimeout(timeout);
