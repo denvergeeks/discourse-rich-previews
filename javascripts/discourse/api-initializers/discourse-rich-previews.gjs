@@ -51,7 +51,9 @@ function discourseIcon(name) {
 
 function joinMetadataGroups(items, separator = "·") {
   const filtered = items.filter(Boolean);
-  if (!filtered.length) return "";
+  if (!filtered.length) {
+    return "";
+  }
 
   return filtered
     .map((item, index) =>
@@ -67,7 +69,10 @@ function getSiteCategories(api) {
 }
 
 function findCategoryById(categories, categoryId) {
-  if (!categories?.length || !categoryId) return null;
+  if (!categories?.length || !categoryId) {
+    return null;
+  }
+
   return categories.find((c) => Number(c.id) === Number(categoryId)) || null;
 }
 
@@ -116,7 +121,9 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
     return "";
   }
 
-  if (!topic.category_id) return "";
+  if (!topic.category_id) {
+    return "";
+  }
 
   const category = findCategoryById(categories, topic.category_id);
   const name =
@@ -129,7 +136,9 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
   const rawColor = category?.color || topic.category_color || null;
   const color = rawColor ? `#${String(rawColor).replace(/^#/, "")}` : null;
 
-  if (!name) return "";
+  if (!name) {
+    return "";
+  }
 
   return `
     <span class="topic-hover-card__badge topic-hover-card__badge--category"${
@@ -141,12 +150,19 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
 }
 
 function buildTagsHTML(topic, config, isMobile) {
-  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
-  if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
+  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) {
+    return "";
+  }
+
+  if (!Array.isArray(topic.tags) || !topic.tags.length) {
+    return "";
+  }
 
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
 
-  if (!tags.length) return "";
+  if (!tags.length) {
+    return "";
+  }
 
   return `
     <div class="topic-hover-card__tags">
@@ -167,7 +183,9 @@ function buildBadgesHTML(topic, categories, config, isMobile) {
   const categoryHTML = buildCategoryHTML(topic, categories, config, isMobile);
   const tagsHTML = buildTagsHTML(topic, config, isMobile);
 
-  if (!categoryHTML && !tagsHTML) return "";
+  if (!categoryHTML && !tagsHTML) {
+    return "";
+  }
 
   return `
     <div class="topic-hover-card__badges">
@@ -178,7 +196,10 @@ function buildBadgesHTML(topic, categories, config, isMobile) {
 }
 
 function buildTitleHTML(topic, config, isMobile) {
-  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) return "";
+  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) {
+    return "";
+  }
+
   const title = topic.fancy_title ?? topic.title ?? "(no title)";
 
   return `
@@ -208,7 +229,9 @@ function buildExcerptHTML(topic, config, isMobile) {
   topic.__thc_excerpt = cleanedExcerpt;
 
   const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
-  if (!finalExcerpt) return "";
+  if (!finalExcerpt) {
+    return "";
+  }
 
   const CHARS_PER_LINE = 90;
   const isLikelyMultiLine = finalExcerpt.length > CHARS_PER_LINE;
@@ -227,7 +250,9 @@ function buildExcerptHTML(topic, config, isMobile) {
 }
 
 function buildOpHTML(topic, config, isMobile) {
-  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) return "";
+  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) {
+    return "";
+  }
 
   const op =
     topic.details?.created_by ||
@@ -237,11 +262,12 @@ function buildOpHTML(topic, config, isMobile) {
     }) ||
     topic.posters?.[0]?.user;
 
-  if (!op?.username) return "";
+  if (!op?.username) {
+    return "";
+  }
 
   const avatarUrl =
-    topic.op_avatar_url ||
-    safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
+    topic.op_avatar_url || safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
   const avatarImg = avatarUrl
     ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
         avatarUrl
@@ -261,9 +287,14 @@ function buildPublishDateHTML(topic, config, isMobile) {
     return "";
   }
 
-  if (!topic.created_at) return "";
+  if (!topic.created_at) {
+    return "";
+  }
+
   const d = new Date(topic.created_at);
-  if (Number.isNaN(d.getTime())) return "";
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
 
   const fmt = d.toLocaleDateString(undefined, {
     year: "numeric",
@@ -355,7 +386,9 @@ function buildMetadataHTML(topic, config, isMobile) {
 }
 
 function buildMobileActionsHTML(topic, isMobile) {
-  if (!isMobile) return "";
+  if (!isMobile) {
+    return "";
+  }
 
   const slug = escapeHTML(String(topic.slug || topic.id || ""));
   const id = escapeHTML(String(topic.id || ""));
@@ -535,7 +568,9 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
 export default apiInitializer((api) => {
   const config = readConfig(settings);
 
-  if (!config.enabled) return;
+  if (!config.enabled) {
+    return;
+  }
 
   registerPreviewBBCode(api, config);
 
@@ -626,7 +661,9 @@ export default apiInitializer((api) => {
   }
 
   function ensureTooltip() {
-    if (tooltip?.isConnected) return;
+    if (tooltip?.isConnected) {
+      return;
+    }
 
     tooltip = document.querySelector(TOOLTIP_SELECTOR);
 
@@ -638,7 +675,9 @@ export default apiInitializer((api) => {
       document.body.appendChild(tooltip);
 
       cleanupFns.push(() => {
-        if (tooltip?.isConnected) tooltip.remove();
+        if (tooltip?.isConnected) {
+          tooltip.remove();
+        }
         tooltip = null;
       });
     }
@@ -662,8 +701,40 @@ export default apiInitializer((api) => {
     }
   }
 
+  function applyBodyClasses() {
+    const body = document.body;
+    if (!body) {
+      return;
+    }
+
+    body.classList.remove(
+      "previews-underline-always",
+      "previews-underline-hover",
+      "previews-icon-before",
+      "previews-icon-after"
+    );
+
+    if (config.previewsShowUnderline) {
+      body.classList.add(
+        config.previewsUnderlineAlways
+          ? "previews-underline-always"
+          : "previews-underline-hover"
+      );
+    }
+
+    if (config.previewsShowIcon) {
+      body.classList.add(
+        config.previewsIconPosition === "before"
+          ? "previews-icon-before"
+          : "previews-icon-after"
+      );
+    }
+  }
+
   function positionTooltip(anchorRect) {
-    if (!tooltip) return;
+    if (!tooltip) {
+      return;
+    }
 
     if (viewport.isMobileInteractionMode()) {
       const left = Math.max(
@@ -729,7 +800,9 @@ export default apiInitializer((api) => {
   function getRenderedCard(preview, isMobile) {
     const key = getRenderCacheKey(preview, isMobile);
     const cached = getCachedValue(renderCache, key);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
 
     let html;
 
@@ -766,7 +839,9 @@ export default apiInitializer((api) => {
   function hideCard() {
     abortCurrentRequest();
 
-    if (!tooltip) return;
+    if (!tooltip) {
+      return;
+    }
 
     tooltip.classList.remove("is-visible");
     tooltip.style.removeProperty("--thc-provider-color");
@@ -782,7 +857,9 @@ export default apiInitializer((api) => {
   function scheduleHide() {
     cancel(hideTimer);
     hideTimer = later(() => {
-      if (!isInsideCard) hideCard();
+      if (!isInsideCard) {
+        hideCard();
+      }
       suppressNextClick = false;
     }, DELAY_HIDE);
   }
@@ -817,18 +894,25 @@ export default apiInitializer((api) => {
     return provider.fetch(target, signal);
   }
 
-  function getPreviewCacheKey(target) {
+  function previewCacheKeyForTarget(target) {
+    if (!target) {
+      return null;
+    }
+
     return `${target.providerKey}:${target.key ?? target.url ?? target.topicId ?? ""}`;
   }
 
   async function prefetchTarget(target) {
     if (!target) {
-      return;
+      return null;
     }
 
-    const cacheKey = getPreviewCacheKey(target);
-    if (getCachedValue(previewCache, cacheKey)) {
-      return;
+    const cacheKey = previewCacheKeyForTarget(target);
+    if (cacheKey) {
+      const cached = getCachedValue(previewCache, cacheKey);
+      if (cached) {
+        return cached;
+      }
     }
 
     const controller = new AbortController();
@@ -836,14 +920,16 @@ export default apiInitializer((api) => {
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const preview = await fetchPreview(target, controller.signal);
-      if (preview) {
-        setCachedValue(previewCache, cacheKey, preview, config.topicCacheMax);
+      const data = await fetchPreview(target, controller.signal);
+      if (data && cacheKey) {
+        setCachedValue(previewCache, cacheKey, data, config.topicCacheMax);
       }
+      return data;
     } catch (error) {
       if (error?.name !== "AbortError") {
         logDebug(config, "Prefetch failed", { target, error });
       }
+      return null;
     } finally {
       clearTimeout(timeoutId);
     }
@@ -918,16 +1004,10 @@ export default apiInitializer((api) => {
         preview?.providerKey || preview?.type || target?.providerKey || "topic"
       );
 
-      tooltip.innerHTML = getRenderedCard(
-        preview,
-        viewport.isMobileLayout()
-      );
+      tooltip.innerHTML = getRenderedCard(preview, viewport.isMobileLayout());
       positionTooltipNextFrame(anchorRect);
     } catch (error) {
-      if (
-        error?.name === "AbortError" ||
-        controller.signal.aborted
-      ) {
+      if (error?.name === "AbortError" || controller.signal.aborted) {
         return;
       }
 
@@ -962,16 +1042,30 @@ export default apiInitializer((api) => {
   }
 
   async function resolveUserFieldIdForAdmins() {
-    if (!config.resolveUserFieldIdForAdmins) return null;
-    if (!currentUserIsStaffLike(currentUser)) return null;
-    if (!config.userPreferenceFieldName) return null;
+    if (!config.resolveUserFieldIdForAdmins) {
+      return null;
+    }
+    if (!currentUserIsStaffLike(currentUser)) {
+      return null;
+    }
+    if (!config.userPreferenceFieldName) {
+      return null;
+    }
 
     const raw = String(config.userPreferenceFieldName).trim();
-    if (/^\d+$/.test(raw)) return raw;
-    if (/^user_field_\d+$/i.test(raw)) return raw.match(/\d+/)?.[0] ?? null;
+    if (/^\d+$/.test(raw)) {
+      return raw;
+    }
+    if (/^user_field_\d+$/i.test(raw)) {
+      return raw.match(/\d+/)?.[0] ?? null;
+    }
 
-    if (resolvedUserFieldId !== null) return resolvedUserFieldId;
-    if (resolvedUserFieldIdPromise) return resolvedUserFieldIdPromise;
+    if (resolvedUserFieldId !== null) {
+      return resolvedUserFieldId;
+    }
+    if (resolvedUserFieldIdPromise) {
+      return resolvedUserFieldIdPromise;
+    }
 
     resolvedUserFieldIdPromise = getJSON("/admin/config/user-fields.json")
       .then((result) => {
@@ -1011,7 +1105,9 @@ export default apiInitializer((api) => {
   }
 
   async function fetchFullCurrentUser() {
-    if (!currentUser?.username) return null;
+    if (!currentUser?.username) {
+      return null;
+    }
 
     try {
       const store = api.container.lookup("service:store");
@@ -1023,7 +1119,9 @@ export default apiInitializer((api) => {
   }
 
   async function hoverCardsDisabledForUser() {
-    if (!currentUser || !config.userPreferenceFieldName) return false;
+    if (!currentUser || !config.userPreferenceFieldName) {
+      return false;
+    }
 
     const directCandidates = normalizedFieldKeyVariants(
       config.userPreferenceFieldName
@@ -1036,7 +1134,9 @@ export default apiInitializer((api) => {
       findTruthyFieldMatch(currentUserCustomFields, directCandidates) ||
       findTruthyFieldMatch(currentUserUserFields, directCandidates);
 
-    if (match) return true;
+    if (match) {
+      return true;
+    }
 
     const resolvedId = await resolveUserFieldIdForAdmins();
     const resolvedCandidates = resolvedId
@@ -1048,7 +1148,9 @@ export default apiInitializer((api) => {
         findTruthyFieldMatch(currentUserCustomFields, resolvedCandidates) ||
         findTruthyFieldMatch(currentUserUserFields, resolvedCandidates);
 
-      if (match) return true;
+      if (match) {
+        return true;
+      }
     }
 
     const fullUser = await fetchFullCurrentUser();
@@ -1059,14 +1161,18 @@ export default apiInitializer((api) => {
       findTruthyFieldMatch(fullUserFields, directCandidates) ||
       findTruthyFieldMatch(fullUserCustomFields, directCandidates);
 
-    if (match) return true;
+    if (match) {
+      return true;
+    }
 
     if (resolvedCandidates.length) {
       match =
         findTruthyFieldMatch(fullUserFields, resolvedCandidates) ||
         findTruthyFieldMatch(fullUserCustomFields, resolvedCandidates);
 
-      if (match) return true;
+      if (match) {
+        return true;
+      }
     }
 
     return false;
@@ -1085,10 +1191,14 @@ export default apiInitializer((api) => {
 
   function onTooltipClick(event) {
     const target = event.target;
-    if (!(target instanceof Element)) return;
+    if (!(target instanceof Element)) {
+      return;
+    }
 
     const inCard = target.closest(".topic-hover-card");
-    if (!inCard) return;
+    if (!inCard) {
+      return;
+    }
 
     const closeBtn = target.closest("[data-thc-close]");
     if (closeBtn) {
@@ -1114,25 +1224,39 @@ export default apiInitializer((api) => {
   }
 
   function onMouseOver(event) {
-    if (viewport.isMobileInteractionMode()) return;
-    if (!(event.target instanceof Element)) return;
+    if (viewport.isMobileInteractionMode()) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const target = matchPreviewTarget(link, config);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     mouseIsOverAnchor = true;
     scheduleShow(target, link.getBoundingClientRect(), link);
   }
 
   function onMouseOut(event) {
-    if (viewport.isMobileInteractionMode()) return;
-    if (!(event.target instanceof Element)) return;
+    if (viewport.isMobileInteractionMode()) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     mouseIsOverAnchor = false;
     cancel(showTimer);
@@ -1140,15 +1264,25 @@ export default apiInitializer((api) => {
   }
 
   function onTouchStart(event) {
-    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
-    if (!(event.target instanceof Element)) return;
-    if (event.target.closest(TOOLTIP_SELECTOR)) return;
+    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+    if (event.target.closest(TOOLTIP_SELECTOR)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const target = matchPreviewTarget(link, config);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     currentAnchor = link;
     event.preventDefault();
@@ -1159,8 +1293,12 @@ export default apiInitializer((api) => {
   }
 
   function onDocumentClick(event) {
-    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
-    if (!(event.target instanceof Element)) return;
+    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) {
+      return;
+    }
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     if (event.target.closest("[data-thc-open-topic]")) {
       suppressNextClick = false;
@@ -1181,9 +1319,13 @@ export default apiInitializer((api) => {
       }
     }
 
-    if (event.target.closest(TOOLTIP_SELECTOR)) return;
+    if (event.target.closest(TOOLTIP_SELECTOR)) {
+      return;
+    }
 
-    if (tooltip?.classList.contains("is-visible")) hideCard();
+    if (tooltip?.classList.contains("is-visible")) {
+      hideCard();
+    }
     suppressNextClick = false;
   }
 
@@ -1205,25 +1347,35 @@ export default apiInitializer((api) => {
   }
 
   function setupPrefetch() {
-    if (!config.prefetchEnabled) return;
+    if (!config.prefetchEnabled) {
+      return;
+    }
 
     const prefetched = new Set();
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
+          if (!entry.isIntersecting) {
+            continue;
+          }
 
           const link = entry.target;
           const href = link?.href;
-          if (!href || prefetched.has(href)) continue;
-
-          prefetched.add(href);
-          observer.unobserve(link);
+          if (!href || prefetched.has(href)) {
+            observer.unobserve(link);
+            continue;
+          }
 
           const target = matchPreviewTarget(link, config);
-          if (!target) continue;
+          observer.unobserve(link);
 
+          if (!target) {
+            prefetched.add(href);
+            continue;
+          }
+
+          prefetched.add(href);
           prefetchTarget(target);
         }
       },
@@ -1246,7 +1398,9 @@ export default apiInitializer((api) => {
     const mutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (!(node instanceof Element)) continue;
+          if (!(node instanceof Element)) {
+            continue;
+          }
 
           if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
             observer.observe(node);
@@ -1287,34 +1441,6 @@ export default apiInitializer((api) => {
     addCleanup(window, "resize", onResize, { passive: true });
 
     setupPrefetch();
-  }
-
-  function applyBodyClasses() {
-    const body = document.body;
-    if (!body) return;
-
-    body.classList.remove(
-      "previews-underline-always",
-      "previews-underline-hover",
-      "previews-icon-before",
-      "previews-icon-after"
-    );
-
-    if (config.previewsShowUnderline) {
-      body.classList.add(
-        config.previewsUnderlineAlways
-          ? "previews-underline-always"
-          : "previews-underline-hover"
-      );
-    }
-
-    if (config.previewsShowIcon) {
-      body.classList.add(
-        config.previewsIconPosition === "before"
-          ? "previews-icon-before"
-          : "previews-icon-after"
-      );
-    }
   }
 
   (async () => {
