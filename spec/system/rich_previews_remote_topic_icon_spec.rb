@@ -10,12 +10,13 @@ RSpec.describe "Rich preview remote-topic indicators", type: :system do
     @theme = upload_theme_component
     sign_in(user)
 
+    @theme.update_setting(:previews_remote_topic_mode, "auto_and_composer")
     @theme.update_setting(:previews_show_icon, true)
     @theme.update_setting(:previews_icon_position, "after")
     @theme.save!
   end
 
-  it "adds the remote_topic wrapper class for wrapped remote-topic links" do
+  it "adds remote-topic classes to wrapped remote-topic links" do
     create_post(
       topic: topic,
       raw: <<~MD
@@ -25,8 +26,9 @@ RSpec.describe "Rich preview remote-topic indicators", type: :system do
 
     visit topic_path(topic)
 
-    expect(page).to have_css(".rich-preview-wrap--remote_topic")
-    expect(page).to have_css(".rich-preview-wrap--icon-after")
+    expect(page).to have_css(
+      "a.rich-preview-link.rich-preview-link--remote_topic.rich-preview-link--icon-after[data-bbcode='true']"
+    )
     expect(page).to have_link("Remote discussion")
   end
 end

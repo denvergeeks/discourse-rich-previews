@@ -1,97 +1,194 @@
-import { linkInSupportedArea } from "./rich-preview-utils";
+import { iconHTML } from "discourse/lib/icon-library";
+
 import { matchPreviewTarget } from "./preview-router";
 import {
-  clearDecoratedLink,
-  decorateAutoDetectedLink,
-  decorateWrappedPreviewLink,
-} from "./link-decorator";
+  escapeHTML,
+  getPreviewProvider,
+  providerColor,
+  sanitizeURL,
+} from "./rich-preview-utils";
 
-const MANUAL_LINK_SELECTOR = 'a[data-rich-preview="true"][href]';
-
-function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) {
-    return;
+function discourseIcon(name) {
+  try {
+    return iconHTML(name) || "";
+  } catch {
+    return "";
   }
-
-  root
-    .querySelectorAll("a[data-rich-preview-type], a.rich-preview-link, a[href]")
-    .forEach((link) => {
-      if (!(link instanceof HTMLAnchorElement)) {
-        return;
-      }
-
-      clearDecoratedLink(link);
-    });
 }
 
-function decorateManualPreviewLink(link, config) {
-  if (!(link instanceof HTMLAnchorElement)) {
-    return;
+function glyphHTMLForTarget(target, config) {
+  const providerKey = target?.providerKey || target?.type || "external";
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false || provider.glyphMode === "none") {
+    return "";
   }
 
-  if (!linkInSupportedArea(link, config)) {
-    clearDecoratedLink(link);
-    return;
+  if (provider.glyphMode === "emoji") {
+    const emoji = String(provider.emoji || "").trim();
+    return emoji
+      ? `<span class="thc-inline-glyph" aria-hidden="true">${escapeHTML(
+          emoji
+        )}</span>`
+      : "";
   }
 
-  const target = matchPreviewTarget(link, config);
-  if (!target) {
-    clearDecoratedLink(link);
-    return;
+  const iconName = String(provider.icon || "").trim();
+  if (!iconName) {
+    return "";
   }
 
-  decorateWrappedPreviewLink(null, link, target, config);
+  const icon = discourseIcon(iconName);
+  return icon
+    ? `<span class="thc-inline-glyph" aria-hidden="true">${icon}</span>`
+    : "";
 }
 
-function stampAutoLinkIndicators(root, config) {
-  if (!(root instanceof Element) || !config) {
-    return;
+function shouldDecorateTarget(target, config) {
+  const providerKey = target?.providerKey || target?.type;
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false) {
+    return false;
   }
 
-  clearAutoLinkIndicators(root);
+  switch (providerKey) {
+    case "topic":
+      return (
+        config.previewsTopicMode === "composer_only" ||
+        config.previewsTopicMode === "auto_and_composer"
+      );
 
-  root.querySelectorAll(MANUAL_LINK_SELECTOR).forEach((link) => {
-    decorateManualPreviewLink(link, config);
-  });
+    case "remote_topic":
+      return (
+        config.previewsRemoteTopicMode === "composer_only" ||
+        config.previewsRemoteTopicMode === "auto_and_composer"
+      );
 
-  root.querySelectorAll("a[href]").forEach((link) => {
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
+    case "external":
+      return (
+        config.previewsExternalMode === "composer_only" ||
+        config.previewsExternalMode === "auto_and_composer"
+      );
 
-    if (link.matches(MANUAL_LINK_SELECTOR)) {
-      return;
-    }
+    case "wikipedia":
+      return (
+        config.previewsWikipediaMode === "composer_only" ||
+        config.previewsWikipediaMode === "auto_and_composer"
+      );
 
-    if (!linkInSupportedArea(link, config)) {
-      clearDecoratedLink(link);
-      return;
-    }
-
-    const target = matchPreviewTarget(link, config);
-    if (!target) {
-      clearDecoratedLink(link);
-      return;
-    }
-
-    decorateAutoDetectedLink(link, target, config);
-  });
+    default:
+      return false;
+  }
 }
 
-export function applyPreviewWraps(root, _tagName = "preview", config = null) {
-  if (!(root instanceof Element)) {
+function applyPreviewClasses(anchor, target, config) {
+  const providerKey = target?.providerKey || target?.type || "external";
+
+  anchor.classList.add("rich-preview-link");
+  anchor.classList.add(`rich-preview-link--${providerKey}`);
+
+  if (config.previewsShowUnderline) {
+    anchor.classList.add(
+      config.previewsUnderlineAlways
+        ? "rich-preview-link--underline-always"
+        : "rich-preview-link--underline-hover"
+    );
+  }
+
+  if (config.previewsShowIcon) {
+    anchor.classList.add(
+      config.previewsIconPosition === "before"
+        ? "rich-preview-link--icon-before"
+        : "rich-preview-link--icon-after"
+    );
+  }
+}
+
+function applyPreviewDataAttributes(anchor, target, config) {
+  const providerKey = target?.providerKey || target?.type || "external";
+  const color = providerColor(providerKey, config, "");
+
+  anchor.dataset.richPreview = "true";
+  anchor.dataset.richPreviewType = providerKey;
+  anchor.dataset.bbcode = "true";
+
+  if (config.previewsShowUnderline) {
+    anchor.dataset.richPreviewUnderline = config.previewsUnderlineAlways
+      ? "always"
+      : "hover";
+  }
+
+  if (config.previewsShowIcon) {
+    anchor.dataset.richPreviewIcon = config.previewsIconPosition;
+  }
+
+  if (color) {
+    anchor.style.setProperty("--rp-color", color);
+  }
+}
+
+function appendGlyph(anchor, target, config) {
+  if (!config.previewsShowIcon) {
     return;
   }
 
-  stampAutoLinkIndicators(root, config);
+  if (anchor.querySelector(":scope > .thc-inline-glyph")) {
+    return;
+  }
+
+  const glyph = glyphHTMLForTarget(target, config);
+  if (!glyph) {
+    return;
+  }
+
+  if (config.previewsIconPosition === "before") {
+    anchor.insertAdjacentHTML("afterbegin", glyph);
+  } else {
+    anchor.insertAdjacentHTML("beforeend", glyph);
+  }
+}
+
+function decoratePreviewAnchor(anchor, config) {
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return;
+  }
+
+  if (anchor.dataset.richPreviewDecorated === "true") {
+    return;
+  }
+
+  if (anchor.closest(".onebox, .inline-onebox")) {
+    return;
+  }
+
+  const href = sanitizeURL(anchor.getAttribute("href"));
+  if (!href) {
+    return;
+  }
+
+  const target = matchPreviewTarget(href, config);
+  if (!target || !shouldDecorateTarget(target, config)) {
+    return;
+  }
+
+  applyPreviewClasses(anchor, target, config);
+  applyPreviewDataAttributes(anchor, target, config);
+  appendGlyph(anchor, target, config);
+
+  anchor.dataset.richPreviewDecorated = "true";
+}
+
+function decorateCooked(container, config) {
+  const anchors = container.querySelectorAll('a[data-bbcode="true"]');
+  anchors.forEach((anchor) => decoratePreviewAnchor(anchor, config));
 }
 
 export function registerPreviewBBCode(api, config) {
   api.decorateCookedElement(
-    (element) => applyPreviewWraps(element, "preview", config),
-    {
-      id: "rich-preview-bbcode-decorator",
-      onlyStream: false,
-    }
+    (element) => {
+      decorateCooked(element, config);
+    },
+    { id: "discourse-rich-previews-bbcode" }
   );
 }
