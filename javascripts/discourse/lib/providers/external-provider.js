@@ -1,7 +1,6 @@
 import {
-  getCachedValue,
-  setCachedValue,
   getPreviewProvider,
+  matchesExternalTarget,
   sanitizeExcerpt,
   sanitizeURL,
 } from "../rich-preview-utils";
@@ -17,20 +16,15 @@ function firstNonEmpty(...values) {
       return normalized;
     }
   }
-
   return "";
 }
 
 function externalProviderConfig(config) {
-  return getPreviewProvider(config, "external") || {};
-}
-
-function externalRequireHttps(config) {
-  return externalProviderConfig(config)?.require_https !== false;
+  return getPreviewProvider(config, "external");
 }
 
 function externalTimeoutMs(config) {
-  return externalProviderConfig(config)?.timeout_ms || 3000;
+  return externalProviderConfig(config)?.timeoutMs || 3000;
 }
 
 function normalizedHostname(url) {
@@ -66,9 +60,8 @@ function normalizeImageUrl(rawUrl, baseUrl) {
 
 function parseExternalHTML(html, target) {
   const doc = new DOMParser().parseFromString(html, "text/html");
-
   const meta = (selector) =>
-    doc.querySelector(selector)?.getAttribute("content")?.trim() || "";
+    doc.querySelector(selector)?.getAttribute("content")?.trim();
 
   return {
     title:
@@ -113,7 +106,7 @@ function normalizeExternalPreview(target, payload, config) {
       payload?.twitterDescription,
       payload?.metaDescription
     ),
-    config?.excerptExcludedSelectors || []
+    config?.excerptExcludedSelectors
   );
 
   const imageUrl = firstNonEmpty(
@@ -138,50 +131,11 @@ function normalizeExternalPreview(target, payload, config) {
     imageUrl,
     thumbnail: imageUrl,
     fetchedAt: Date.now(),
-    raw: payload || {},
+    raw: payload,
   };
 }
 
-export function matchesExternalTarget(link, config) {
-  if (!(link instanceof HTMLAnchorElement)) {
-    return false;
-  }
-
-  const href = link.getAttribute("href") || "";
-  if (!href || href.startsWith("#")) {
-    return false;
-  }
-
-  try {
-    const url = new URL(link.href, window.location.origin);
-
-    if (url.origin === window.location.origin) {
-      return false;
-    }
-
-    if (!/^https?:$/i.test(url.protocol)) {
-      return false;
-    }
-
-    if (externalRequireHttps(config) && url.protocol !== "https:") {
-      return false;
-    }
-
-    if (/(^|\.)wikipedia\.org$/i.test(url.hostname)) {
-      return false;
-    }
-
-    if (/^\/t\//.test(url.pathname) || /^\/t\//.test(href)) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function createExternalProvider(config, previewCache, inFlightFetches) {
+export function createExternalProvider(config) {
   return {
     key: "external",
 
@@ -194,68 +148,48 @@ export function createExternalProvider(config, previewCache, inFlightFetches) {
         throw new Error("Missing external preview target URL.");
       }
 
-      if (signal?.aborted) {
-        return null;
-      }
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        externalTimeoutMs(config)
+      );
 
-      const cacheKey = `external:${target.url}`;
-      const cached = getCachedValue(previewCache, cacheKey);
-      if (cached) {
-        return cached;
-      }
+      const abortHandler = () => {
+        clearTimeout(timeout);
+        controller.abort();
+      };
 
-      const inFlightKey = `external:${target.url}`;
-      if (inFlightFetches?.has(inFlightKey)) {
-        return inFlightFetches.get(inFlightKey);
-      }
+      signal?.addEventListener?.("abort", abortHandler, { once: true });
 
-      const promise = (async () => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), externalTimeoutMs(config));
+      try {
+        const response = await fetch(buildProxyUrl(target), {
+          method: "GET",
+          credentials: "same-origin",
+          headers: {
+            Accept: "application/json, text/plain;q=0.9, text/html;q=0.8",
+          },
+          signal: controller.signal,
+        });
 
-        const abortHandler = () => {
-          clearTimeout(timeout);
-          controller.abort();
-        };
-
-        signal?.addEventListener?.("abort", abortHandler, { once: true });
-
-        try {
-          const response = await fetch(buildProxyUrl(target), {
-            method: "GET",
-            credentials: "same-origin",
-            headers: {
-              Accept: "application/json, text/plain;q=0.9, text/html;q=0.8",
-            },
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status} for ${target.url}`);
-          }
-
-          const contentType = response.headers.get("content-type") || "";
-          let payload;
-
-          if (contentType.includes("application/json")) {
-            payload = await response.json();
-          } else {
-            const html = await response.text();
-            payload = parseExternalHTML(html, target);
-          }
-
-          const normalized = normalizeExternalPreview(target, payload, config);
-          setCachedValue(previewCache, cacheKey, normalized);
-          return normalized;
-        } finally {
-          clearTimeout(timeout);
-          signal?.removeEventListener?.("abort", abortHandler);
-          inFlightFetches?.delete(inFlightKey);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} for ${target.url}`);
         }
-      })();
 
-      inFlightFetches?.set(inFlightKey, promise);
-      return promise;
+        const contentType = response.headers.get("content-type") || "";
+        let payload;
+
+        if (contentType.includes("application/json")) {
+          payload = await response.json();
+        } else {
+          const html = await response.text();
+          payload = parseExternalHTML(html, target);
+        }
+
+        return normalizeExternalPreview(target, payload, config);
+      } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener?.("abort", abortHandler);
+      }
     },
   };
 }

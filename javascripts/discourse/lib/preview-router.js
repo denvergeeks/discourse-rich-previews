@@ -1,10 +1,10 @@
 import {
-  parseTopicUrl,
+  matchesExternalTarget,
   parseRemoteDiscourseTopicUrl,
+  parseTopicUrl,
   providerEnabled,
 } from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
-import { matchesExternalTarget } from "./providers/external-provider";
 
 function normalizeWikipediaPageKey(pathname) {
   return decodeURIComponent(pathname.replace(/^\/wiki\//, ""))
@@ -36,7 +36,7 @@ function matchTopicPreview(link, config) {
       glyphProviderKey: "topic",
       key: `topic:${window.location.origin}:${local.topicId}`,
       topicId: local.topicId,
-      slug: local.slug || "",
+      slug: local.slug,
       postNumber: local.postNumber ?? null,
       origin: window.location.origin,
       hostname: window.location.hostname,
@@ -47,14 +47,14 @@ function matchTopicPreview(link, config) {
 
   const remote = parseRemoteDiscourseTopicUrl(link.href, config);
 
-  if (remote?.topicId && providerEnabled(config, "remote_topic")) {
+  if (remote?.topicId && providerEnabled(config, "remotetopic")) {
     return {
       type: "topic",
-      providerKey: "remote_topic",
-      glyphProviderKey: "remote_topic",
+      providerKey: "remotetopic",
+      glyphProviderKey: "remotetopic",
       key: `topic:${remote.origin}:${remote.topicId}`,
       topicId: remote.topicId,
-      slug: remote.slug || "",
+      slug: remote.slug,
       postNumber: remote.postNumber ?? null,
       origin: remote.origin,
       hostname: remote.hostname,

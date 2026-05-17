@@ -1,14 +1,11 @@
 {
-  "name": "Discourse Rich Previews",
+  "name": "discourse-rich-previews",
   "component": true,
-  "authors": "@denvergeeks",
   "about_url": "https://github.com/denvergeeks/discourse-rich-previews",
   "license_url": "https://github.com/denvergeeks/discourse-rich-previews/blob/main/LICENSE",
-  "theme_version": "0.0.1",
-  "minimum_discourse_version": "3.3.0",
-  "maximum_discourse_version": null,
+  "authors": "Denver Geeks",
+  "theme_version": "0.1.0",
   "assets": {
-    "icons-sprite": "/assets/tooltip-icon.svg"
-  },
-  "modifiers": {}
+    "tooltip-icon": "assets/tooltip-icon.svg"
+  }
 }

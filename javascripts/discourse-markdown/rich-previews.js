@@ -1,46 +1,122 @@
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function normalizeAttrValue(value) {
+  return String(value ?? "").trim();
 }
 
-function wrapPreviewTags(source, tagName = "preview") {
-  const openTag = `[${tagName}]`;
-  const closeTag = `[/${tagName}]`;
+function getPreviewHref(attrs, content) {
+  const explicitHref = normalizeAttrValue(attrs?._default);
+  const fallbackHref = normalizeAttrValue(content);
 
-  if (!source?.includes(openTag)) {
-    return source;
+  return explicitHref || fallbackHref;
+}
+
+function copyAttrs(token, attrs = {}) {
+  Object.entries(attrs).forEach(([name, value]) => {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
+
+    token.attrSet(name, String(value));
+  });
+}
+
+function buildAnchorTokens(state, startToken, endToken, tagInfo, content) {
+  const href = getPreviewHref(tagInfo?.attrs, content);
+
+  if (!href) {
+    startToken.type = "text";
+    startToken.tag = "";
+    startToken.nesting = 0;
+    startToken.content = "";
+
+    endToken.type = "text";
+    endToken.tag = "";
+    endToken.nesting = 0;
+    endToken.content = "";
+
+    return false;
   }
 
-  const pattern = new RegExp(
-    `${escapeRegExp(openTag)}([\\s\\S]*?)${escapeRegExp(closeTag)}`,
-    "gi"
-  );
+  startToken.type = "link_open";
+  startToken.tag = "a";
+  startToken.nesting = 1;
+  startToken.content = "";
+  startToken.attrs = [];
 
-  return source.replace(pattern, (_match, inner) => {
-    return `<span class="rich-preview-wrap" data-rich-preview="true">${inner}</span>`;
+  copyAttrs(startToken, {
+    href,
+    "data-bbcode": "true",
+  });
+
+  const title = normalizeAttrValue(tagInfo?.attrs?.title);
+  if (title) {
+    startToken.attrSet("title", title);
+  }
+
+  endToken.type = "link_close";
+  endToken.tag = "a";
+  endToken.nesting = -1;
+  endToken.content = "";
+
+  return false;
+}
+
+function registerPreviewBBCodeRule(md) {
+  md.inline.bbcode.ruler.push("preview", {
+    tag: "preview",
+
+    wrap(startToken, endToken, tagInfo, content) {
+      startToken.type = "html_inline";
+      startToken.tag = "";
+      startToken.nesting = 0;
+      startToken.content =
+        '<span class="rich-preview-wrap" data-rich-preview="true">';
+
+      buildAnchorTokens(startToken, endToken, tagInfo, content);
+
+      const closeToken = endToken;
+      const originalCloseContent = closeToken.content ?? "";
+
+      closeToken.type = "html_inline";
+      closeToken.tag = "";
+      closeToken.nesting = 0;
+      closeToken.content = "</span>";
+
+      if (originalCloseContent) {
+        closeToken.content += originalCloseContent;
+      }
+
+      return false;
+    },
   });
 }
 
 export function setup(helper) {
-  if (!helper.markdownIt) {
+  if (!helper?.markdownIt) {
     return;
   }
 
   helper.allowList([
     "span.rich-preview-wrap",
-    "span[data-rich-preview]",
+    "span[data-rich-preview=true]",
   ]);
 
   helper.registerPlugin((md) => {
-    md.core.ruler.push("rich-previews-bbcode", (state) => {
-      state.tokens.forEach((token) => {
-        if (token.type !== "inline" || !token.content) {
-          return;
-        }
+    md.inline.bbcode.ruler.push("preview", {
+      tag: "preview",
+      wrap(startToken, endToken) {
+        startToken.type = "html_inline";
+        startToken.tag = "";
+        startToken.nesting = 0;
+        startToken.content =
+          '<span class="rich-preview-wrap" data-rich-preview="true">';
 
-        token.content = wrapPreviewTags(token.content, "preview");
-      });
+        endToken.type = "html_inline";
+        endToken.tag = "";
+        endToken.nesting = 0;
+        endToken.content = "</span>";
 
-      return false;
+        return false;
+      },
     });
   });
 }
