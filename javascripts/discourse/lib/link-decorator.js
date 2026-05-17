@@ -1,7 +1,9 @@
+import { iconHTML } from "discourse/lib/icon-library";
+
 import {
-  providerKeyForTarget,
   providerColor,
-  renderInlineProviderGlyph,
+  sanitizeURL,
+  getPreviewProvider,
 } from "./rich-preview-utils";
 
 const WRAP_TYPE_CLASSES = [
@@ -85,6 +87,28 @@ function clearInlineProviderPresentation(link, wrapper = null) {
     wrapper.style.removeProperty("--rp-color");
     removeWrapperGlyphNode(wrapper);
   }
+}
+
+function renderInlineProviderGlyph(providerKey, config) {
+  const provider = getPreviewProvider(config, providerKey);
+  const iconName = provider?.icon;
+
+  if (!iconName) {
+    return "";
+  }
+
+  let html = "";
+  try {
+    html = iconHTML(iconName) || "";
+  } catch {
+    html = "";
+  }
+
+  if (!html) {
+    return "";
+  }
+
+  return `<span class="thc-inline-glyph" aria-hidden="true">${html}</span>`;
 }
 
 function buildInlineGlyphFragment(providerKey, config, wrapperMode = false) {
@@ -215,8 +239,8 @@ function placeWrapperGlyphNode(wrapper, glyphNode, position = "after") {
   }
 }
 
-function applyLinkClasses(link, providerKey, config) {
-  if (!link || !providerKey) {
+function applyLinkDecorationClasses(link, providerKey, underlineMode, iconMode) {
+  if (!link) {
     return;
   }
 
@@ -224,160 +248,157 @@ function applyLinkClasses(link, providerKey, config) {
 
   link.classList.add("rich-preview-link", `rich-preview-link--${providerKey}`);
 
-  const underlineMode = normalizeUnderlineMode(config);
-  const iconMode = normalizeIconMode(config, providerKey);
-
-  if (underlineMode === "always") {
-    link.classList.add("rich-preview-link--underline-always");
-  } else if (underlineMode === "hover") {
-    link.classList.add("rich-preview-link--underline-hover");
-  }
-
-  if (iconMode === "before") {
-    link.classList.add("rich-preview-link--icon-before");
-  } else if (iconMode === "after") {
-    link.classList.add("rich-preview-link--icon-after");
-  }
-}
-
-function applyAutoLinkPresentation(link, providerKey, config) {
-  if (!link || !providerKey) {
-    return;
-  }
-
-  const color = providerColor(providerKey, config, "var(--tertiary)");
-
-  if (color) {
-    link.style.setProperty("--rp-color", color);
-  } else {
-    link.style.removeProperty("--rp-color");
-  }
-
-  applyLinkClasses(link, providerKey, config);
-
-  link.dataset.richPreviewType = providerKey;
-
-  const underlineMode = normalizeUnderlineMode(config);
-  const iconMode = normalizeIconMode(config, providerKey);
-
   if (underlineMode) {
+    link.classList.add(`rich-preview-link--underline-${underlineMode}`);
     link.dataset.richPreviewUnderline = underlineMode;
   } else {
     delete link.dataset.richPreviewUnderline;
   }
 
   if (iconMode) {
+    link.classList.add(`rich-preview-link--icon-${iconMode}`);
     link.dataset.richPreviewIcon = iconMode;
   } else {
     delete link.dataset.richPreviewIcon;
   }
 
-  removeInlineGlyphNode(link);
+  link.dataset.richPreviewType = providerKey;
+}
 
-  if (!iconMode) {
+function applyWrapperDecorationClasses(
+  wrapper,
+  providerKey,
+  underlineMode,
+  iconMode
+) {
+  if (!wrapper) {
+    return;
+  }
+
+  clearWrapperState(wrapper);
+
+  wrapper.classList.add("rich-preview-wrap", `rich-preview-wrap--${providerKey}`);
+
+  if (underlineMode) {
+    wrapper.classList.add(`rich-preview-wrap--underline-${underlineMode}`);
+  }
+
+  if (iconMode) {
+    wrapper.classList.add(`rich-preview-wrap--icon-${iconMode}`);
+  }
+
+  wrapper.dataset.providerKey = providerKey;
+  wrapper.dataset.richPreview = "true";
+}
+
+function applyProviderColor(link, wrapper, providerKey, config) {
+  const color = providerColor(providerKey, config, "var(--tertiary)");
+  if (!color) {
+    return;
+  }
+
+  if (link) {
+    link.style.setProperty("--rp-color", color);
+  }
+
+  if (wrapper) {
+    wrapper.style.setProperty("--rp-color", color);
+  }
+}
+
+function ensureInlineGlyph(link, providerKey, config, iconMode) {
+  if (!link || !providerKey || !iconMode) {
+    removeInlineGlyphNode(link);
     return;
   }
 
   if (anchorHasComplexInlineContent(link)) {
+    removeInlineGlyphNode(link);
     return;
   }
 
-  const glyphNode = buildInlineGlyphFragment(providerKey, config);
+  let glyphNode = link.querySelector(":scope > .thc-inline-glyph");
+  if (!glyphNode) {
+    glyphNode = buildInlineGlyphFragment(providerKey, config, false);
+  }
 
   if (!glyphNode) {
     return;
   }
 
-  placeInlineGlyphNode(link, glyphNode, iconMode === "before" ? "before" : "after");
+  placeInlineGlyphNode(link, glyphNode, iconMode);
 }
 
-function applyWrappedLinkPresentation(wrapper, link, providerKey, config) {
-  if (!wrapper || !providerKey) {
+function ensureWrapperGlyph(wrapper, providerKey, config, iconMode) {
+  if (!wrapper || !providerKey || !iconMode) {
+    removeWrapperGlyphNode(wrapper);
     return;
   }
 
-  const color = providerColor(providerKey, config, "var(--tertiary)");
-
-  if (color) {
-    wrapper.style.setProperty("--rp-color", color);
-  } else {
-    wrapper.style.removeProperty("--rp-color");
+  let glyphNode = wrapper.querySelector(":scope > .thc-inline-glyph-wrap");
+  if (!glyphNode) {
+    glyphNode = buildInlineGlyphFragment(providerKey, config, true);
   }
-
-  wrapper.dataset.providerKey = providerKey;
-
-  if (link) {
-    link.style.removeProperty("--rp-color");
-    clearLinkClasses(link);
-    delete link.dataset.richPreviewType;
-    delete link.dataset.richPreviewUnderline;
-    delete link.dataset.richPreviewIcon;
-    removeInlineGlyphNode(link);
-  }
-
-  removeWrapperGlyphNode(wrapper);
-
-  const iconMode = normalizeIconMode(config, providerKey);
-  if (!iconMode) {
-    return;
-  }
-
-  const glyphNode = buildInlineGlyphFragment(providerKey, config, true);
 
   if (!glyphNode) {
     return;
   }
 
-  const position = normalizeInlineGlyphPosition(config);
-  placeWrapperGlyphNode(wrapper, glyphNode, position);
+  placeWrapperGlyphNode(wrapper, glyphNode, iconMode);
+}
+
+function decorateAnchorOnlyPreviewLink(link, target, config) {
+  if (!(link instanceof HTMLAnchorElement) || !target?.providerKey) {
+    return;
+  }
+
+  const providerKey = target.providerKey;
+  const underlineMode = normalizeUnderlineMode(config);
+  const iconMode = normalizeIconMode(config, providerKey);
+
+  clearInlineProviderPresentation(link);
+
+  const href = sanitizeURL(link.getAttribute("href"));
+  if (href) {
+    link.setAttribute("href", href);
+  }
+
+  applyLinkDecorationClasses(link, providerKey, underlineMode, iconMode);
+  applyProviderColor(link, null, providerKey, config);
+  ensureInlineGlyph(link, providerKey, config, iconMode);
 }
 
 export function decorateAutoDetectedLink(link, target, config) {
-  const providerKey = providerKeyForTarget(target, null);
-
-  if (!providerKey) {
-    clearInlineProviderPresentation(link);
-    return;
-  }
-
-  applyAutoLinkPresentation(link, providerKey, config);
+  decorateAnchorOnlyPreviewLink(link, target, config);
 }
 
 export function decorateWrappedPreviewLink(wrapper, link, target, config) {
   const resolvedLink = resolveLink(wrapper, link);
-  const providerKey = providerKeyForTarget(target, null);
-
-  if (!providerKey) {
-    clearInlineProviderPresentation(resolvedLink, wrapper);
-    clearWrapperState(wrapper);
+  if (!(resolvedLink instanceof HTMLAnchorElement) || !target?.providerKey) {
     return;
   }
 
-  applyWrappedLinkPresentation(wrapper, resolvedLink, providerKey, config);
+  const providerKey = target.providerKey;
+  const underlineMode = normalizeUnderlineMode(config);
+  const iconMode = normalizeIconMode(config, providerKey);
 
-  if (wrapper) {
-    wrapper.classList.remove(...WRAP_TYPE_CLASSES);
-    wrapper.classList.add(`rich-preview-wrap--${providerKey}`);
+  clearInlineProviderPresentation(resolvedLink, wrapper);
+  clearWrapperState(wrapper);
 
-    const underlineMode = normalizeUnderlineMode(config);
-    const iconMode = normalizeIconMode(config, providerKey);
+  const href = sanitizeURL(resolvedLink.getAttribute("href"));
+  if (href) {
+    resolvedLink.setAttribute("href", href);
+  }
 
-    wrapper.classList.toggle(
-      "rich-preview-wrap--underline-always",
-      underlineMode === "always"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--underline-hover",
-      underlineMode === "hover"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--icon-before",
-      iconMode === "before"
-    );
-    wrapper.classList.toggle(
-      "rich-preview-wrap--icon-after",
-      iconMode === "after"
-    );
+  applyLinkDecorationClasses(resolvedLink, providerKey, underlineMode, iconMode);
+  applyProviderColor(resolvedLink, wrapper, providerKey, config);
+
+  if (wrapper instanceof Element) {
+    applyWrapperDecorationClasses(wrapper, providerKey, underlineMode, iconMode);
+    ensureWrapperGlyph(wrapper, providerKey, config, iconMode);
+    removeInlineGlyphNode(resolvedLink);
+  } else {
+    ensureInlineGlyph(resolvedLink, providerKey, config, iconMode);
   }
 }
 

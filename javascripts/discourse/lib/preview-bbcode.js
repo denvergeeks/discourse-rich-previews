@@ -1,14 +1,3 @@
-/*
-  Applies preview decoration to both manual wrapped links and auto-detected
-  eligible links in cooked content.
-
-  The markdown-it plugin is authoritative for parsing:
-    [preview][label](url "title")[/preview]
-  into a normal anchor in cooked HTML.
-
-  This decorator layer only styles and augments those cooked anchors.
-*/
-
 import { linkInSupportedArea } from "./rich-preview-utils";
 import { matchPreviewTarget } from "./preview-router";
 import {
@@ -17,27 +6,7 @@ import {
   decorateWrappedPreviewLink,
 } from "./link-decorator";
 
-const WRAP_SELECTOR = '.rich-preview-wrap[data-rich-preview="true"]';
-
-function clearWrapModifierClasses(wrapEl) {
-  if (!(wrapEl instanceof Element)) {
-    return;
-  }
-
-  [
-    "rich-preview-wrap--topic",
-    "rich-preview-wrap--remote_topic",
-    "rich-preview-wrap--external",
-    "rich-preview-wrap--wikipedia",
-    "rich-preview-wrap--underline-always",
-    "rich-preview-wrap--underline-hover",
-    "rich-preview-wrap--icon-before",
-    "rich-preview-wrap--icon-after",
-  ].forEach((klass) => wrapEl.classList.remove(klass));
-
-  wrapEl.style.removeProperty("--rp-color");
-  delete wrapEl.dataset.providerKey;
-}
+const MANUAL_LINK_SELECTOR = 'a[data-rich-preview="true"][href]';
 
 function clearAutoLinkIndicators(root) {
   if (!(root instanceof Element)) {
@@ -45,9 +14,7 @@ function clearAutoLinkIndicators(root) {
   }
 
   root
-    .querySelectorAll(
-      "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
-    )
+    .querySelectorAll("a[data-rich-preview-type], a.rich-preview-link, a[href]")
     .forEach((link) => {
       if (!(link instanceof HTMLAnchorElement)) {
         return;
@@ -57,39 +24,23 @@ function clearAutoLinkIndicators(root) {
     });
 }
 
-function getWrappedAnchor(wrapEl) {
-  if (!(wrapEl instanceof Element)) {
-    return null;
-  }
-
-  const link = wrapEl.querySelector(":scope > a[href]");
-  return link instanceof HTMLAnchorElement ? link : null;
-}
-
-function stampModifierClasses(wrapEl, config) {
-  if (!(wrapEl instanceof Element)) {
-    return;
-  }
-
-  clearWrapModifierClasses(wrapEl);
-
-  const link = getWrappedAnchor(wrapEl);
-  if (!link) {
+function decorateManualPreviewLink(link, config) {
+  if (!(link instanceof HTMLAnchorElement)) {
     return;
   }
 
   if (!linkInSupportedArea(link, config)) {
-    clearDecoratedLink(link, wrapEl);
+    clearDecoratedLink(link);
     return;
   }
 
   const target = matchPreviewTarget(link, config);
   if (!target) {
-    clearDecoratedLink(link, wrapEl);
+    clearDecoratedLink(link);
     return;
   }
 
-  decorateWrappedPreviewLink(wrapEl, link, target, config);
+  decorateWrappedPreviewLink(null, link, target, config);
 }
 
 function stampAutoLinkIndicators(root, config) {
@@ -99,12 +50,16 @@ function stampAutoLinkIndicators(root, config) {
 
   clearAutoLinkIndicators(root);
 
+  root.querySelectorAll(MANUAL_LINK_SELECTOR).forEach((link) => {
+    decorateManualPreviewLink(link, config);
+  });
+
   root.querySelectorAll("a[href]").forEach((link) => {
     if (!(link instanceof HTMLAnchorElement)) {
       return;
     }
 
-    if (link.closest(WRAP_SELECTOR)) {
+    if (link.matches(MANUAL_LINK_SELECTOR)) {
       return;
     }
 
@@ -127,10 +82,6 @@ export function applyPreviewWraps(root, _tagName = "preview", config = null) {
   if (!(root instanceof Element)) {
     return;
   }
-
-  root.querySelectorAll(WRAP_SELECTOR).forEach((wrapEl) => {
-    stampModifierClasses(wrapEl, config);
-  });
 
   stampAutoLinkIndicators(root, config);
 }
