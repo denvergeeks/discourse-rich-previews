@@ -11,12 +11,16 @@ Gemfile
 Gemfile.lock
 LICENSE
 README.md
+_export/repo-baseline.txt
+_export/repo-meta.txt
+_export/repo-tree.txt
 about.json
 assets/.gitkeep
 assets/tooltip-icon.svg
 common/common.scss
 config/locales/client.en.yml
 eslint.config.mjs
+export-repo-snapshot.sh
 javascripts/.gitkeep
 javascripts/discourse-markdown/rich-previews.js
 javascripts/discourse/api-initializers/discourse-rich-previews.gjs
@@ -40,6 +44,7 @@ settings.yml
 spec/system/.gitkeep
 spec/system/core_features_spec.rb
 spec/system/rich_previews_bbcode_spec.rb
+spec/system/rich_previews_external_spec.rb
 spec/system/rich_previews_hover_spec.rb
 spec/system/rich_previews_mobile_spec.rb
 spec/system/rich_previews_modes_spec.rb
