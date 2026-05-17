@@ -25,7 +25,7 @@ function clearWrapModifierClasses(wrapEl) {
 
   [
     "rich-preview-wrap--topic",
-    "rich-preview-wrap--remotetopic",
+    "rich-preview-wrap--remote_topic",
     "rich-preview-wrap--external",
     "rich-preview-wrap--wikipedia",
     "rich-preview-wrap--underline-always",

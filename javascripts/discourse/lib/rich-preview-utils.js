@@ -71,8 +71,8 @@ function normalizePreviewProviders(rawProviders) {
       timeoutMs: 3000,
       requireHttps: false,
     },
-    remotetopic: {
-      key: "remotetopic",
+    remote_topic: {
+      key: "remote_topic",
       enabled: true,
       color: "var(--tertiary)",
       glyphMode: "icon",
@@ -425,7 +425,7 @@ export function providerModeForType(type, config) {
   switch (type) {
     case "topic":
       return config?.previewsTopicMode || "auto_only";
-    case "remotetopic":
+    case "remote_topic":
       return config?.previewsRemoteTopicMode || "auto_only";
     case "external":
       return config?.previewsExternalMode || "auto_only";
@@ -447,7 +447,7 @@ export function providerSupportsComposer(type, config) {
 }
 
 export function getRemoteTopicProvider(config) {
-  return getPreviewProvider(config, "remotetopic");
+  return getPreviewProvider(config, "remote_topic");
 }
 
 export function getWikipediaProvider(config) {
@@ -462,8 +462,8 @@ export function providerKeyForTarget(target, preview = null) {
   if (target?.providerKey) return target.providerKey;
   if (preview?.providerKey) return preview.providerKey;
   if (target?.type === "wikipedia" || preview?.type === "wikipedia") return "wikipedia";
-  if (target?.type === "topic" && target?.isRemote) return "remotetopic";
-  if (preview?.raw?.isRemoteDiscourseTopic) return "remotetopic";
+  if (target?.type === "topic" && target?.isRemote) return "remote_topic";
+  if (preview?.raw?.isRemoteDiscourseTopic) return "remote_topic";
   if (target?.type === "topic" || preview?.type === "topic") return "topic";
   if (target?.type === "external" || preview?.type === "external") return "external";
   return null;
@@ -471,7 +471,7 @@ export function providerKeyForTarget(target, preview = null) {
 
 const FALLBACK_GLYPHS = {
   topic: "↗",
-  remotetopic: "↗",
+  remote_topic: "↗",
   external: "↗",
   wikipedia: "Ⓦ",
 };
@@ -791,8 +791,8 @@ export function previewTypeEnabled(type, config) {
   const providerKey =
     type === "topic"
       ? "topic"
-      : type === "remotetopic"
-        ? "remotetopic"
+      : type === "remote_topic"
+        ? "remote_topic"
         : type === "external"
           ? "external"
           : type === "wikipedia"
@@ -807,7 +807,7 @@ export function previewTypeEnabled(type, config) {
 export function composerButtonShouldShow(config) {
   return (
     previewTypeEnabled("topic", config) ||
-    previewTypeEnabled("remotetopic", config) ||
+    previewTypeEnabled("remote_topic", config) ||
     previewTypeEnabled("external", config) ||
     previewTypeEnabled("wikipedia", config)
   );
@@ -820,7 +820,7 @@ export function isManuallyWrapped(link) {
 export function classifyLink(link, config) {
   if (isWikipediaArticleLink(link)) return "wikipedia";
   if (parseTopicUrl(link?.href)) return "topic";
-  if (parseRemoteDiscourseTopicUrl(link?.href, config)) return "remotetopic";
+  if (parseRemoteDiscourseTopicUrl(link?.href, config)) return "remote_topic";
   if (matchesExternalTarget(link, config)) return "external";
   return null;
 }

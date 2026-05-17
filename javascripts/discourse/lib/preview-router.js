@@ -47,11 +47,11 @@ function matchTopicPreview(link, config) {
 
   const remote = parseRemoteDiscourseTopicUrl(link.href, config);
 
-  if (remote?.topicId && providerEnabled(config, "remotetopic")) {
+  if (remote?.topicId && providerEnabled(config, "remote_topic")) {
     return {
       type: "topic",
-      providerKey: "remotetopic",
-      glyphProviderKey: "remotetopic",
+      providerKey: "remote_topic",
+      glyphProviderKey: "remote_topic",
       key: `topic:${remote.origin}:${remote.topicId}`,
       topicId: remote.topicId,
       slug: remote.slug,
