@@ -188,8 +188,7 @@ export function createExternalProvider(config) {
       return matchesExternalTarget(link, config);
     },
 
-    async fetch(target, signalOrOptions) {
-      const signal = signalOrOptions?.signal ?? signalOrOptions ?? undefined;
+    async fetch(target, signal) {          // ← accept signal directly, not destructured
       if (!target?.url) {
         throw new Error("Missing external preview target URL.");
       }
@@ -200,7 +199,11 @@ export function createExternalProvider(config) {
         externalTimeoutMs(config)
       );
 
-      const abortHandler = () => controller.abort();
+      // Wire parent signal → inner controller
+      const abortHandler = () => {
+        clearTimeout(timeout);             // ← also clear timeout on parent abort
+        controller.abort();
+      };
       signal?.addEventListener?.("abort", abortHandler, { once: true });
 
       try {
