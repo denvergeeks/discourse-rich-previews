@@ -3,7 +3,7 @@ import { providerColor, sanitizeURL, getPreviewProvider } from "./rich-preview-u
 
 const WRAP_TYPE_CLASSES = [
   "rich-preview-wrap--topic",
-  "rich-preview-wrap--remotetopic",
+  "rich-preview-wrap--remote_topic",
   "rich-preview-wrap--external",
   "rich-preview-wrap--wikipedia",
 ];
@@ -18,7 +18,7 @@ const WRAP_MODE_CLASSES = [
 const LINK_DECORATION_CLASSES = [
   "rich-preview-link",
   "rich-preview-link--topic",
-  "rich-preview-link--remotetopic",
+  "rich-preview-link--remote_topic",
   "rich-preview-link--external",
   "rich-preview-link--wikipedia",
   "rich-preview-link--underline-always",
@@ -475,7 +475,6 @@ export function decorateWrappedPreviewLink(wrapper, link, target, config) {
   const iconMode = normalizeIconMode(config, providerKey);
 
   clearInlineProviderPresentation(resolvedLink, wrapper);
-  clearWrapperState(wrapper);
 
   applyLinkDecorationClasses(resolvedLink, providerKey, underlineMode, iconMode);
   applyWrapperDecorationClasses(wrapper, providerKey, underlineMode, iconMode);
