@@ -1,7 +1,7 @@
 REPO: discourse-rich-previews
 BRANCH: main
-COMMIT: f7bac43c063de7e5ca3530a5b34fd963e44c9de0
-GENERATED: 2026-05-17 19:43:21 -0600
+COMMIT: 10d8c2bc43e1abee2164fc8c966dc4d5f98a1318
+GENERATED: 2026-05-17 20:12:40 -0600
 
 === FILE TREE ===
 .discourse-compatibility
@@ -1645,68 +1645,87 @@ export default [...DiscourseRecommendedTheme];
 
 === FILE: javascripts/discourse-markdown/rich-previews.js ===
 ```js
-console.log("[rich-previews canary] module evaluated");
+function normalizeAttrValue(value) {
+  return String(value ?? "").trim();
+}
 
-export function setup(helper) {
-  console.log("[rich-previews canary] setup called", {
-    helper,
-    markdownIt: helper?.markdownIt,
-  });
+function getPreviewHref(attrs, content) {
+  const explicitHref = normalizeAttrValue(attrs?.default);
+  const fallbackHref = normalizeAttrValue(content);
 
-  if (!helper?.markdownIt) {
-    console.log("[rich-previews canary] helper.markdownIt missing, aborting");
-    return;
-  }
+  return explicitHref || fallbackHref;
+}
 
-  helper.allowList([
-    "span.rich-preview-wrap",
-    "span[data-canary]",
-    "span[data-bbcode]",
-  ]);
+function buildFallbackTextToken(token, content) {
+  token.type = "text";
+  token.tag = "";
+  token.nesting = 0;
+  token.attrs = null;
+  token.content = content || "";
+  token.children = null;
+}
 
-  console.log("[rich-previews canary] allowList applied");
-
-  helper.registerPlugin((md) => {
-    console.log("[rich-previews canary] registerPlugin called", {
-      hasInline: !!md?.inline,
-      hasBbcode: !!md?.inline?.bbcode,
-      hasRuler: !!md?.inline?.bbcode?.ruler,
-    });
-
-    if (!md?.inline?.bbcode?.ruler) {
-      console.log("[rich-previews canary] bbcode ruler missing");
+function copyAttrs(token, attrs) {
+  Object.entries(attrs).forEach(([name, value]) => {
+    if (value === null || value === undefined || value === "") {
       return;
     }
 
+    token.attrSet(name, String(value));
+  });
+}
+
+function buildAnchorTokens(startToken, endToken, tagInfo, content) {
+  const href = getPreviewHref(tagInfo?.attrs, content);
+
+  if (!href) {
+    buildFallbackTextToken(startToken, content);
+    buildFallbackTextToken(endToken, "");
+    return false;
+  }
+
+  startToken.type = "link_open";
+  startToken.tag = "a";
+  startToken.nesting = 1;
+  startToken.content = "";
+  startToken.attrs = null;
+  startToken.children = null;
+
+  copyAttrs(startToken, {
+    href,
+    "data-bbcode": "true",
+  });
+
+  const title = normalizeAttrValue(tagInfo?.attrs?.title);
+  if (title) {
+    startToken.attrSet("title", title);
+  }
+
+  endToken.type = "link_close";
+  endToken.tag = "a";
+  endToken.nesting = -1;
+  endToken.attrs = null;
+  endToken.content = "";
+  endToken.children = null;
+
+  return false;
+}
+
+export function setup(helper) {
+  if (!helper?.markdownIt) {
+    return;
+  }
+
+  helper.allowList(["a[data-bbcode]", "a[title]"]);
+
+  helper.registerPlugin((md) => {
     md.inline.bbcode.ruler.push("preview", {
       tag: "preview",
 
       wrap(startToken, endToken, tagInfo, content) {
-        console.log("[rich-previews canary] wrap fired", {
-          tagInfo,
-          content,
-        });
-
-        startToken.type = "html_inline";
-        startToken.tag = "";
-        startToken.nesting = 0;
-        startToken.attrs = null;
-        startToken.content =
-          '<span class="rich-preview-wrap" data-canary="true" data-bbcode="true">';
-        startToken.children = null;
-
-        endToken.type = "html_inline";
-        endToken.tag = "";
-        endToken.nesting = 0;
-        endToken.attrs = null;
-        endToken.content = "</span>";
-        endToken.children = null;
-
-        return false;
+        return buildAnchorTokens(startToken, endToken, tagInfo, content);
       },
     });
-
-    console.log("[rich-previews canary] preview rule registered");
   });
 }
 ```
@@ -4153,79 +4172,15 @@ export function clearDecoratedLink(link, wrapper = null) {
 
 === FILE: javascripts/discourse/lib/preview-bbcode.js ===
 ```js
-function normalizeAttrValue(value) {
-  return String(value ?? "").trim();
-}
+// Intentionally unused in the current theme runtime.
+//
+// Theme-side markdown BBCode registration is handled from:
+//   javascripts/discourse-markdown/rich-previews.js
+//
+// Keeping this file as a no-op avoids accidental imports against unsupported
+// theme API methods such as api.registerMarkdownItPlugin(...).
 
-function getPreviewHref(attrs, content) {
-  const explicitHref = normalizeAttrValue(attrs?._default);
-  const fallbackHref = normalizeAttrValue(content);
-
-  return explicitHref || fallbackHref;
-}
-
-function copyAttrs(token, attrs = {}) {
-  Object.entries(attrs).forEach(([name, value]) => {
-    if (value === null || value === undefined || value === "") {
-      return;
-    }
-
-    token.attrSet(name, String(value));
-  });
-}
-
-function buildAnchorTokens(startToken, endToken, tagInfo, content) {
-  const href = getPreviewHref(tagInfo?.attrs, content);
-
-  if (!href) {
-    startToken.type = "text";
-    startToken.tag = "";
-    startToken.nesting = 0;
-    startToken.content = "";
-
-    endToken.type = "text";
-    endToken.tag = "";
-    endToken.nesting = 0;
-    endToken.content = "";
-
-    return false;
-  }
-
-  startToken.type = "link_open";
-  startToken.tag = "a";
-  startToken.nesting = 1;
-  startToken.content = "";
-  startToken.attrs = [];
-
-  copyAttrs(startToken, {
-    href,
-    "data-bbcode": "true",
-  });
-
-  const title = normalizeAttrValue(tagInfo?.attrs?.title);
-  if (title) {
-    startToken.attrSet("title", title);
-  }
-
-  endToken.type = "link_close";
-  endToken.tag = "a";
-  endToken.nesting = -1;
-  endToken.content = "";
-
-  return false;
-}
-
-export function registerPreviewBBCode(api) {
-  api.registerMarkdownItPlugin((md) => {
-    md.inline.bbcode.ruler.push("preview", {
-      tag: "preview",
-
-      wrap(startToken, endToken, tagInfo, content) {
-        return buildAnchorTokens(startToken, endToken, tagInfo, content);
-      },
-    });
-  });
-}
+export function registerPreviewBBCode() {}
 ```
 
 === FILE: javascripts/discourse/lib/preview-composer-button.js ===
