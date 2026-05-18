@@ -1,8 +1,3 @@
-/**
- * Applies preview decoration to both manual wrapped links and auto-detected
- * eligible links in cooked content.
- */
-
 import { linkInSupportedArea } from "./rich-preview-utils";
 import { matchPreviewTarget } from "./preview-router";
 import {
@@ -11,7 +6,7 @@ import {
   clearDecoratedLink,
 } from "./link-decorator";
 
-const WRAP_SELECTOR = ".rich-preview-wrap[data-rich-preview='true']";
+const WRAP_SELECTOR = '.rich-preview-wrap[data-rich-preview="true"]';
 
 function clearWrapModifierClasses(wrapEl) {
   if (!(wrapEl instanceof Element)) {
@@ -40,7 +35,7 @@ function clearAutoLinkIndicators(root) {
 
   root
     .querySelectorAll(
-      "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
+      'a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]'
     )
     .forEach((link) => {
       if (!(link instanceof HTMLAnchorElement)) {
@@ -56,8 +51,36 @@ function getWrappedAnchor(wrapEl) {
     return null;
   }
 
-  const link = wrapEl.querySelector(":scope > a[href]");
+  const link = wrapEl.querySelector(":scope a[href]");
   return link instanceof HTMLAnchorElement ? link : null;
+}
+
+function ensureAnchorForPlaceholderWrap(wrapEl) {
+  if (!(wrapEl instanceof Element)) {
+    return;
+  }
+
+  if (getWrappedAnchor(wrapEl)) {
+    return;
+  }
+
+  const form = String(wrapEl.dataset.previewForm || "").trim().toLowerCase();
+  const url = String(wrapEl.dataset.previewUrl || "").trim();
+  const label = String(wrapEl.dataset.previewLabel || "").trim();
+
+  if (form !== "explicit" && form !== "bare") {
+    return;
+  }
+
+  if (!url) {
+    return;
+  }
+
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.textContent = form === "bare" ? url : label || url;
+
+  wrapEl.replaceChildren(anchor);
 }
 
 function stampModifierClasses(wrapEl, config) {
@@ -66,8 +89,10 @@ function stampModifierClasses(wrapEl, config) {
   }
 
   clearWrapModifierClasses(wrapEl);
+  ensureAnchorForPlaceholderWrap(wrapEl);
 
   const link = getWrappedAnchor(wrapEl);
+
   if (!link) {
     return;
   }
@@ -78,6 +103,7 @@ function stampModifierClasses(wrapEl, config) {
   }
 
   const target = matchPreviewTarget(link, config);
+
   if (!target) {
     clearDecoratedLink(link, wrapEl);
     return;
@@ -112,6 +138,7 @@ function stampAutoLinkIndicators(root, config) {
     }
 
     const target = matchPreviewTarget(link, config);
+
     if (!target) {
       clearDecoratedLink(link);
       return;
@@ -121,8 +148,12 @@ function stampAutoLinkIndicators(root, config) {
   });
 }
 
-export function applyPreviewWraps(root, config = null) {
-  if (!(root instanceof Element) || !config) {
+export function applyPreviewWraps(root, tagName = "preview", config = null) {
+  if (!(root instanceof Element)) {
+    return;
+  }
+
+  if (!config) {
     return;
   }
 
@@ -135,9 +166,7 @@ export function applyPreviewWraps(root, config = null) {
 
 export function registerPreviewBBCode(api, config) {
   api.decorateCookedElement(
-    (element) => {
-      applyPreviewWraps(element, config);
-    },
+    (element) => applyPreviewWraps(element, "preview", config),
     {
       id: "rich-preview-bbcode-decorator",
       onlyStream: false,
