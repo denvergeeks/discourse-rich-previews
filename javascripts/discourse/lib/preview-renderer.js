@@ -55,7 +55,9 @@ export function buildErrorPreviewHTML(message, rootAttrs = "") {
             Preview unavailable
           </span>
         </div>
-        <div class="topic-hover-card__excerpt">${escapeHTML(message)}</div>
+        <div class="topic-hover-card__excerpt">
+          ${escapeHTML(message)}
+        </div>
       </div>
     </div>
   `;
@@ -242,14 +244,8 @@ function buildSharedThumbnailHTML(
   const variant = options.variant || "plain";
 
   const sizePercent = isMobile
-    ? config?.thumbnailSizePercentMobile ||
-      config?.imageSizePercentMobile ||
-      config?.thumbnailSizeMobile ||
-      25
-    : config?.thumbnailSizePercent ||
-      config?.imageSizePercent ||
-      config?.thumbnailSize ||
-      15;
+    ? config?.thumbnailSizePercentMobile || 25
+    : config?.thumbnailSizePercentDesktop || 15;
 
   const autoMaxWidth = isMobile
     ? config?.thumbnailAutoFitMaxWidthMobile || "8rem"
@@ -418,7 +414,6 @@ function buildTopicCategoryHTML(preview, categories, config, isMobile) {
     preview?.categoryColor ||
     preview?.categoryTextColor ||
     preview?.raw?.category_color ||
-    preview?.raw?.categoryColor ||
     null;
 
   const normalizedColor = rawColor ? String(rawColor).trim() : "";
@@ -437,6 +432,7 @@ function buildTopicCategoryHTML(preview, categories, config, isMobile) {
 
 function buildTagsHTML(tags, config, isMobile) {
   const showTags = pick(config, "showTagsDesktop", "showTagsMobile", isMobile);
+
   if (!showTags || !Array.isArray(tags) || !tags.length) {
     return "";
   }
@@ -484,6 +480,7 @@ function buildTagsHTML(tags, config, isMobile) {
 
 function buildAuthorHTML(preview, config, isMobile) {
   const showOp = pick(config, "showOpDesktop", "showOpMobile", isMobile);
+
   if (!showOp) {
     return "";
   }
@@ -511,7 +508,7 @@ function buildAuthorHTML(preview, config, isMobile) {
         preview?.author?.avatarUrl ||
           preview?.avatarUrl ||
           safeAvatarURL(
-            preview?.author?.avatarTemplate || preview?.avatar_template,
+            preview?.author?.avatarTemplate || preview?.avatarTemplate,
             24
           )
       )
@@ -582,11 +579,13 @@ function buildExcerptHTML(preview, config, isMobile) {
 
 function buildTitleHTML(preview, config, isMobile) {
   const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
+
   if (!showTitle) {
     return "";
   }
 
   const title = preview?.title || preview?.label || preview?.hostname || "";
+
   if (!title) {
     return "";
   }
@@ -614,7 +613,7 @@ function buildPublishDateHTML(preview, config, isMobile) {
     isMobile
   );
 
-  const value = preview?.createdAt || preview?.created_at;
+  const value = preview?.createdAt;
   if (!showPublishDate || !value) {
     return "";
   }
@@ -740,7 +739,6 @@ function buildTopicPreviewHTML(
     preview?.thumbnail ||
     preview?.image ||
     preview?.thumbnailUrl ||
-    preview?.thumbnail_url ||
     "";
   const tags = preview?.tags || preview?.raw?.tags || [];
 

@@ -44,6 +44,7 @@ function extractFirstImageURLFromCooked(cooked) {
 
   const temp = document.createElement("div");
   temp.innerHTML = String(cooked);
+
   const img = temp.querySelector("img");
   return img?.getAttribute("src") || null;
 }
@@ -82,13 +83,21 @@ function normalizeTopic(topic, target, config) {
     topic?.topicPostLikeCount ??
     0;
 
-  const createdAt = topic?.created_at ?? topic?.createdAt ?? firstPost?.created_at ?? null;
+  const createdAt =
+    topic?.created_at ??
+    topic?.createdAt ??
+    firstPost?.created_at ??
+    firstPost?.createdAt ??
+    null;
+
   const lastPostedAt =
     topic?.last_posted_at ??
     topic?.lastPostedAt ??
     topic?.bumped_at ??
     topic?.bumpedAt ??
     null;
+
+  const bumpedAt = topic?.bumped_at ?? topic?.bumpedAt ?? null;
 
   const username =
     firstPost?.username ||
@@ -109,15 +118,14 @@ function normalizeTopic(topic, target, config) {
 
   const categoryId = topic?.category_id ?? topic?.categoryId ?? null;
 
-  const category =
-    topic?.category ||
+  const category = topic?.category ||
     (categoryId
       ? {
           id: categoryId,
           name: topic?.category_name || topic?.categoryName || null,
           slug: topic?.category_slug || topic?.categorySlug || null,
           color: topic?.category_color || topic?.categoryColor || null,
-          text_color:
+          textColor:
             topic?.category_text_color || topic?.categoryTextColor || null,
         }
       : null);
@@ -135,30 +143,23 @@ function normalizeTopic(topic, target, config) {
     slug,
     url,
     title: topic?.fancy_title || topic?.fancyTitle || topic?.title || "Untitled topic",
-    excerpt: sanitizeExcerpt(excerptSource, config?.excerptExcludedSelectors || []),
+    excerpt: sanitizeExcerpt(
+      excerptSource,
+      config?.excerptExcludedSelectors || []
+    ),
     html: null,
-
     imageUrl,
-    image_url: imageUrl,
     thumbnail: imageUrl,
     thumbnailUrl: imageUrl,
-
     views: topic?.views ?? 0,
     replyCount,
-    reply_count: replyCount,
     likeCount,
-    like_count: likeCount,
     createdAt,
-    created_at: createdAt,
     lastPostedAt,
-    last_posted_at: lastPostedAt,
-    bumpedAt: topic?.bumped_at ?? topic?.bumpedAt ?? null,
-    bumped_at: topic?.bumped_at ?? topic?.bumpedAt ?? null,
-
+    bumpedAt,
     username,
     avatarUrl,
     avatarTemplate,
-
     author: username
       ? {
           username,
@@ -166,26 +167,27 @@ function normalizeTopic(topic, target, config) {
           avatarTemplate,
         }
       : null,
-
     categoryId,
     categoryName: category?.name || null,
     categorySlug: category?.slug || null,
     categoryColor: category?.color || null,
-    categoryTextColor: category?.text_color || category?.textColor || null,
+    categoryTextColor: category?.textColor || null,
     category,
-
     tags,
-
     origin,
     hostname: target?.hostname || new URL(origin).hostname,
     isRemote,
     postNumber: target?.postNumber ?? null,
     externalSourceHost: isRemote ? target?.hostname || null : null,
     isRemoteDiscourseTopic: isRemote,
-
     raw: {
       ...topic,
-      category,
+      category: category
+        ? {
+            ...category,
+            text_color: category?.textColor ?? null,
+          }
+        : null,
       tags,
       username,
       avatar_template: avatarTemplate,
@@ -195,7 +197,12 @@ function normalizeTopic(topic, target, config) {
   };
 }
 
-export function createTopicProvider(api, config, topicCache, inFlightFetches) {
+export function createTopicProvider(
+  api,
+  config,
+  topicCache,
+  inFlightFetches
+) {
   async function fetchTopic(target, signal) {
     const topicId = target?.topicId;
     const origin = target?.origin || window.location.origin;
@@ -216,11 +223,13 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
 
     const cacheKey = `${origin}:topic:${topicId}`;
     const cached = getCachedValue(topicCache, cacheKey);
+
     if (cached) {
       return cached;
     }
 
     const inflightKey = `topic:${origin}:${topicId}`;
+
     if (inFlightFetches.has(inflightKey)) {
       try {
         return await inFlightFetches.get(inflightKey);
@@ -233,13 +242,15 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
       }
     }
 
-    const jsonUrl = isRemote ? `${origin}/t/${topicId}.json` : `/t/${topicId}.json`;
+    const jsonUrl = isRemote
+      ? `${origin}/t/${topicId}.json`
+      : `/t/${topicId}.json`;
 
     const promise = (async () => {
       try {
         const data = isRemote
           ? await fetchViaProxy(jsonUrl, signal)
-          : await getJSON(jsonUrl, signal);
+          : await getJSON(jsonUrl, { signal });
 
         if (!data || signal?.aborted) {
           return null;

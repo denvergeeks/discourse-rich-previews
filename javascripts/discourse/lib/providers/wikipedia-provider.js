@@ -8,7 +8,7 @@ import {
 const WIKIPEDIA_HOST_RE = /(^|\.)wikipedia\.org$/i;
 
 export function matchesWikipediaTarget(link, config) {
-  if (config?.wikipediaPreviewsEnabled === false) {
+  if (config?.wikipediaEnabled === false) {
     return false;
   }
 
@@ -20,8 +20,7 @@ export function matchesWikipediaTarget(link, config) {
     const url = new URL(link.href, window.location.origin);
 
     return (
-      WIKIPEDIA_HOST_RE.test(url.hostname) &&
-      url.pathname.startsWith("/wiki/")
+      WIKIPEDIA_HOST_RE.test(url.hostname) && url.pathname.startsWith("/wiki/")
     );
   } catch {
     return false;
@@ -31,10 +30,9 @@ export function matchesWikipediaTarget(link, config) {
 function getWikipediaHost(link, config) {
   try {
     const url = new URL(link.href, window.location.origin);
-
-    return url.hostname || config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org";
+    return url.hostname || config?.wikipediaBaseUrl || "en.wikipedia.org";
   } catch {
-    return config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org";
+    return config?.wikipediaBaseUrl || "en.wikipedia.org";
   }
 }
 
@@ -55,6 +53,7 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
   return {
     async fetch(target, signal) {
       const link = target?.link;
+
       if (!link || signal?.aborted) {
         return null;
       }
@@ -67,8 +66,8 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
       }
 
       const cacheKey = `wikipedia:${host}:${title}`;
-
       const cached = getCachedValue(previewCache, cacheKey);
+
       if (cached) {
         return cached;
       }
@@ -146,11 +145,14 @@ async function fetchWikipediaPreview(host, title, config, signal) {
     );
 
     let summary = null;
+
     if (summaryRes.ok) {
       summary = await summaryRes.json();
     }
 
     const excerpt = sanitizeExcerpt(page.excerpt || summary?.extract || "");
+    const imageUrl =
+      summary?.thumbnail?.source || summary?.originalimage?.source || null;
 
     return {
       type: "wikipedia",
@@ -159,10 +161,7 @@ async function fetchWikipediaPreview(host, title, config, signal) {
       key: page.key,
       title: summary?.title || page.title || title,
       excerpt,
-      image_url:
-        summary?.thumbnail?.source ||
-        summary?.originalimage?.source ||
-        null,
+      imageUrl,
       url: `https://${host}/wiki/${encodeURIComponent(page.key)}`,
       source: host,
       raw: {

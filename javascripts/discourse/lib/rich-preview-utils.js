@@ -47,7 +47,9 @@ function cssEscape(value) {
 
 function normalizeListSetting(value) {
   if (Array.isArray(value)) {
-    return value.map((v) => String(v).trim().toLowerCase()).filter(Boolean);
+    return value
+      .map((v) => String(v).trim().toLowerCase())
+      .filter(Boolean);
   }
 
   if (typeof value === "string") {
@@ -70,7 +72,9 @@ function normalizePipeList(value) {
   }
 
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
+    return value
+      .map((item) => String(item).trim())
+      .filter(Boolean);
   }
 
   return String(value)
@@ -322,16 +326,11 @@ export function readConfig(settings) {
     excludedTags: normalizeListSetting(settings.excluded_tags),
     excludedClasses: normalizeListSetting(settings.excluded_classes),
 
-    wikipediaPreviewsBaseUrl: stringSetting(
+    wikipediaBaseUrl: stringSetting(
       settings.wikipedia_previews_base_url,
       "en.wikipedia.org"
     ),
-    wikipediaPreviewsShowImage:
-      settings.wikipedia_previews_show_image !== false,
-    wikipediaShowImage:
-      settings.wikipedia_previews_show_image !== false,
-    wikipediaPreviewsUseExtractHtml:
-      settings.wikipedia_previews_use_extract_html !== false,
+    wikipediaShowImage: settings.wikipedia_previews_show_image !== false,
     wikipediaUseExtractHtml:
       settings.wikipedia_previews_use_extract_html !== false,
 
@@ -382,6 +381,7 @@ export function sanitizeURL(url) {
 
   try {
     const parsed = new URL(String(url), window.location.origin);
+
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
       return parsed.toString();
     }
@@ -406,6 +406,7 @@ export function createViewportState() {
     isMobileLayout() {
       return window.matchMedia("(max-width: 767px)").matches;
     },
+
     isMobileInteractionMode() {
       return (
         window.matchMedia("(max-width: 767px)").matches ||
@@ -564,6 +565,7 @@ export function renderProviderGlyph(providerKey, config) {
   }
 
   const iconName = String(provider.icon || "").trim();
+
   if (!iconName) {
     return "";
   }
@@ -581,7 +583,7 @@ export function renderInlineProviderGlyph(providerKey, config) {
     return "";
   }
 
-  return `<span class="thc-inline-glyph" aria-hidden="true">${glyphHTML}</span>`;
+  return ` ${glyphHTML} `;
 }
 
 export function isAllowedRemoteDiscourseHost(hostname, config) {
@@ -654,6 +656,7 @@ export async function getJSON(url, options = {}) {
     throw error;
   }
 }
+
 export function inCookedPost(el) {
   return !!el?.closest?.(".cooked");
 }
@@ -664,6 +667,7 @@ export function isCookedPostFragmentLink(link) {
   }
 
   const href = link.getAttribute("href") || "";
+
   if (!href) {
     return false;
   }
@@ -763,12 +767,14 @@ export function parsePreviewTopicUrl(href, config) {
 
 export function currentTopicIdFromPage() {
   const bodyTopicId = document.body?.dataset?.topicId;
+
   if (bodyTopicId && /^\d+$/.test(bodyTopicId)) {
     return Number.parseInt(bodyTopicId, 10);
   }
 
   const topicEl = document.querySelector("[data-topic-id]");
   const topicId = topicEl?.getAttribute?.("data-topic-id");
+
   if (topicId && /^\d+$/.test(topicId)) {
     return Number.parseInt(topicId, 10);
   }
@@ -849,6 +855,7 @@ function matchesExcludedRules(link, config) {
     : [];
 
   const excludedTagMatch = matchesTagList(link, excludedTags);
+
   if (excludedTagMatch) {
     return {
       type: "tag",
@@ -857,6 +864,7 @@ function matchesExcludedRules(link, config) {
   }
 
   const excludedClassMatch = matchesClassList(link, excludedClasses);
+
   if (excludedClassMatch) {
     return {
       type: "class",
@@ -870,6 +878,7 @@ function matchesExcludedRules(link, config) {
 export function isWikipediaArticleLink(link) {
   try {
     const url = new URL(link.href, window.location.origin);
+
     return (
       /(^|\.)wikipedia\.org$/i.test(url.hostname) &&
       url.pathname.startsWith("/wiki/")
@@ -949,6 +958,7 @@ export function isEligiblePreviewLink(link, config) {
   }
 
   const type = classifyLink(link, config);
+
   if (!type) {
     return false;
   }
@@ -975,6 +985,7 @@ export function isEligiblePreviewLink(link, config) {
   }
 
   const excluded = matchesExcludedRules(link, config);
+
   if (excluded) {
     if (excluded.type === "tag") {
       logDebug(config, "Skipping link due to excluded tag", {
@@ -987,6 +998,7 @@ export function isEligiblePreviewLink(link, config) {
         className: excluded.match?.className,
       });
     }
+
     return false;
   }
 
@@ -1034,7 +1046,6 @@ export function linkInSupportedArea(link, config) {
     const isBoardUrl =
       window.location.pathname === "/latest" &&
       new URLSearchParams(window.location.search).has("board");
-
     const inKanbanUi = !!link.closest(
       ".kanban-board, .kanban-column, .kanban-card, .kanban-topic-card, [class*='kanban']"
     );
@@ -1109,6 +1120,7 @@ export function linkInSupportedArea(link, config) {
 
 export function normalizedFieldKeyVariants(rawValue) {
   const raw = String(rawValue ?? "").trim();
+
   if (!raw) {
     return [];
   }
@@ -1121,6 +1133,7 @@ export function normalizedFieldKeyVariants(rawValue) {
   }
 
   const userFieldMatch = normalized.match(/^user_field_(\d+)$/);
+
   if (userFieldMatch) {
     variants.add(userFieldMatch[1]);
   }
@@ -1134,7 +1147,6 @@ function isTruthyUserFieldValue(value) {
   }
 
   const normalized = String(value ?? "").trim().toLowerCase();
-
   return ["true", "t", "1", "yes", "y", "on"].includes(normalized);
 }
 
@@ -1163,6 +1175,7 @@ export function currentUserIsStaffLike(user) {
 
 export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
   const source = String(htmlOrText ?? "").trim();
+
   if (!source) {
     return "";
   }
@@ -1186,6 +1199,7 @@ export function sanitizeExcerpt(htmlOrText, excludedSelectors = []) {
 
   temp.querySelectorAll("a").forEach((el) => {
     const text = (el.textContent || "").trim();
+
     if (!text) {
       el.remove();
     }
@@ -1221,7 +1235,6 @@ export function normalizeTag(tag) {
   if (typeof tag === "object") {
     const value =
       tag.name || tag.text || tag.id || tag.slug || tag.value || "";
-
     return String(value).trim();
   }
 
@@ -1230,6 +1243,7 @@ export function normalizeTag(tag) {
 
 export function formatNumber(value) {
   const num = Number(value);
+
   if (!Number.isFinite(num)) {
     return "0";
   }
