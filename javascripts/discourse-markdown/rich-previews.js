@@ -25,10 +25,7 @@ export function setup(helper) {
     return;
   }
 
-  helper.allowList([
-    "span.rich-preview-wrap",
-    "span[data-rich-preview]",
-  ]);
+  helper.allowList(["span.rich-preview-wrap", "span[data-rich-preview]"]);
 
   helper.registerPlugin((md) => {
     md.core.ruler.push("rich-previews-bbcode", (state) => {
