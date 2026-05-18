@@ -7,7 +7,6 @@ import {
   safeAvatarURL,
   sanitizeExcerpt,
   sanitizeURL,
-  normalizeTag,
 } from "./rich-preview-utils";
 
 export function buildPreviewHTML(preview, categories, config, isMobile = false) {
@@ -28,13 +27,7 @@ export function buildPreviewHTML(preview, categories, config, isMobile = false) 
     case "external":
       return buildExternalPreviewHTML(preview, provider, config, isMobile);
     case "topic":
-      return buildTopicPreviewHTML(
-        preview,
-        provider,
-        categories,
-        config,
-        isMobile
-      );
+      return buildTopicPreviewHTML(preview, provider, categories, config, isMobile);
     default:
       return buildErrorPreviewHTML("Unsupported preview type.");
   }
@@ -61,9 +54,7 @@ export function buildErrorPreviewHTML(message, rootAttrs = "") {
             Preview unavailable
           </span>
         </div>
-        <div class="topic-hover-card__excerpt">
-          ${escapeHTML(message)}
-        </div>
+        <div class="topic-hover-card__excerpt">${escapeHTML(message)}</div>
       </div>
     </div>
   `;
@@ -76,8 +67,10 @@ function resolveProviderKey(preview) {
     (preview?.type === "wikipedia"
       ? "wikipedia"
       : preview?.type === "external"
-      ? "external"
-      : "topic")
+        ? "external"
+        : preview?.type === "topic"
+          ? "topic"
+          : "topic")
   );
 }
 
@@ -92,29 +85,23 @@ function resolveProviderKeyAndColor(preview, config) {
 }
 
 function buildProviderRootAttrs(preview, config, fallbackType = "topic") {
-  const { providerKey, providerColor } = resolveProviderKeyAndColor(
-    preview,
-    config
-  );
+  const { providerKey, providerColor: resolvedProviderColor } =
+    resolveProviderKeyAndColor(preview, config);
 
   const finalProviderKey = providerKey || fallbackType;
 
   return {
     providerKey: finalProviderKey,
-    providerColor,
+    providerColor: resolvedProviderColor,
     rootAttrs: `data-preview-type="${escapeHTML(
       preview?.type || fallbackType
     )}" data-provider-key="${escapeHTML(
       finalProviderKey
-    )}" style="--thc-provider-color:${escapeHTML(providerColor)};"`,
+    )}" style="--thc-provider-color:${escapeHTML(resolvedProviderColor)};"`,
   };
 }
 
-export function buildRootAttrsForTarget(
-  target,
-  config,
-  fallbackType = "topic"
-) {
+export function buildRootAttrsForTarget(target, config, fallbackType = "topic") {
   const previewLike = {
     type: target?.type || fallbackType,
     providerKey: target?.providerKey,
@@ -123,7 +110,7 @@ export function buildRootAttrsForTarget(
   return buildProviderRootAttrs(previewLike, config, fallbackType).rootAttrs;
 }
 
-function densityFor(provider, config, isMobile, previewType) {
+function densityFor(_provider, config, isMobile, previewType) {
   if (previewType === "wikipedia") {
     return isMobile
       ? config?.wikipediaDensityMobile || "compact"
@@ -140,25 +127,11 @@ function pick(config, desktopKey, mobileKey, isMobile) {
 }
 
 function placementFor(config, isMobile) {
-  return (
-    pick(
-      config,
-      "thumbnailPlacementDesktop",
-      "thumbnailPlacementMobile",
-      isMobile
-    ) || "left"
-  );
+  return pick(config, "thumbnailPlacementDesktop", "thumbnailPlacementMobile", isMobile) || "left";
 }
 
 function sizeModeFor(config, isMobile) {
-  return (
-    pick(
-      config,
-      "thumbnailSizeModeDesktop",
-      "thumbnailSizeModeMobile",
-      isMobile
-    ) || "auto_fit_height"
-  );
+  return pick(config, "thumbnailSizeModeDesktop", "thumbnailSizeModeMobile", isMobile) || "auto_fit_height";
 }
 
 function layoutMode(config) {
@@ -183,8 +156,8 @@ function buildCardClasses(preview, config, isMobile) {
   classes.push(
     `topic-hover-card--${placement}`,
     `topic-hover-card--density-${density}`,
-    `topic-hover-card--thumb-size-${sizeMode}`,
-    `topic-hover-card--layout-${layoutMode(config)}`
+    `topic-hover-card--thumb-size-${sizeMode.replaceAll("_", "")}`,
+    `topic-hover-card--layout-${layoutMode(config).replaceAll("_", "-")}`
   );
 
   if (isMobile) {
@@ -205,49 +178,30 @@ function buildMobileActionsHTML(preview, isMobile, primaryLabel = "Open link") {
   }
 
   const mobileCloseButton = `
-    <button
-      class="topic-hover-card__mobile-x"
-      type="button"
-      aria-label="Close preview"
-      data-thc-close
-    >
+    <button class="topic-hover-card__mobile-x" type="button" aria-label="Close preview" data-thc-close>
       &times;
     </button>
   `;
 
   const actions = `
     <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
-      <a
-        class="btn btn-primary topic-hover-card__open-topic"
-        href="${escapeHTML(safeUrl)}"
-        data-thc-open-topic
-      >
+      <a class="btn btn-primary topic-hover-card__open-topic" href="${escapeHTML(
+        safeUrl
+      )}" data-thc-open-topic>
         ${escapeHTML(primaryLabel)}
       </a>
-      <button
-        class="btn btn-default topic-hover-card__close"
-        type="button"
-        data-thc-close
-      >
+      <button class="btn btn-default topic-hover-card__close" type="button" data-thc-close>
         Close
       </button>
     </div>
   `;
 
-  return mobileCloseButton + actions;
+  return `${mobileCloseButton}${actions}`;
 }
 
-function buildSharedThumbnailHTML(
-  imageUrl,
-  title,
-  config,
-  isMobile,
-  options = {}
-) {
+function buildSharedThumbnailHTML(imageUrl, title, config, isMobile, options = {}) {
   const safeImage =
-    typeof imageUrl === "string" && imageUrl.trim().length
-      ? imageUrl.trim()
-      : "";
+    typeof imageUrl === "string" && imageUrl.trim().length ? imageUrl.trim() : "";
 
   if (!safeImage) {
     return "";
@@ -258,57 +212,44 @@ function buildSharedThumbnailHTML(
   const variant = options.variant || "plain";
 
   const sizePercent = isMobile
-    ? config?.thumbnailSizePercentMobile ||
-      config?.imageSizePercentMobile ||
-      config?.thumbnailSizeMobile ||
+    ? config?.thumbnailSizePercentMobile ??
+      config?.imageSizePercentMobile ??
+      config?.thumbnailSizeMobile ??
       25
-    : config?.thumbnailSizePercent ||
-      config?.imageSizePercent ||
-      config?.thumbnailSize ||
+    : config?.thumbnailSizePercent ??
+      config?.imageSizePercent ??
+      config?.thumbnailSize ??
       15;
 
   const autoMaxWidth = isMobile
-    ? config?.autoThumbnailMaxWidthMobile || "8rem"
-    : config?.autoThumbnailMaxWidth || "10rem";
+    ? config?.thumbnailAutoFitMaxWidthMobile || "8rem"
+    : config?.thumbnailAutoFitMaxWidth || "10rem";
 
   const thumbTopBottomHeight = isMobile
-    ? config?.thumbnailTopBottomHeightMobile || "auto"
-    : config?.thumbnailTopBottomHeight || "auto";
+    ? config?.thumbnailHeightTopBottomMobile || "auto"
+    : config?.thumbnailHeightTopBottom || "auto";
 
   const imgClasses = ["topic-hover-card__thumb"];
-  const wrapStyles = [
-    `--thc-thumbnail-size-percent:${escapeHTML(String(sizePercent))};`,
-  ];
+  const wrapStyles = [`--thc-thumbnail-size-percent:${escapeHTML(String(sizePercent))};`];
   const imgStyles = [];
 
   if (sizeMode === "auto_fit_height") {
     imgClasses.push("topic-hover-card__thumb--auto-fit");
-    wrapStyles.push(
-      `--thc-auto-thumb-max-width:${escapeHTML(String(autoMaxWidth))};`
-    );
   }
+
+  wrapStyles.push(`--thc-auto-thumb-max-width:${escapeHTML(String(autoMaxWidth))};`);
 
   if (placement === "top" || placement === "bottom") {
     wrapStyles.push(
-      `--thc-thumb-top-bottom-height:${escapeHTML(
-        String(thumbTopBottomHeight)
-      )};`
+      `--thc-thumb-top-bottom-height:${escapeHTML(String(thumbTopBottomHeight))};`
     );
     imgStyles.push(
-      `--thc-thumb-top-bottom-height:${escapeHTML(
-        String(thumbTopBottomHeight)
-      )};`
+      `--thc-thumb-top-bottom-height:${escapeHTML(String(thumbTopBottomHeight))};`
     );
   }
 
-  const wrapStyleAttr = wrapStyles.length
-    ? `style="${wrapStyles.join("")}"`
-    : "";
-
-  const imgStyleAttr = imgStyles.length
-    ? `style="${imgStyles.join("")}"`
-    : "";
-
+  const wrapStyleAttr = wrapStyles.length ? `style="${wrapStyles.join(" ")}"` : "";
+  const imgStyleAttr = imgStyles.length ? `style="${imgStyles.join(" ")}"` : "";
   const safeAlt = escapeHTML(title || "Preview image");
   const safeSrc = escapeHTML(safeImage);
   const imgClassAttr = imgClasses.join(" ");
@@ -316,55 +257,17 @@ function buildSharedThumbnailHTML(
   if (variant === "blur-bg") {
     return `
       <div class="topic-hover-card__thumb-wrap" ${wrapStyleAttr}>
-        <div
-          class="topic-hover-card__thumb-bg"
-          style="background-image: url('${safeSrc}');"
-          aria-hidden="true"
-        ></div>
-        <img
-          class="${imgClassAttr}"
-          src="${safeSrc}"
-          alt="${safeAlt}"
-          loading="lazy"
-          decoding="async"
-          ${imgStyleAttr}
-        >
+        <div class="topic-hover-card__thumb-bg" style="background-image: url('${safeSrc}');" aria-hidden="true"></div>
+        <img class="${imgClassAttr}" src="${safeSrc}" alt="${safeAlt}" loading="lazy" decoding="async" ${imgStyleAttr}>
       </div>
     `;
   }
 
   return `
     <div class="topic-hover-card__thumb-wrap" ${wrapStyleAttr}>
-      <img
-        class="${imgClassAttr}"
-        src="${safeSrc}"
-        alt="${safeAlt}"
-        loading="lazy"
-        decoding="async"
-        ${imgStyleAttr}
-      >
+      <img class="${imgClassAttr}" src="${safeSrc}" alt="${safeAlt}" loading="lazy" decoding="async" ${imgStyleAttr}>
     </div>
   `;
-}
-
-function buildMetaRow(items) {
-  const filtered = items.filter(Boolean);
-  if (!filtered.length) {
-    return "";
-  }
-
-  return `
-    <div class="topic-hover-card__meta">
-      ${filtered.join("")}
-    </div>
-  `;
-}
-
-function formatMetaDate(value) {
-  if (!value) return String(value ?? "");
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function buildMetaItem(label, value, extraClass = "") {
@@ -374,131 +277,59 @@ function buildMetaItem(label, value, extraClass = "") {
 
   return `
     <span class="topic-hover-card__meta-item ${escapeHTML(extraClass)}">
-      <span class="topic-hover-card__meta-label">${escapeHTML(label)}:</span>
-      <span>${escapeHTML(formatMetaDate(value))}</span>
+      <span class="topic-hover-card__meta-label">${escapeHTML(label)}</span>
+      <span>${escapeHTML(String(value))}</span>
     </span>
   `;
 }
 
-function buildTopicCategoryHTML(preview, categories, config, isMobile) {
-  if (!pick(config, "showCategoryDesktop", "showCategoryMobile", isMobile)) {
+function buildTopicCategoryHTML(category, categories, config, isMobile) {
+  const showCategory = pick(config, "showCategoryDesktop", "showCategoryMobile", isMobile);
+  if (!showCategory || !category) {
     return "";
   }
 
-  const previewCategory =
-    preview?.category ||
-    (preview?.categoryId
-      ? {
-          id: preview.categoryId,
-          name: preview.categoryName || null,
-          slug: preview.categorySlug || null,
-          color: preview.categoryColor || null,
-          text_color: preview.categoryTextColor || null,
-        }
-      : null);
-
-  const categoryId = previewCategory?.id ?? preview?.categoryId ?? preview?.raw?.category_id;
-  const matchedCategory =
-    categoryId && Array.isArray(categories)
-      ? categories.find((c) => Number(c?.id) === Number(categoryId))
-      : null;
-
-  const category = matchedCategory || previewCategory;
-
-  const name =
+  const categoryName =
     category?.name ||
-    category?.slug ||
-    preview?.categoryName ||
-    preview?.categorySlug ||
-    preview?.raw?.category_name ||
-    preview?.raw?.category_slug;
+    categories?.find?.((c) => Number(c.id) === Number(category?.id))?.name;
 
-  if (!name) {
+  if (!categoryName) {
     return "";
   }
 
-  const rawColor =
-    category?.color ||
-    category?.text_color ||
-    category?.textColor ||
-    preview?.categoryColor ||
-    preview?.categoryTextColor ||
-    preview?.raw?.category_color ||
-    preview?.raw?.categoryColor ||
-    null;
+  const rawColor = category?.color || category?.text_color;
+  const color = rawColor ? String(rawColor).replace(/^#/, "") : null;
 
-  const normalizedColor = rawColor ? String(rawColor).trim() : "";
-  const color = normalizedColor.startsWith("#")
-    ? normalizedColor.slice(1)
-    : normalizedColor || null;
-
-  const styleAttr = color
-    ? ` style="--thc-category-color:#${escapeHTML(color)};"`
-    : "";
-
-  return `<span class="topic-hover-card__badge topic-hover-card__badge--category"${styleAttr}>${escapeHTML(
-    String(name)
-  )}</span>`;
+  return `
+    <span class="topic-hover-card__badge topic-hover-card__badge--category" ${
+      color ? `style="--thc-category-color:#${escapeHTML(color)};"` : ""
+    }>
+      ${escapeHTML(categoryName)}
+    </span>
+  `;
 }
 
 function buildTagsHTML(tags, config, isMobile) {
-  const showTags = pick(
-    config,
-    "showTagsDesktop",
-    "showTagsMobile",
-    isMobile
-  );
-
+  const showTags = pick(config, "showTagsDesktop", "showTagsMobile", isMobile);
   if (!showTags || !Array.isArray(tags) || !tags.length) {
     return "";
   }
 
-  const normalizedTags = tags
-    .map((tag) => {
-      const normalized = normalizeTag(tag);
-
-      if (normalized) {
-        return normalized;
-      }
-
-      if (typeof tag === "string") {
-        const trimmed = tag.trim();
-        return trimmed || null;
-      }
-
-      if (tag && typeof tag === "object") {
-        const fallback =
-          tag.name ??
-          tag.text ??
-          tag.slug ??
-          tag.value ??
-          tag.id ??
-          null;
-
-        return fallback ? String(fallback).trim() : null;
-      }
-
-      return null;
-    })
-    .filter(Boolean)
-    .slice(0, 5);
-
-  if (!normalizedTags.length) {
-    return "";
-  }
-
-  return (
-    '<div class="topic-hover-card__tags">' +
-    normalizedTags
-      .map(
-        (tag) =>
-          '<span class="topic-hover-card__badge topic-hover-card__badge--tag">' +
-          escapeHTML(String(tag)) +
-          "</span>"
-      )
-      .join("") +
-    "</div>"
-  );
+  return `
+    <div class="topic-hover-card__tags">
+      ${tags
+        .filter(Boolean)
+        .slice(0, 5)
+        .map(
+          (tag) => `
+            <span class="topic-hover-card__badge topic-hover-card__badge--tag">
+              ${escapeHTML(String(tag))}
+            </span>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function buildAuthorHTML(preview, config, isMobile) {
@@ -551,116 +382,153 @@ function buildAuthorHTML(preview, config, isMobile) {
 }
 
 function buildExcerptHTML(preview, config, isMobile) {
-  const showExcerpt = pick(
-    config,
-    "showExcerptDesktop",
-    "showExcerptMobile",
-    isMobile
-  );
-
+  const showExcerpt = pick(config, "showExcerptDesktop", "showExcerptMobile", isMobile);
   if (!showExcerpt) {
     return "";
   }
 
   const rawExcerpt =
-    preview?.excerpt ||
-    preview?.description ||
-    preview?.raw?.excerpt ||
-    preview?.raw?.blurb ||
-    "";
+    preview?.excerpt || preview?.description || preview?.raw?.excerpt || preview?.raw?.blurb;
 
-  const excerpt = sanitizeExcerpt(
-    rawExcerpt,
-    config?.excerptExcludedSelectors || []
-  );
-
+  const excerpt = sanitizeExcerpt(rawExcerpt, config?.excerptExcludedSelectors);
   if (!excerpt) {
     return "";
   }
 
-  const lines = pick(
-    config,
-    "excerptLengthDesktop",
-    "excerptLengthMobile",
-    isMobile
-  );
-
+  const lines = pick(config, "excerptLengthDesktop", "excerptLengthMobile", isMobile);
   const overflowClass =
-    typeof lines === "number" && lines > 0
-      ? " topic-hover-card__excerpt--overflows"
-      : "";
+    typeof lines === "number" && lines > 0 ? " topic-hover-card__excerpt--overflows" : "";
 
   return `
-    <div class="topic-hover-card__excerpt${overflowClass}" style="--thc-excerpt-lines:${Number(
-      lines || 3
-    )};">
+    <div class="topic-hover-card__excerpt${overflowClass}" style="--thc-excerpt-lines:${Number(lines || 3)};">
       ${escapeHTML(excerpt)}
     </div>
   `;
 }
 
 function buildTitleHTML(preview, config, isMobile) {
-  const showTitle = pick(
-    config,
-    "showTitleDesktop",
-    "showTitleMobile",
-    isMobile
-  );
-
+  const showTitle = pick(config, "showTitleDesktop", "showTitleMobile", isMobile);
   if (!showTitle) {
     return "";
   }
 
-  const title = preview?.title || preview?.label || preview?.hostname || "";
-
+  const title = preview?.title || preview?.label || preview?.hostname;
   if (!title) {
     return "";
   }
 
   if (preview.type === "topic") {
-    return `
-      <h3 class="topic-hover-card__title">
-        ${escapeHTML(title)}
-      </h3>
-    `;
+    return `<h3 class="topic-hover-card__title">${escapeHTML(title)}</h3>`;
+  }
+
+  return `<div class="topic-hover-card__title">${escapeHTML(title)}</div>`;
+}
+
+function buildPublishDateHTML(preview, config, isMobile) {
+  const showPublishDate = pick(
+    config,
+    "showPublishDateDesktop",
+    "showPublishDateMobile",
+    isMobile
+  );
+
+  if (!showPublishDate || !preview?.createdAt) {
+    return "";
   }
 
   return `
-    <div class="topic-hover-card__title">
-      ${escapeHTML(title)}
-    </div>
+    <span class="topic-hover-card__meta-item topic-hover-card__meta-item--date">
+      <span>${escapeHTML(String(preview.createdAt))}</span>
+    </span>
   `;
 }
 
-function buildOneboxLayoutBody(preview, config, isMobile, options = {}) {
-  const {
-    primaryLabel = "Open link",
-    showSourceRow = true,
-    sourceLabel,
-    titlePreview = preview,
-    excerptPreview = preview,
-  } = options;
+function buildIconHTML(iconName) {
+  const safeIcon = escapeHTML(String(iconName));
+  return `<svg class="fa d-icon d-icon-${safeIcon} svg-icon fa-width-auto svg-string" width="1em" height="1em" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><use href="#${safeIcon}"></use></svg>`;
+}
 
-  const titleHtml = buildTitleHTML(
-    titlePreview || preview,
-    config,
-    isMobile
-  );
-  const excerptHtml = buildExcerptHTML(
-    excerptPreview || preview,
-    config,
-    isMobile
-  );
+function buildTopicStatsHTML(preview, config, isMobile) {
+  const items = [];
 
-  const metaItems = [];
-
-  if (showSourceRow && sourceLabel) {
-    metaItems.push(
-      buildMetaItem("Source", sourceLabel, "topic-hover-card__meta-item--source")
-    );
+  if (
+    pick(config, "showViewsDesktop", "showViewsMobile", isMobile) &&
+    Number.isFinite(Number(preview?.views))
+  ) {
+    items.push(`
+      <span class="topic-hover-card__stat">
+        ${buildIconHTML("far-eye")}
+        <span>${escapeHTML(formatNumber(Number(preview.views)))}</span>
+      </span>
+    `);
   }
 
-  const metaHtml = buildMetaRow(metaItems);
+  if (
+    pick(config, "showReplyCountDesktop", "showReplyCountMobile", isMobile) &&
+    Number.isFinite(Number(preview?.replyCount))
+  ) {
+    items.push(`
+      <span class="topic-hover-card__stat">
+        ${buildIconHTML("comment")}
+        <span>${escapeHTML(formatNumber(Number(preview.replyCount)))}</span>
+      </span>
+    `);
+  }
+
+  if (
+    pick(config, "showLikesDesktop", "showLikesMobile", isMobile) &&
+    Number.isFinite(Number(preview?.likeCount))
+  ) {
+    items.push(`
+      <span class="topic-hover-card__stat">
+        ${buildIconHTML("heart")}
+        <span>${escapeHTML(formatNumber(Number(preview.likeCount)))}</span>
+      </span>
+    `);
+  }
+
+  if (
+    pick(config, "showActivityDesktop", "showActivityMobile", isMobile) &&
+    preview?.lastPostedAt
+  ) {
+    items.push(`
+      <span class="topic-hover-card__stat">
+        ${buildIconHTML("clock")}
+        <span>${escapeHTML(String(preview.lastPostedAt))}</span>
+      </span>
+    `);
+  }
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `<span class="topic-hover-card__meta-item topic-hover-card__meta-item--stats">${items.join("")}</span>`;
+}
+
+function buildOneboxLayoutBody(
+  preview,
+  config,
+  isMobile,
+  {
+    primaryLabel = "Open link",
+    showSourceRow = true,
+    sourceLabel = "",
+    titlePreview = preview,
+    excerptPreview = preview,
+  } = {}
+) {
+  const titleHtml = buildTitleHTML(titlePreview || preview, config, isMobile);
+  const excerptHtml = buildExcerptHTML(excerptPreview || preview, config, isMobile);
+
+  const metaItems = [];
+  if (showSourceRow && sourceLabel) {
+    metaItems.push(buildMetaItem("Source", sourceLabel, "topic-hover-card__meta-item--source"));
+  }
+
+  const metaHtml = metaItems.length
+    ? `<div class="topic-hover-card__meta">${metaItems.filter(Boolean).join("")}</div>`
+    : "";
 
   return `
     <div class="topic-hover-card__body topic-hover-card__body--onebox">
@@ -672,147 +540,70 @@ function buildOneboxLayoutBody(preview, config, isMobile, options = {}) {
   `;
 }
 
-function buildTopicPreviewHTML(
-  preview,
-  _provider,
-  categories,
-  config,
-  isMobile
-) {
+function buildTopicPreviewHTML(preview, _provider, categories, config, isMobile) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "topic");
-  const title = preview?.title || "";
-  const imageUrl =
-    preview?.imageUrl ||
-    preview?.thumbnail ||
-    preview?.image ||
-    preview?.thumbnailUrl ||
-    preview?.thumbnail_url ||
-    "";
+  const classes = buildCardClasses(preview, config, isMobile);
 
-  const tags = preview?.tags || preview?.raw?.tags || [];
-
-  const showPublishDate = pick(
+  const showThumbnail = pick(
     config,
-    "showPublishDateDesktop",
-    "showPublishDateMobile",
-    isMobile
-  );
-  const showViews = pick(
-    config,
-    "showViewsDesktop",
-    "showViewsMobile",
-    isMobile
-  );
-  const showReplyCount = pick(
-    config,
-    "showReplyCountDesktop",
-    "showReplyCountMobile",
-    isMobile
-  );
-  const showLikes = pick(
-    config,
-    "showLikesDesktop",
-    "showLikesMobile",
-    isMobile
-  );
-  const showActivity = pick(
-    config,
-    "showActivityDesktop",
-    "showActivityMobile",
+    "showThumbnailDesktop",
+    "showThumbnailMobile",
     isMobile
   );
 
-  const thumbHtml = buildSharedThumbnailHTML(
-    imageUrl,
-    title,
-    config,
-    isMobile,
-    { variant: "blur-bg" }
-  );
+  const thumbHtml =
+    showThumbnail && preview?.imageUrl
+      ? buildSharedThumbnailHTML(preview.imageUrl, preview.title, config, isMobile, {
+          variant: "blur-bg",
+        })
+      : "";
 
   const titleHtml = buildTitleHTML(preview, config, isMobile);
   const excerptHtml = buildExcerptHTML(preview, config, isMobile);
+
   const authorHtml = buildAuthorHTML(preview, config, isMobile);
+  const publishDateHtml = buildPublishDateHTML(preview, config, isMobile);
+  const statsHtml = buildTopicStatsHTML(preview, config, isMobile);
 
-  const statsParts = [];
+  const metaParts = [authorHtml, publishDateHtml, statsHtml].filter(Boolean);
 
-  if (showViews) {
-    statsParts.push(
-      `<span class="topic-hover-card__stat"><span>${escapeHTML(
-        formatNumber(preview?.views || 0)
-      )}</span></span>`
-    );
-  }
-
-  if (showReplyCount) {
-    statsParts.push(
-      `<span class="topic-hover-card__stat"><span>${escapeHTML(
-        formatNumber(
-          preview?.replyCount ??
-            preview?.postsCount ??
-            preview?.reply_count ??
-            0
-        )
-      )}</span></span>`
-    );
-  }
-
-  if (showLikes) {
-    statsParts.push(
-      `<span class="topic-hover-card__stat"><span>${escapeHTML(
-        formatNumber(
-          preview?.likeCount ?? preview?.like_count ?? preview?.like_score ?? 0
-        )
-      )}</span></span>`
-    );
-  }
-
-  if (showActivity) {
-    const activityValue =
-      preview?.lastPostedAt ||
-      preview?.bumpedAt ||
-      preview?.last_posted_at ||
-      preview?.bumped_at;
-
-    if (activityValue) {
-      statsParts.push(
-        `<span class="topic-hover-card__stat"><span>${escapeHTML(
-          formatMetaDate(activityValue)
-        )}</span></span>`
-      );
-    }
-  }
-
-  const statsHtml = statsParts.length
-    ? `<span class="topic-hover-card__meta-item topic-hover-card__meta-item--stats">${statsParts.join(
-        ""
-      )}</span>`
+  const metaHtml = metaParts.length
+    ? `<div class="topic-hover-card__meta">${metaParts.join(
+        '<span class="topic-hover-card__sep">·</span>'
+      )}</div>`
     : "";
 
-  const metaItems = [
-    authorHtml,
-    showPublishDate
-      ? `<span class="topic-hover-card__meta-item topic-hover-card__meta-item--date">${escapeHTML(
-          formatMetaDate(preview?.createdAt || preview?.created_at)
-        )}</span>`
-      : "",
-    statsHtml,
-  ];
+  const categoryHtml = buildTopicCategoryHTML(preview?.category, categories, config, isMobile);
+  const tagsHtml = buildTagsHTML(preview?.tags, config, isMobile);
 
-  const metaHtml = buildMetaRow(metaItems);
+  const badgesHtml =
+    categoryHtml || tagsHtml
+      ? `
+        <div class="topic-hover-card__badges">
+          ${categoryHtml}
+          ${tagsHtml}
+        </div>
+      `
+      : "";
 
-  const badgesParts = [
-    buildTopicCategoryHTML(preview, categories, config, isMobile),
-    buildTagsHTML(tags, config, isMobile),
-  ].filter(Boolean);
+  if (layoutMode(config) === "onebox") {
+    const oneboxBody = `
+      <div class="topic-hover-card__body topic-hover-card__body--onebox">
+        ${buildMobileActionsHTML(preview, isMobile, "Open topic")}
+        ${titleHtml}
+        ${excerptHtml}
+        ${metaHtml}
+        ${badgesHtml}
+      </div>
+    `;
 
-  const badgesHtml = badgesParts.length
-    ? `<div class="topic-hover-card__badges">${badgesParts.join("")}</div>`
-    : "";
-
-  const cardClasses = buildCardClasses(preview, config, isMobile);
-  const placement = placementFor(config, isMobile);
-  const layout = layoutMode(config);
+    return `
+      <div class="${classes}" ${rootAttrs}>
+        ${thumbHtml}
+        ${oneboxBody}
+      </div>
+    `;
+  }
 
   const bodyHtml = `
     <div class="topic-hover-card__body">
@@ -824,28 +615,92 @@ function buildTopicPreviewHTML(
     </div>
   `;
 
-  if (layout === "hover_card" && (placement === "left" || placement === "right")) {
-    if (placement === "left") {
-      return `
-        <div class="${cardClasses}" ${rootAttrs}>
-          ${thumbHtml}
-          ${bodyHtml}
+  return `
+    <div class="${classes}" ${rootAttrs}>
+      ${thumbHtml}
+      ${bodyHtml}
+    </div>
+  `;
+}
+
+function buildWikipediaPreviewHTML(preview, provider, config, isMobile) {
+  const { rootAttrs } = buildProviderRootAttrs(preview, config, "wikipedia");
+  const classes = buildCardClasses(preview, config, isMobile);
+
+  const showImage = config?.wikipediaShowImage !== false;
+  const thumbHtml =
+    showImage && preview?.imageUrl
+      ? buildSharedThumbnailHTML(preview.imageUrl, preview.title, config, isMobile)
+      : "";
+
+  const titleHtml = buildTitleHTML(preview, config, isMobile);
+  const excerptHtml = buildExcerptHTML(preview, config, isMobile);
+
+  const sourceLabel = provider?.label || "Wikipedia";
+  const bodyHtml =
+    layoutMode(config) === "onebox"
+      ? buildOneboxLayoutBody(preview, config, isMobile, {
+          primaryLabel: "Open article",
+          showSourceRow: true,
+          sourceLabel,
+        })
+      : `
+        <div class="topic-hover-card__body">
+          ${buildMobileActionsHTML(preview, isMobile, "Open article")}
+          ${titleHtml}
+          ${excerptHtml}
+          <div class="topic-hover-card__meta">
+            ${buildMetaItem("Source", sourceLabel, "topic-hover-card__meta-item--source")}
+          </div>
         </div>
       `;
-    }
-
-    return `
-      <div class="${cardClasses}" ${rootAttrs}>
-        ${bodyHtml}
-        ${thumbHtml}
-      </div>
-    `;
-  }
 
   return `
-    <div class="${cardClasses}" ${rootAttrs}>
-      ${bodyHtml}
+    <div class="${classes}" ${rootAttrs}>
       ${thumbHtml}
+      ${bodyHtml}
+    </div>
+  `;
+}
+
+function buildExternalPreviewHTML(preview, provider, config, isMobile) {
+  const { rootAttrs } = buildProviderRootAttrs(preview, config, "external");
+  const classes = buildCardClasses(preview, config, isMobile);
+
+  const thumbHtml = preview?.imageUrl
+    ? buildSharedThumbnailHTML(preview.imageUrl, preview.title, config, isMobile)
+    : "";
+
+  const titleHtml = buildTitleHTML(preview, config, isMobile);
+  const excerptHtml = buildExcerptHTML(preview, config, isMobile);
+
+  const sourceLabel = preview?.hostname || provider?.label || "External link";
+  const metaHtml = `
+    <div class="topic-hover-card__meta">
+      ${buildMetaItem("Source", sourceLabel, "topic-hover-card__meta-item--source")}
+    </div>
+  `;
+
+  const bodyHtml =
+    layoutMode(config) === "onebox"
+      ? buildOneboxLayoutBody(preview, config, isMobile, {
+          primaryLabel: "Open link",
+          showSourceRow: true,
+          sourceLabel,
+        })
+      : `
+        <div class="topic-hover-card__body">
+          ${buildMobileActionsHTML(preview, isMobile, "Open link")}
+          ${titleHtml}
+          ${excerptHtml}
+          ${metaHtml}
+        </div>
+      `;
+
+  return `
+    <div class="${classes}" ${rootAttrs}>
+      ${thumbHtml}
+      ${bodyHtml}
     </div>
   `;
 }
