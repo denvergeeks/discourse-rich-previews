@@ -226,16 +226,19 @@ export function createExternalProvider(config) {
       return matchesExternalTarget(link, config);
     },
 
-    // Bug 4 fix: use (target, signal) instead of (target, { signal } = {})
-    // so provider.fetch(target, controller.signal) from the initializer
-    // correctly passes the AbortSignal rather than leaving it undefined.
-    // Also guards against a pre-aborted signal on entry.
+    // Bug #8 fix: use fetch(target, signal) with a plain AbortSignal
+    // instead of fetch(target, { signal } = {}) so the raw AbortSignal
+    // passed by the initializer's provider.fetch(target, controller.signal)
+    // is received correctly rather than being silently undefined.
+    //
+    // Bug #5 fix: guard against a signal that is already aborted before
+    // we create our internal controller, so we don't start a fetch that
+    // can never be cancelled by the outer signal.
     async fetch(target, signal) {
       if (!target?.url) {
         throw new Error("Missing external preview target URL.");
       }
 
-      // Bug 4 fix: guard against a signal already aborted before we start
       if (signal?.aborted) {
         throw new DOMException("Aborted", "AbortError");
       }

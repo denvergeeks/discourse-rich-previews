@@ -393,11 +393,15 @@ function buildTopicCategoryHTML(category, categories, config, isMobile) {
     return "";
   }
 
-  const color = category?.color || category?.text_color;
+  // Bug #4 fix: strip any leading '#' from the API color value before
+  // prepending our own '#', so both 'ab1234' and '#ab1234' produce
+  // a valid '--thc-category-color:#ab1234' in the style attribute.
+  const rawColor = category?.color || category?.text_color;
+  const color = rawColor ? String(rawColor).replace(/^#/, "") : null;
 
   return `
     <span class="topic-hover-card__badge topic-hover-card__badge--category"${
-      color ? ` style="--thc-category-color:#${escapeHTML(String(color))};"` : ""
+      color ? ` style="--thc-category-color:#${escapeHTML(color)};"` : ""
     }>
       ${escapeHTML(categoryName)}
     </span>

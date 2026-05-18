@@ -4,6 +4,7 @@ import {
   getJSON,
   sanitizeExcerpt,
   safeRemoteAvatarURL,
+  safeAvatarURL,
 } from "../rich-preview-utils";
 
 const PROXY_ENDPOINT = "/discourse-proxy-safe";
@@ -129,14 +130,49 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
     const excerptSource =
       topic?.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
 
+    // Bug #2 fix: resolve imageUrl to a camelCase top-level field so
+    // preview-renderer.js can read preview.imageUrl directly instead of
+    // having to fall back through preview.raw.image_url.
     const imageUrl =
       topic?.image_url ||
       topic?.topic_image ||
       extractFirstImageURLFromCooked(firstPost?.cooked) ||
       null;
 
+    // Bug #2 fix: expose stats, dates, category and author fields at the
+    // top level of the normalized object, both as camelCase (for the
+    // renderer) and with the original snake_case keys preserved in raw.
+    const replyCount =
+      topic?.reply_count ?? Math.max((topic?.posts_count ?? 1) - 1, 0);
+
+    const likeCount = topic?.like_count ?? topic?.like_score ?? 0;
+
+    const views = topic?.views ?? 0;
+
+    const createdAt = topic?.created_at ?? null;
+
+    const lastPostedAt = topic?.last_posted_at ?? topic?.bumped_at ?? null;
+
+    const category = topic?.category ?? null;
+
+    const tags = Array.isArray(topic?.tags) ? topic.tags : [];
+
+    const opUsername =
+      firstPost?.username ||
+      topic?.posters?.[0]?.user?.username ||
+      "";
+
+    const opAvatarUrl = isRemote
+      ? safeRemoteAvatarURL(origin, firstPost?.avatar_template, 24)
+      : safeAvatarURL(
+          firstPost?.avatar_template ||
+            topic?.posters?.[0]?.user?.avatar_template,
+          24
+        );
+
     return {
       type: "topic",
+      providerKey: isRemote ? "remote_topic" : "topic",
       id: `${isRemote ? origin : "local"}:topic:${topic.id}`,
       title: topic?.fancy_title ?? topic?.title ?? "(no title)",
       excerpt: sanitizeExcerpt(
@@ -144,14 +180,25 @@ export function createTopicProvider(api, config, topicCache, inFlightFetches) {
         config.excerptExcludedSelectors
       ),
       html: null,
-      image_url: imageUrl,
+      // camelCase fields for preview-renderer.js
+      imageUrl,
+      thumbnail: imageUrl,
+      replyCount,
+      likeCount,
+      views,
+      createdAt,
+      lastPostedAt,
+      category,
+      tags,
+      author: {
+        username: opUsername,
+        avatarUrl: opAvatarUrl,
+      },
       url: `${origin}/t/${topic?.slug || topic?.id}/${topic?.id}`,
       raw: {
         ...topic,
-        op_avatar_url: isRemote
-          ? safeRemoteAvatarURL(origin, firstPost?.avatar_template, 24)
-          : null,
-        op_username: firstPost?.username || "",
+        op_avatar_url: opAvatarUrl,
+        op_username: opUsername,
         external_source_host: isRemote ? target?.hostname || "" : "",
         is_remote_discourse_topic: isRemote,
       },
