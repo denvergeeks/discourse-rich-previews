@@ -1,109 +1,63 @@
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function escapeHtml(value) {
-  return String(value ?? "")
+  return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
 
-function normalizeUrlCandidate(value) {
-  const trimmed = String(value ?? "").trim();
-
-  if (!trimmed) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
-  }
-
-  return "";
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll("'", "&#39;");
 }
 
-function classifyPreviewPayload(attrValue, inner) {
-  const trimmedAttr = String(attrValue ?? "").trim();
-  const trimmedInner = String(inner ?? "").trim();
+function isLikelyUrl(value) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(String(value).trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function buildWrappedPreviewInner(attrValue, inner) {
+  const trimmedInner = String(inner || "").trim();
+  const trimmedAttr = String(attrValue || "").trim();
 
   if (trimmedAttr) {
-    return {
-      form: "explicit",
-      url: normalizeUrlCandidate(trimmedAttr),
-      label: trimmedInner,
-      markdown: "",
-    };
+    const visibleText = trimmedInner || trimmedAttr;
+
+    return `<a href="${escapeAttribute(trimmedAttr)}">${escapeHtml(
+      visibleText
+    )}</a>`;
   }
 
-  if (!trimmedInner) {
-    return {
-      form: "empty",
-      url: "",
-      label: "",
-      markdown: "",
-    };
+  if (isLikelyUrl(trimmedInner)) {
+    return `<a href="${escapeAttribute(trimmedInner)}">${escapeHtml(
+      trimmedInner
+    )}</a>`;
   }
 
-  if (/^https?:\/\/\S+$/i.test(trimmedInner)) {
-    return {
-      form: "bare",
-      url: normalizeUrlCandidate(trimmedInner),
-      label: trimmedInner,
-      markdown: "",
-    };
-  }
-
-  return {
-    form: "markdown",
-    url: "",
-    label: "",
-    markdown: trimmedInner,
-  };
-}
-
-function buildPlaceholderSpan(payload) {
-  const attrs = [
-    `class="rich-preview-wrap"`,
-    `data-rich-preview="true"`,
-    `data-preview-form="${escapeHtml(payload.form)}"`,
-  ];
-
-  if (payload.url) {
-    attrs.push(`data-preview-url="${escapeHtml(payload.url)}"`);
-  }
-
-  if (payload.label) {
-    attrs.push(`data-preview-label="${escapeHtml(payload.label)}"`);
-  }
-
-  if (payload.markdown) {
-    attrs.push(`data-preview-markdown="${escapeHtml(payload.markdown)}"`);
-    return `<span ${attrs.join(" ")}>${escapeHtml(payload.markdown)}</span>`;
-  }
-
-  if (payload.label) {
-    return `<span ${attrs.join(" ")}>${escapeHtml(payload.label)}</span>`;
-  }
-
-  return `<span ${attrs.join(" ")}></span>`;
+  return inner;
 }
 
 function wrapPreviewTags(source, tagName = "preview") {
-  if (!source?.toLowerCase().includes(`[${tagName}`)) {
+  if (!source?.includes(`[${tagName}`)) {
     return source;
   }
 
   const pattern = new RegExp(
-    `\\[${escapeRegExp(tagName)}(?:=([^\\]]+))?\\]([\\s\\S]*?)\\[\\/${escapeRegExp(
-      tagName
-    )}\\]`,
+    `\\[${tagName}(?:=([^\\]]+))?\\]([\\s\\S]*?)\\[\\/${tagName}\\]`,
     "gi"
   );
 
   return source.replace(pattern, (_match, attrValue, inner) => {
-    return buildPlaceholderSpan(classifyPreviewPayload(attrValue, inner));
+    const wrappedInner = buildWrappedPreviewInner(attrValue, inner);
+
+    return `<span class="rich-preview-wrap" data-rich-preview="true">${wrappedInner}</span>`;
   });
 }
 
@@ -115,10 +69,7 @@ export function setup(helper) {
   helper.allowList([
     "span.rich-preview-wrap",
     "span[data-rich-preview]",
-    "span[data-preview-form]",
-    "span[data-preview-url]",
-    "span[data-preview-label]",
-    "span[data-preview-markdown]",
+    "a[href]",
   ]);
 
   helper.registerPlugin((md) => {
