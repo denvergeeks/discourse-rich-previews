@@ -1,7 +1,10 @@
 /**
- * Registers the [preview]...[/preview] wrapper handling and applies
- * preview decoration to both manual wrapped links and auto-detected
- * eligible links in cooked content.
+ * Applies preview decoration to both manual wrapped links and
+ * auto-detected eligible links in cooked content.
+ *
+ * The [preview] BBCode itself is handled in discourse-markdown/rich-previews.js
+ * using a proper markdown-it BBCode rule, so this module should not try to
+ * parse literal [preview]...[/preview] text from cooked HTML.
  */
 
 import { linkInSupportedArea } from "./rich-preview-utils";
@@ -35,14 +38,19 @@ function clearWrapModifierClasses(wrapEl) {
 }
 
 function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   root
     .querySelectorAll(
       "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
     )
     .forEach((link) => {
-      if (!(link instanceof HTMLAnchorElement)) return;
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
       clearDecoratedLink(link);
     });
 }
@@ -117,42 +125,8 @@ function stampAutoLinkIndicators(root, config) {
   });
 }
 
-function wrapLiteralPreviewTags(root, tagName = "preview") {
-  if (!(root instanceof Element)) {
-    return;
-  }
-
-  const openTag = `[${tagName}]`;
-  const closeTag = `[/${tagName}]`;
-
-  root.querySelectorAll("p, li, td, div, blockquote").forEach((container) => {
-    if (!(container instanceof Element)) {
-      return;
-    }
-
-    const html = container.innerHTML;
-    if (!html || !html.includes(openTag) || !html.includes(closeTag)) {
-      return;
-    }
-
-    container.innerHTML = html.replaceAll(
-      new RegExp(
-        `\\[${tagName}\\]([\\s\\S]*?)\\[\\/${tagName}\\]`,
-        "gi"
-      ),
-      `<span class="rich-preview-wrap" data-rich-preview="true">$1</span>`
-    );
-  });
-}
-
-export function applyPreviewWraps(root, tagName = "preview", config = null) {
-  if (!(root instanceof Element)) {
-    return;
-  }
-
-  wrapLiteralPreviewTags(root, tagName);
-
-  if (!config) {
+export function applyPreviewWraps(root, _tagName = "preview", config = null) {
+  if (!(root instanceof Element) || !config) {
     return;
   }
 
