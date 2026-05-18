@@ -39,7 +39,6 @@ import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 import { createExternalProvider } from "../lib/providers/external-provider";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
-import { registerPreviewBBCode } from "../lib/preview-bbcode";
 import {
   decorateAutoDetectedLink,
   decorateWrappedPreviewLink,
@@ -661,8 +660,6 @@ export default apiInitializer((api) => {
   if (!config.enabled) {
     return;
   }
-
-  registerPreviewBBCode(api);
 
   if (composerButtonShouldShow(config)) {
     registerPreviewComposerButton(api, config);
