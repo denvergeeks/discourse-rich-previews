@@ -887,17 +887,12 @@ export default apiInitializer((api) => {
   function getRenderedCard(preview, isMobile) {
     const key = getRenderCacheKey(preview, isMobile);
     const cached = getCachedValue(renderCache, key);
+
     if (cached) {
       return cached;
     }
 
-    let html;
-
-    if (preview.type === "topic" && preview.raw) {
-      html = buildCardHTML(preview.raw, categories, config, isMobile);
-    } else {
-      html = buildPreviewHTML(preview, categories, config, isMobile);
-    }
+    const html = buildPreviewHTML(preview, categories, config, isMobile);
 
     setCachedValue(renderCache, key, html, config.topicCacheMax * 2);
     return html;
