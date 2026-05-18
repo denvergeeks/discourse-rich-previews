@@ -676,7 +676,6 @@ function buildTopicPreviewHTML(
     preview?.thumbnailUrl ||
     preview?.thumbnail_url ||
     "";
-  const category = preview?.category || preview?.raw?.category || null;
   const tags = preview?.tags || preview?.raw?.tags || [];
 
   const showPublishDate = pick(
@@ -711,7 +710,7 @@ function buildTopicPreviewHTML(
   );
 
   const metaTop = buildMetaRow([
-    buildTopicCategoryHTML(category, categories, config, isMobile),
+    buildTopicCategoryHTML(preview, categories, config, isMobile),
   ]);
 
   const tagsHtml = buildTagsHTML(tags, config, isMobile);
@@ -783,10 +782,8 @@ function buildTopicPreviewHTML(
       ${buildTitleHTML(preview, config, isMobile)}
       ${excerptHtml}
       ${tagsHtml}
-      <div class="topic-hover-card__meta">
-        ${authorHtml}
-        ${metaBottom}
-      </div>
+      ${buildMetaRow([authorHtml])}
+      ${metaBottom}
     </div>
   `;
 
