@@ -3,13 +3,22 @@ function normalizeAttrValue(value) {
 }
 
 function getPreviewHref(attrs, content) {
-  const explicitHref = normalizeAttrValue(attrs?._default);
+  const explicitHref = normalizeAttrValue(attrs?.default);
   const fallbackHref = normalizeAttrValue(content);
 
   return explicitHref || fallbackHref;
 }
 
-function copyAttrs(token, attrs = {}) {
+function buildFallbackTextToken(token, content) {
+  token.type = "text";
+  token.tag = "";
+  token.nesting = 0;
+  token.attrs = null;
+  token.content = content || "";
+  token.children = null;
+}
+
+function copyAttrs(token, attrs) {
   Object.entries(attrs).forEach(([name, value]) => {
     if (value === null || value === undefined || value === "") {
       return;
@@ -23,16 +32,8 @@ function buildAnchorTokens(startToken, endToken, tagInfo, content) {
   const href = getPreviewHref(tagInfo?.attrs, content);
 
   if (!href) {
-    startToken.type = "text";
-    startToken.tag = "";
-    startToken.nesting = 0;
-    startToken.content = "";
-
-    endToken.type = "text";
-    endToken.tag = "";
-    endToken.nesting = 0;
-    endToken.content = "";
-
+    buildFallbackTextToken(startToken, content);
+    buildFallbackTextToken(endToken, "");
     return false;
   }
 
@@ -40,7 +41,8 @@ function buildAnchorTokens(startToken, endToken, tagInfo, content) {
   startToken.tag = "a";
   startToken.nesting = 1;
   startToken.content = "";
-  startToken.attrs = [];
+  startToken.attrs = null;
+  startToken.children = null;
 
   copyAttrs(startToken, {
     href,
@@ -55,7 +57,9 @@ function buildAnchorTokens(startToken, endToken, tagInfo, content) {
   endToken.type = "link_close";
   endToken.tag = "a";
   endToken.nesting = -1;
+  endToken.attrs = null;
   endToken.content = "";
+  endToken.children = null;
 
   return false;
 }
