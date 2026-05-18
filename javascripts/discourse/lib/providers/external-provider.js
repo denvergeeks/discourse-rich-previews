@@ -40,7 +40,7 @@ function normalizedHostname(url) {
 }
 
 function buildProxyUrl(target) {
-  const url = new URL("/discourse-proxy-safe", window.location.origin);
+  const url = new URL("/discourse-proxy-safe.json", window.location.origin);
   url.searchParams.set("url", target.url);
   return url.toString();
 }
@@ -73,6 +73,7 @@ function parseExternalHTML(html, target) {
       meta('meta[property="og:title"]') ||
       meta('meta[name="twitter:title"]') ||
       doc.querySelector("title")?.textContent?.trim() ||
+      doc.querySelector("h1")?.textContent?.trim() ||
       "",
     description:
       meta('meta[property="og:description"]') ||
@@ -80,13 +81,50 @@ function parseExternalHTML(html, target) {
       meta('meta[name="description"]') ||
       "",
     siteName:
-      meta('meta[property="og:site_name"]') ||
-      normalizedHostname(target.url),
+      meta('meta[property="og:site_name"]') || normalizedHostname(target.url),
     image:
       meta('meta[property="og:image"]') ||
       meta('meta[name="twitter:image"]') ||
       "",
   };
+}
+
+function parseExternalText(text, target) {
+  const trimmed = textValue(text);
+
+  return {
+    title: target?.hostname || normalizedHostname(target?.url),
+    description: trimmed,
+    siteName: target?.hostname || normalizedHostname(target?.url),
+    image: "",
+  };
+}
+
+async function parseProxyResponse(response, target) {
+  const contentType = (response.headers.get("content-type") || "").toLowerCase();
+  const raw = await response.text();
+
+  if (!raw.trim()) {
+    return {};
+  }
+
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return parseExternalHTML(raw, target);
+    }
+  }
+
+  if (contentType.includes("text/html")) {
+    return parseExternalHTML(raw, target);
+  }
+
+  if (contentType.includes("text/plain")) {
+    return parseExternalText(raw, target);
+  }
+
+  return parseExternalHTML(raw, target);
 }
 
 function normalizeExternalPreview(target, payload, config) {
@@ -166,11 +204,11 @@ export function matchesExternalTarget(link, config) {
       return false;
     }
 
-    if (/(^|\.)wikipedia\.org$/i.test(url.hostname)) {
+    if (/(^|\\.)wikipedia\\.org$/i.test(url.hostname)) {
       return false;
     }
 
-    if (/^\/t\//.test(url.pathname) || /^\/t\//.test(href)) {
+    if (/^\\/t\\//.test(url.pathname) || /^\\/t\\//.test(href)) {
       return false;
     }
 
@@ -207,7 +245,7 @@ export function createExternalProvider(config) {
           method: "GET",
           credentials: "same-origin",
           headers: {
-            Accept: "application/json, text/plain;q=0.9, text/html;q=0.8",
+            Accept: "application/json, text/html;q=0.9, text/plain;q=0.8",
           },
           signal: controller.signal,
         });
@@ -216,16 +254,7 @@ export function createExternalProvider(config) {
           throw new Error(`HTTP ${response.status} for ${target.url}`);
         }
 
-        const contentType = response.headers.get("content-type") || "";
-        let payload;
-
-        if (contentType.includes("application/json")) {
-          payload = await response.json();
-        } else {
-          const html = await response.text();
-          payload = parseExternalHTML(html, target);
-        }
-
+        const payload = await parseProxyResponse(response, target);
         return normalizeExternalPreview(target, payload, config);
       } finally {
         clearTimeout(timeout);
