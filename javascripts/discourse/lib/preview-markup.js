@@ -1,54 +1,114 @@
 /**
- * Builds the [preview]...[/preview] BBCode string that the composer
- * toolbar button inserts.
+ * Builds the [preview]...[/preview] markup that the composer toolbar inserts.
  *
- * Three forms are supported:
+ * Supported forms:
  *
- *   'markdown' (default) — form 2, composer-style markdown link:
+ *   "markdown" (default) — form 2:
  *     [preview][Link text](https://url/)[/preview]
  *
- *   'explicit' — form 1, explicit default attribute:
+ *   "explicit" — form 1:
  *     [preview=https://url/]Link text[/preview]
  *
- *   'bare' — form 3, bare URL:
+ *   "bare" — form 3:
  *     [preview]https://url/[/preview]
  *
- * For forms 1 and 2 the label text is preserved.
- * For form 3 the URL is used as the visible text.
- *
- * The composer button uses 'markdown' (form 2) by default because it
- * is the most ergonomic for authors and mirrors standard Markdown link
- * conventions.
+ * Behavior:
+ * - Forms 1 and 2 preserve the label text.
+ * - Form 3 uses the URL as the visible text.
+ * - If the requested form is "markdown" but the label is empty or identical to
+ *   the URL, the helper falls back to bare form for cleaner authoring.
  */
+
+function normalizeText(value) {
+  return String(value ?? "").trim();
+}
+
+function isAbsoluteHttpUrl(value) {
+  return /^https?:\/\/[^\s<>"']+$/i.test(normalizeText(value));
+}
+
+function escapeBbcodeText(value) {
+  return String(value ?? "").replace(/\[/g, "\\[").replace(/\]/g, "\\]");
+}
+
+function escapeMarkdownLinkLabel(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]");
+}
+
+function escapeMarkdownLinkTitle(value) {
+  return String(value ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function buildExplicitAttrPreview(url, linkText) {
+  const normalizedUrl = normalizeText(url);
+  const normalizedText = normalizeText(linkText) || normalizedUrl;
+
+  return `[preview=${normalizedUrl}]${escapeBbcodeText(normalizedText)}[/preview]`;
+}
+
+function buildBareUrlPreview(url) {
+  const normalizedUrl = normalizeText(url);
+  return `[preview]${normalizedUrl}[/preview]`;
+}
+
+function buildMarkdownWrappedPreview(url, linkText, title = "") {
+  const normalizedUrl = normalizeText(url);
+  const normalizedText = normalizeText(linkText) || normalizedUrl;
+  const normalizedTitle = normalizeText(title);
+
+  const escapedLabel = escapeMarkdownLinkLabel(normalizedText);
+
+  if (normalizedTitle) {
+    const escapedTitle = escapeMarkdownLinkTitle(normalizedTitle);
+    return `[preview][${escapedLabel}](${normalizedUrl} "${escapedTitle}")[/preview]`;
+  }
+
+  return `[preview][${escapedLabel}](${normalizedUrl})[/preview]`;
+}
+
+function shouldUseBareUrlForm(url, linkText) {
+  const normalizedUrl = normalizeText(url);
+  const normalizedText = normalizeText(linkText);
+
+  return (
+    isAbsoluteHttpUrl(normalizedUrl) &&
+    (!normalizedText || normalizedText === normalizedUrl)
+  );
+}
+
 export function buildPreviewWrappedMarkdown(
   url,
   linkText,
   title = "",
   form = "markdown"
 ) {
-  if (!url) {
+  const normalizedUrl = normalizeText(url);
+  const normalizedText = normalizeText(linkText);
+
+  if (!normalizedUrl) {
     return "";
   }
 
-  const displayText = linkText?.trim() || url;
-  const trimmedTitle = title?.trim();
-
   switch (form) {
     case "explicit":
-      // [preview=https://url/]Label[/preview]
-      return `[preview=${url}]${displayText}[/preview]`;
+      return buildExplicitAttrPreview(normalizedUrl, normalizedText);
 
     case "bare":
-      // [preview]https://url/[/preview]
-      return `[preview]${url}[/preview]`;
+      return buildBareUrlPreview(normalizedUrl);
 
     case "markdown":
-    default: {
-      // [preview][Label](https://url/ "optional title")[/preview]
-      const mdLink = trimmedTitle
-        ? `[${displayText}](${url} "${trimmedTitle}")`
-        : `[${displayText}](${url})`;
-      return `[preview]${mdLink}[/preview]`;
-    }
+    default:
+      if (shouldUseBareUrlForm(normalizedUrl, normalizedText)) {
+        return buildBareUrlPreview(normalizedUrl);
+      }
+
+      return buildMarkdownWrappedPreview(
+        normalizedUrl,
+        normalizedText,
+        title
+      );
   }
 }

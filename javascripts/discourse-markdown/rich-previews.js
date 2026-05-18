@@ -1,39 +1,24 @@
 /**
  * discourse-markdown/rich-previews.js
  *
- * Markdown-It plugin that pre-processes [preview] BBCode tags before
- * markdown-it's standard inline rendering runs.
+ * Implements [preview] as a proper inline BBCode rule.
  *
  * Supported forms:
  *
- *   Form 1 — explicit default-attr URL:
- *     [preview=https://example.com/]Link text[/preview]
- *     → <span class="rich-preview-wrap" data-rich-preview="true">
- *          <a href="https://example.com/">Link text</a></span>
+ * 1. Explicit default attr:
+ *    [preview=https://example.com/]Label[/preview]
  *
- *   Form 2 — composer-style markdown link inside tag (handled naturally):
- *     [preview][Link text](https://example.com/)[/preview]
- *     → markdown-it renders the inner [...](...) as a normal <a> first;
- *        this plugin then wraps it in the span unchanged.
+ * 2. Markdown link inside preview:
+ *    [preview][Label](https://example.com/)[/preview]
  *
- *   Form 3 — bare URL fallback:
- *     [preview]https://example.com/[/preview]
- *     → <span class="rich-preview-wrap" data-rich-preview="true">
- *          <a href="https://example.com/">https://example.com/</a></span>
- *
- * In all forms the link inside the span is what link-decorator picks up
- * via matchPreviewTarget to show the hover card.
+ * 3. Bare URL fallback:
+ *    [preview]https://example.com/[/preview]
  */
 
-// Matches an absolute URL (http/https) with no surrounding whitespace.
-const BARE_URL_RE = /^https?:\/\/[^\s"'<>]+$/i;
-
-// Matches [preview=URL]...[/preview]
-const EXPLICIT_ATTR_RE =
-  /^https?:\/\/[^\]\s"'<>]+$/i;
+const ABSOLUTE_HTTP_URL_RE = /^https?:\/\/[^\s"'<>]+$/i;
 
 function escapeAttr(value) {
-  return String(value)
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
@@ -41,79 +26,39 @@ function escapeAttr(value) {
 }
 
 function escapeText(value) {
-  return String(value)
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
 
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function normalizeUrl(value) {
+  const trimmed = String(value ?? "").trim();
+  return ABSOLUTE_HTTP_URL_RE.test(trimmed) ? trimmed : "";
 }
 
-/**
- * Transform a single [preview...] … [/preview] match.
- *
- * @param {string|undefined} attr  – URL from [preview=URL], or undefined
- * @param {string}           inner – raw inner content
- * @returns {string}               – HTML fragment
- */
-function buildWrapHTML(attr, inner) {
-  const trimmed = inner.trim();
+function pushHtmlInline(state, content) {
+  const token = state.push("html_inline", "", 0);
+  token.content = content;
+  return token;
+}
 
-  // Form 1: explicit attr URL
-  if (attr && EXPLICIT_ATTR_RE.test(attr.trim())) {
-    const safeHref = escapeAttr(attr.trim());
-    // Use inner text as label; fall back to URL if inner is empty
-    const label = trimmed || attr.trim();
-    return (
-      `<span class="rich-preview-wrap" data-rich-preview="true">` +
-      `<a href="${safeHref}">${escapeText(label)}</a>` +
-      `</span>`
-    );
-  }
-
-  // Form 3: bare URL inside tag (no attr, inner is a raw URL)
-  if (!attr && BARE_URL_RE.test(trimmed)) {
-    const safeHref = escapeAttr(trimmed);
-    return (
-      `<span class="rich-preview-wrap" data-rich-preview="true">` +
-      `<a href="${safeHref}">${escapeText(trimmed)}</a>` +
-      `</span>`
-    );
-  }
-
-  // Form 2 (and any other content): pass inner through unchanged so
-  // markdown-it can render [text](url) links and other inline markup.
-  return (
-    `<span class="rich-preview-wrap" data-rich-preview="true">` +
-    inner +
-    `</span>`
+function pushPreviewWrapOpen(state) {
+  return pushHtmlInline(
+    state,
+    '<span class="rich-preview-wrap" data-rich-preview="true">'
   );
 }
 
-/**
- * Replace all [preview] / [preview=URL] … [/preview] occurrences in a
- * raw token content string.
- */
-function wrapPreviewTags(source, tagName = "preview") {
-  if (!source) {
-    return source;
-  }
+function pushPreviewWrapClose(state) {
+  return pushHtmlInline(state, "</span>");
+}
 
-  const escapedTag = escapeRegExp(tagName);
+function pushAnchor(state, href, text) {
+  const safeHref = escapeAttr(href);
+  const safeText = escapeText(text);
 
-  // Matches:
-  //   [preview]...[/preview]              – no attr (forms 2 & 3)
-  //   [preview=somevalue]...[/preview]    – with attr (form 1)
-  const pattern = new RegExp(
-    `\\[${escapedTag}(?:=([^\\]]+))?\\]([\\s\\S]*?)\\[\\/${escapedTag}\\]`,
-    "gi"
-  );
-
-  return source.replace(pattern, (_match, attr, inner) => {
-    return buildWrapHTML(attr, inner);
-  });
+  pushHtmlInline(state, `<a href="${safeHref}">${safeText}</a>`);
 }
 
 export function setup(helper) {
@@ -124,21 +69,52 @@ export function setup(helper) {
   helper.allowList([
     "span.rich-preview-wrap",
     "span[data-rich-preview]",
-    // Allow the <a> elements emitted for forms 1 and 3
     "a[href]",
   ]);
 
   helper.registerPlugin((md) => {
-    md.core.ruler.push("rich-previews-bbcode", (state) => {
-      state.tokens.forEach((token) => {
-        if (token.type !== "inline" || !token.content) {
-          return;
+    md.inline.bbcode.ruler.push("preview", {
+      tag: "preview",
+
+      replace(state, tagInfo, content) {
+        const attrUrl = normalizeUrl(tagInfo.attrs?._default);
+        const inner = String(content ?? "");
+        const trimmedInner = inner.trim();
+
+        pushPreviewWrapOpen(state);
+
+        // Form 1:
+        // [preview=https://example.com/]Label[/preview]
+        if (attrUrl) {
+          pushAnchor(state, attrUrl, trimmedInner || attrUrl);
+          pushPreviewWrapClose(state);
+          return true;
         }
 
-        token.content = wrapPreviewTags(token.content, "preview");
-      });
+        // Form 3:
+        // [preview]https://example.com/[/preview]
+        const bareUrl = normalizeUrl(trimmedInner);
+        if (bareUrl) {
+          pushAnchor(state, bareUrl, bareUrl);
+          pushPreviewWrapClose(state);
+          return true;
+        }
 
-      return false;
+        // Form 2:
+        // [preview][Label](https://example.com/)[/preview]
+        //
+        // Re-parse the inner markdown inline so markdown-it can emit a normal
+        // link token sequence inside our wrapper span.
+        const innerTokens = [];
+        state.md.inline.parse(inner, state.md, state.env, innerTokens);
+
+        for (const token of innerTokens) {
+          state.tokens.push(token);
+        }
+
+        pushPreviewWrapClose(state);
+        return true;
+      },
     });
   });
 }
