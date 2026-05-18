@@ -32,11 +32,7 @@ function getWikipediaHost(link, config) {
   try {
     const url = new URL(link.href, window.location.origin);
 
-    return (
-      url.hostname ||
-      config?.wikipediaPreviewsBaseUrl ||
-      "en.wikipedia.org"
-    );
+    return url.hostname || config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org";
   } catch {
     return config?.wikipediaPreviewsBaseUrl || "en.wikipedia.org";
   }
@@ -45,6 +41,7 @@ function getWikipediaHost(link, config) {
 function getWikipediaTitle(link) {
   try {
     const url = new URL(link.href, window.location.origin);
+
     return decodeURIComponent(url.pathname.replace(/^\/wiki\//, ""))
       .replaceAll("_", " ")
       .replace(/\s+/g, " ")

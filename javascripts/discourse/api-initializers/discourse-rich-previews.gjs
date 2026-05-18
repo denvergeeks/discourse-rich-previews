@@ -1,7 +1,6 @@
 import { later, cancel } from "@ember/runloop";
 import { iconHTML } from "discourse/lib/icon-library";
 import { apiInitializer } from "discourse/lib/api";
-
 import {
   DELAY_HIDE,
   VIEWPORT_MARGIN,
@@ -27,7 +26,6 @@ import {
   formatNumber,
   composerButtonShouldShow,
 } from "../lib/rich-preview-utils";
-
 import { matchPreviewTarget } from "../lib/preview-router";
 import {
   buildPreviewHTML,
@@ -43,15 +41,18 @@ import { registerPreviewComposerButton } from "../lib/preview-composer-button";
 
 function discourseIcon(name) {
   try {
-    return iconHTML(name) || "";
+    return iconHTML(name);
   } catch {
     return "";
   }
 }
 
-function joinMetadataGroups(items, separator = "·") {
+function joinMetadataGroups(items, separator = "•") {
   const filtered = items.filter(Boolean);
-  if (!filtered.length) return "";
+
+  if (!filtered.length) {
+    return "";
+  }
 
   return filtered
     .map((item, index) =>
@@ -63,24 +64,28 @@ function joinMetadataGroups(items, separator = "·") {
 }
 
 function getSiteCategories(api) {
-  return api.container.lookup("service:site")?.categories || [];
+  return api.container.lookup("service:site")?.categoriesList?.categories;
 }
 
 function findCategoryById(categories, categoryId) {
-  if (!categories?.length || !categoryId) return null;
+  if (!categories?.length || !categoryId) {
+    return null;
+  }
+
   return categories.find((c) => Number(c.id) === Number(categoryId)) || null;
 }
 
 function pick(config, desktopKey, mobileKey, isMobile) {
-  return isMobile ? config[mobileKey] : config[desktopKey];
+  return isMobile ? config?.[mobileKey] : config?.[desktopKey];
 }
 
 function previewLayout(config) {
-  return config.previewLayout || "hover_card";
+  return config.previewLayout || "hovercard";
 }
 
 function buildThumbnailHTML(topic, config, isMobile = false) {
-  const imageUrl = sanitizeURL(topic.image_url);
+  const imageUrl = sanitizeURL(topic.imageurl);
+
   if (!imageUrl) {
     return "";
   }
@@ -92,23 +97,21 @@ function buildThumbnailHTML(topic, config, isMobile = false) {
     isMobile
   );
 
-  return `
-    <div class="topic-hover-card__thumb-wrap">
-      <div
-        class="topic-hover-card__thumb-bg"
-        style="background-image: url('${escapeHTML(imageUrl)}');"
-        aria-hidden="true"
-      ></div>
-      <img
-        class="topic-hover-card__thumb"
-        src="${escapeHTML(imageUrl)}"
-        alt=""
-        loading="lazy"
-        decoding="async"
-        style="--thc-thumb-top-bottom-height:${escapeHTML(thumbHeight || "auto")};"
-      >
-    </div>
-  `;
+  return `<div class="topic-hover-card__thumb-wrap">
+    <div
+      class="topic-hover-card__thumb-bg"
+      style="background-image: url('${escapeHTML(imageUrl)}')"
+      aria-hidden="true"
+    ></div>
+    <img
+      class="topic-hover-card__thumb"
+      src="${escapeHTML(imageUrl)}"
+      alt=""
+      loading="lazy"
+      decoding="async"
+      style="--thc-thumb-top-bottom-height:${escapeHTML(thumbHeight || "auto")}"
+    />
+  </div>`;
 }
 
 function buildCategoryHTML(topic, categories, config, isMobile) {
@@ -116,76 +119,67 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
     return "";
   }
 
-  if (!topic.category_id) return "";
+  if (!topic.categoryid) {
+    return "";
+  }
 
-  const category = findCategoryById(categories, topic.category_id);
-  const name =
-    category?.name ||
-    category?.slug ||
-    topic.category_name ||
-    topic.category_slug ||
-    "";
-
-  const rawColor = category?.color || topic.category_color || null;
+  const category = findCategoryById(categories, topic.categoryid);
+  const name = category?.name || category?.slug || topic.categoryname || topic.categoryslug;
+  const rawColor = category?.color || topic.categorycolor || null;
   const color = rawColor ? `#${String(rawColor).replace(/^#/, "")}` : null;
 
-  if (!name) return "";
+  if (!name) {
+    return "";
+  }
 
-  return `
-    <span class="topic-hover-card__badge topic-hover-card__badge--category"${
-      color ? ` style="--thc-category-color:${escapeHTML(color)};"` : ""
-    }>
-      ${escapeHTML(name)}
-    </span>
-  `;
+  return `<span class="topic-hover-card__badge topic-hover-card__badge--category"${
+    color ? ` style="--thc-category-color:${escapeHTML(color)}"` : ""
+  }>${escapeHTML(name)}</span>`;
 }
 
 function buildTagsHTML(topic, config, isMobile) {
-  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) return "";
-  if (!Array.isArray(topic.tags) || !topic.tags.length) return "";
+  if (!pick(config, "showTagsDesktop", "showTagsMobile", isMobile)) {
+    return "";
+  }
+
+  if (!Array.isArray(topic.tags) || !topic.tags.length) {
+    return "";
+  }
 
   const tags = topic.tags.map(normalizeTag).filter(Boolean);
 
-  if (!tags.length) return "";
+  if (!tags.length) {
+    return "";
+  }
 
-  return `
-    <div class="topic-hover-card__tags">
-      ${tags
-        .map(
-          (tag) => `
-            <span class="topic-hover-card__badge topic-hover-card__badge--tag">
-              ${escapeHTML(tag)}
-            </span>
-          `
-        )
-        .join("")}
-    </div>
-  `;
+  return `<div class="topic-hover-card__tags">${tags
+    .map(
+      (tag) =>
+        `<span class="topic-hover-card__badge topic-hover-card__badge--tag">${escapeHTML(
+          tag
+        )}</span>`
+    )
+    .join("")}</div>`;
 }
 
 function buildBadgesHTML(topic, categories, config, isMobile) {
   const categoryHTML = buildCategoryHTML(topic, categories, config, isMobile);
   const tagsHTML = buildTagsHTML(topic, config, isMobile);
 
-  if (!categoryHTML && !tagsHTML) return "";
+  if (!categoryHTML && !tagsHTML) {
+    return "";
+  }
 
-  return `
-    <div class="topic-hover-card__badges">
-      ${categoryHTML}
-      ${tagsHTML}
-    </div>
-  `;
+  return `<div class="topic-hover-card__badges">${categoryHTML}${tagsHTML}</div>`;
 }
 
 function buildTitleHTML(topic, config, isMobile) {
-  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) return "";
-  const title = topic.fancy_title ?? topic.title ?? "(no title)";
+  if (!pick(config, "showTitleDesktop", "showTitleMobile", isMobile)) {
+    return "";
+  }
 
-  return `
-    <h3 class="topic-hover-card__title">
-      ${escapeHTML(title)}
-    </h3>
-  `;
+  const title = topic.fancytitle ?? topic.title ?? "no title";
+  return `<h3 class="topic-hover-card__title">${escapeHTML(title)}</h3>`;
 }
 
 function buildExcerptHTML(topic, config, isMobile) {
@@ -193,67 +187,54 @@ function buildExcerptHTML(topic, config, isMobile) {
     return "";
   }
 
-  const lines = pick(
-    config,
-    "excerptLengthDesktop",
-    "excerptLengthMobile",
-    isMobile
-  );
+  const lines = pick(config, "excerptLengthDesktop", "excerptLengthMobile", isMobile);
+  const firstPost = topic.poststream?.posts?.[0];
+  const excerptSource = topic.excerpt ?? firstPost?.excerpt ?? firstPost?.cooked;
+  const cleanedExcerpt = topic.thc_excerpt ?? sanitizeExcerpt(excerptSource);
+  topic.thc_excerpt = cleanedExcerpt;
+  const finalExcerpt = cleanedExcerpt?.length > 20 ? cleanedExcerpt : null;
 
-  const firstPost = topic.post_stream?.posts?.[0];
-  const excerptSource =
-    topic.excerpt || firstPost?.excerpt || firstPost?.cooked || "";
+  if (!finalExcerpt) {
+    return "";
+  }
 
-  const cleanedExcerpt = topic.__thc_excerpt ?? sanitizeExcerpt(excerptSource);
-  topic.__thc_excerpt = cleanedExcerpt;
+  const charsPerLine = 90;
+  const isLikelyMultiLine = finalExcerpt.length > charsPerLine;
+  const overflowClass = isLikelyMultiLine ? " topic-hover-card__excerpt--overflows" : "";
 
-  const finalExcerpt = cleanedExcerpt.length >= 20 ? cleanedExcerpt : "";
-  if (!finalExcerpt) return "";
-
-  const CHARS_PER_LINE = 90;
-  const isLikelyMultiLine = finalExcerpt.length > CHARS_PER_LINE;
-  const overflowClass = isLikelyMultiLine
-    ? " topic-hover-card__excerpt--overflows"
-    : "";
-
-  return `
-    <div
-      class="topic-hover-card__excerpt${overflowClass}"
-      style="--thc-excerpt-lines:${escapeHTML(String(lines))};"
-    >
-      ${escapeHTML(finalExcerpt)}
-    </div>
-  `;
+  return `<div class="topic-hover-card__excerpt${overflowClass}" style="--thc-excerpt-lines:${escapeHTML(
+    String(lines ?? 3)
+  )}">${escapeHTML(finalExcerpt)}</div>`;
 }
 
 function buildOpHTML(topic, config, isMobile) {
-  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) return "";
+  if (!pick(config, "showOpDesktop", "showOpMobile", isMobile)) {
+    return "";
+  }
 
   const op =
     topic.details?.created_by ||
-    (topic.post_stream?.posts?.[0]?.username && {
-      username: topic.post_stream.posts[0].username,
-      avatar_template: topic.post_stream.posts[0].avatar_template,
-    }) ||
-    topic.posters?.[0]?.user;
+    (topic.poststream?.posts?.[0]?.username
+      ? {
+          username: topic.poststream.posts[0].username,
+          avatar_template: topic.poststream.posts[0].avatar_template,
+        }
+      : topic.posters?.[0]?.user);
 
-  if (!op?.username) return "";
+  if (!op?.username) {
+    return "";
+  }
 
-  const avatarUrl =
-    topic.op_avatar_url ||
-    safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
+  const avatarUrl = topic.op_avatar_url || safeAvatarURL(topic.posters?.[0]?.avatar_template, 24);
   const avatarImg = avatarUrl
     ? `<img class="topic-hover-card__op-avatar" src="${escapeHTML(
         avatarUrl
       )}" alt="" loading="lazy" decoding="async" />`
     : "";
 
-  return `
-    <span class="topic-hover-card__meta-item topic-hover-card__meta-item--op">
-      ${avatarImg}
-      <span>${escapeHTML(op.username)}</span>
-    </span>
-  `;
+  return `<span class="topic-hover-card__meta-item topic-hover-card__meta-item--op">${avatarImg}<span>${escapeHTML(
+    op.username
+  )}</span></span>`;
 }
 
 function buildPublishDateHTML(topic, config, isMobile) {
@@ -261,9 +242,14 @@ function buildPublishDateHTML(topic, config, isMobile) {
     return "";
   }
 
-  if (!topic.created_at) return "";
-  const d = new Date(topic.created_at);
-  if (Number.isNaN(d.getTime())) return "";
+  if (!topic.createdat) {
+    return "";
+  }
+
+  const d = new Date(topic.createdat);
+  if (Number.isNaN(d.getTime())) {
+    return "";
+  }
 
   const fmt = d.toLocaleDateString(undefined, {
     year: "numeric",
@@ -271,50 +257,43 @@ function buildPublishDateHTML(topic, config, isMobile) {
     day: "numeric",
   });
 
-  return `
-    <span class="topic-hover-card__meta-item topic-hover-card__meta-item--date">
-      ${escapeHTML(fmt)}
-    </span>
-  `;
+  return `<span class="topic-hover-card__meta-item topic-hover-card__meta-item--date">${escapeHTML(
+    fmt
+  )}</span>`;
 }
 
 function buildStatsHTML(topic, config, isMobile) {
   const stats = [];
 
   if (pick(config, "showViewsDesktop", "showViewsMobile", isMobile)) {
-    stats.push(`
-      <span class="topic-hover-card__stat">
-        ${discourseIcon("far-eye")}
-        <span>${escapeHTML(formatNumber(topic.views))}</span>
-      </span>
-    `);
+    stats.push(
+      `<span class="topic-hover-card__stat">${discourseIcon("far-eye")}<span>${escapeHTML(
+        formatNumber(topic.views)
+      )}</span></span>`
+    );
   }
 
   if (pick(config, "showReplyCountDesktop", "showReplyCountMobile", isMobile)) {
-    const replyCount = topic.reply_count ?? Math.max((topic.posts_count ?? 1) - 1, 0);
-    stats.push(`
-      <span class="topic-hover-card__stat">
-        ${discourseIcon("comment")}
-        <span>${escapeHTML(formatNumber(replyCount))}</span>
-      </span>
-    `);
+    const replyCount = topic.replycount ?? Math.max((topic.postscount ?? 1) - 1, 0);
+    stats.push(
+      `<span class="topic-hover-card__stat">${discourseIcon("comment")}<span>${escapeHTML(
+        formatNumber(replyCount)
+      )}</span></span>`
+    );
   }
 
   if (pick(config, "showLikesDesktop", "showLikesMobile", isMobile)) {
-    const likes = topic.like_count ?? topic.topic_post_like_count ?? 0;
-    stats.push(`
-      <span class="topic-hover-card__stat">
-        ${discourseIcon("heart")}
-        <span>${escapeHTML(formatNumber(likes))}</span>
-      </span>
-    `);
+    const likes = topic.likecount ?? topic.topicpostlikecount ?? 0;
+    stats.push(
+      `<span class="topic-hover-card__stat">${discourseIcon("heart")}<span>${escapeHTML(
+        formatNumber(likes)
+      )}</span></span>`
+    );
   }
 
-  if (
-    pick(config, "showActivityDesktop", "showActivityMobile", isMobile) &&
-    topic.last_posted_at
-  ) {
-    const d = new Date(topic.last_posted_at);
+  if (pick(config, "showActivityDesktop", "showActivityMobile", isMobile) && topic.lastpostedat) {
+    const d = new Date(topic.lastpostedat);
+
     if (!Number.isNaN(d.getTime())) {
       const fmt = d.toLocaleDateString(undefined, {
         month: "short",
@@ -322,12 +301,11 @@ function buildStatsHTML(topic, config, isMobile) {
         year: "numeric",
       });
 
-      stats.push(`
-        <span class="topic-hover-card__stat">
-          ${discourseIcon("clock")}
-          <span>${escapeHTML(fmt)}</span>
-        </span>
-      `);
+      stats.push(
+        `<span class="topic-hover-card__stat">${discourseIcon("clock")}<span>${escapeHTML(
+          fmt
+        )}</span></span>`
+      );
     }
   }
 
@@ -345,79 +323,41 @@ function buildMetadataHTML(topic, config, isMobile) {
     buildStatsHTML(topic, config, isMobile),
   ]);
 
-  return content
-    ? `
-      <div class="topic-hover-card__meta">
-        ${content}
-      </div>
-    `
-    : "";
+  return content ? `<div class="topic-hover-card__meta">${content}</div>` : "";
 }
 
 function buildMobileActionsHTML(topic, isMobile) {
-  if (!isMobile) return "";
+  if (!isMobile) {
+    return "";
+  }
 
-  const slug = escapeHTML(String(topic.slug || topic.id || ""));
-  const id = escapeHTML(String(topic.id || ""));
-  const topicUrl = sanitizeURL(
-    `${window.location.origin}/t/${slug}/${id}`
-  );
+  const slug = escapeHTML(String(topic.slug || topic.id));
+  const id = escapeHTML(String(topic.id));
+  const topicUrl = sanitizeURL(`${window.location.origin}/t/${slug}/${id}`);
 
-  return `
-    <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
-      <a
-        class="btn btn-primary topic-hover-card__open-topic"
-        href="${escapeHTML(topicUrl || "#")}"
-        data-thc-open-topic
-      >
-        Open topic
-      </a>
-      <button
-        class="btn btn-default topic-hover-card__close"
-        type="button"
-        data-thc-close
-      >
-        Close
-      </button>
-    </div>
-  `;
+  return `<div class="topic-hover-card__actions topic-hover-card__actions--mobile">
+    <a class="btn btn-primary topic-hover-card__open-topic" href="${escapeHTML(
+      topicUrl
+    )}" data-thc-open-topic>Open topic</a>
+    <button class="btn btn-default topic-hover-card__close" type="button" data-thc-close>Close</button>
+  </div>`;
 }
 
 function buildCardHTML(topic, categories, config, isMobile = false) {
-  const showThumbnail = pick(
-    config,
-    "showThumbnailDesktop",
-    "showThumbnailMobile",
-    isMobile
-  );
-
-  const placement = pick(
-    config,
-    "thumbnailPlacementDesktop",
-    "thumbnailPlacementMobile",
-    isMobile
-  );
-
+  const showThumbnail = pick(config, "showThumbnailDesktop", "showThumbnailMobile", isMobile);
+  const placement = pick(config, "thumbnailPlacementDesktop", "thumbnailPlacementMobile", isMobile);
   const density = pick(config, "densityDesktop", "densityMobile", isMobile);
   const densityClass = `topic-hover-card--density-${density}`;
   const layoutClass = `topic-hover-card--layout-${previewLayout(config)}`;
-
-  const sizeMode = pick(
-    config,
-    "thumbnailSizeModeDesktop",
-    "thumbnailSizeModeMobile",
-    isMobile
-  );
-
-  const hasImage = !!sanitizeURL(topic.image_url);
+  const sizeMode = pick(config, "thumbnailSizeModeDesktop", "thumbnailSizeModeMobile", isMobile);
+  const hasImage = !!sanitizeURL(topic.imageurl);
   const isWrapExcerpt = sizeMode === "wrap_excerpt" && hasImage;
-
   const sizeModeClass =
     sizeMode === "auto_fit_height"
       ? "topic-hover-card--thumb-size-auto_fit_height"
       : sizeMode === "wrap_excerpt"
-      ? "topic-hover-card--thumb-size-wrap_excerpt"
-      : "topic-hover-card--thumb-size-manual";
+        ? "topic-hover-card--thumb-size-wrap_excerpt"
+        : "topic-hover-card--thumb-size-manual";
 
   const thumbnailPercent = pick(
     config,
@@ -425,14 +365,12 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
     "thumbnailSizePercentMobile",
     isMobile
   );
-
   const autoFitMaxWidth = pick(
     config,
     "thumbnailAutoFitMaxWidthDesktop",
     "thumbnailAutoFitMaxWidthMobile",
     isMobile
   );
-
   const topBottomHeight = pick(
     config,
     "thumbnailHeightTopBottomDesktop",
@@ -441,103 +379,54 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
   );
 
   const mobileCloseButton = isMobile
-    ? `
-      <button
-        class="topic-hover-card__mobile-x"
-        type="button"
-        aria-label="Close preview"
-        data-thc-close
-      >
-        &times;
-      </button>
-    `
+    ? `<button class="topic-hover-card__mobile-x" type="button" aria-label="Close preview" data-thc-close>&times;</button>`
     : "";
 
-  const thumbnail =
-    hasImage && showThumbnail ? buildThumbnailHTML(topic, config, isMobile) : "";
-
+  const thumbnail = hasImage && showThumbnail ? buildThumbnailHTML(topic, config, isMobile) : "";
   const outerThumbnail = isWrapExcerpt ? "" : thumbnail;
-
   const excerptHTML = buildExcerptHTML(topic, config, isMobile);
 
   const wrappedExcerptHTML =
     isWrapExcerpt && thumbnail && excerptHTML
-      ? `
-        <div class="topic-hover-card__excerpt-wrap topic-hover-card__excerpt-wrap--${escapeHTML(
+      ? `<div class="topic-hover-card__excerpt-wrap topic-hover-card__excerpt-wrap--${escapeHTML(
           placement
-        )}">
-          ${thumbnail}
-          ${excerptHTML}
-        </div>
-      `
+        )}">${thumbnail}${excerptHTML}</div>`
       : excerptHTML;
 
-  const bodyInner = `
-    <div class="topic-hover-card__body">
-      ${mobileCloseButton}
-      ${buildTitleHTML(topic, config, isMobile)}
-      ${wrappedExcerptHTML}
-      ${buildMetadataHTML(topic, config, isMobile)}
-      ${buildBadgesHTML(topic, categories, config, isMobile)}
-      ${buildMobileActionsHTML(topic, isMobile)}
-    </div>
- `;
+  const bodyInner = `<div class="topic-hover-card__body">
+    ${mobileCloseButton}
+    ${buildTitleHTML(topic, config, isMobile)}
+    ${wrappedExcerptHTML}
+    ${buildMetadataHTML(topic, config, isMobile)}
+    ${buildBadgesHTML(topic, categories, config, isMobile)}
+    ${buildMobileActionsHTML(topic, isMobile)}
+  </div>`;
 
-  const wrapperStyle = `
-    --thc-thumbnail-size-percent:${escapeHTML(String(thumbnailPercent ?? 15))};
-    --thc-auto-thumb-max-width:${escapeHTML(autoFitMaxWidth || "10rem")};
-    --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};
-  `;
+  const wrapperStyle = `--thc-thumbnail-size-percent:${escapeHTML(
+    String(thumbnailPercent ?? 15)
+  )}; --thc-auto-thumb-max-width:${escapeHTML(
+    autoFitMaxWidth || "10rem"
+  )}; --thc-thumb-top-bottom-height:${escapeHTML(topBottomHeight || "auto")};`;
 
   switch (placement) {
     case "left":
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--left ${densityClass} ${sizeModeClass} ${layoutClass}"
-          style="${wrapperStyle}"
-        >
-          ${outerThumbnail}
-          ${bodyInner}
-        </div>
-      `;
+      return `<div class="topic-hover-card topic-hover-card--topic topic-hover-card--left ${densityClass} ${sizeModeClass} ${layoutClass}" style="${wrapperStyle}">${outerThumbnail}${bodyInner}</div>`;
     case "right":
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--right ${densityClass} ${sizeModeClass} ${layoutClass}"
-          style="${wrapperStyle}"
-        >
-          ${bodyInner}
-          ${outerThumbnail}
-        </div>
-      `;
+      return `<div class="topic-hover-card topic-hover-card--topic topic-hover-card--right ${densityClass} ${sizeModeClass} ${layoutClass}" style="${wrapperStyle}">${bodyInner}${outerThumbnail}</div>`;
     case "bottom":
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--bottom ${densityClass} ${sizeModeClass} ${layoutClass}"
-          style="${wrapperStyle}"
-        >
-          ${bodyInner}
-          ${outerThumbnail}
-        </div>
-      `;
+      return `<div class="topic-hover-card topic-hover-card--topic topic-hover-card--bottom ${densityClass} ${sizeModeClass} ${layoutClass}" style="${wrapperStyle}">${bodyInner}${outerThumbnail}</div>`;
     case "top":
     default:
-      return `
-        <div
-          class="topic-hover-card topic-hover-card--topic topic-hover-card--top ${densityClass} ${sizeModeClass} ${layoutClass}"
-          style="${wrapperStyle}"
-        >
-          ${outerThumbnail}
-          ${bodyInner}
-        </div>
-      `;
+      return `<div class="topic-hover-card topic-hover-card--topic topic-hover-card--top ${densityClass} ${sizeModeClass} ${layoutClass}" style="${wrapperStyle}">${outerThumbnail}${bodyInner}</div>`;
   }
 }
 
-export default apiInitializer((api) => {
+export default apiInitializer(async (api) => {
   const config = readConfig(settings);
 
-  if (!config.enabled) return;
+  if (!config.enabled) {
+    return;
+  }
 
   registerPreviewBBCode(api, config);
 
@@ -555,6 +444,7 @@ export default apiInitializer((api) => {
   let clearSuppressionTimer = null;
   let currentPreviewKey = null;
   let currentAbortController = null;
+  let currentRequestId = 0;
   let currentAnchor = null;
   let isInsideCard = false;
   let mouseIsOverAnchor = false;
@@ -568,24 +458,9 @@ export default apiInitializer((api) => {
   const inFlightFetches = new Map();
   const cleanupFns = [];
 
-  const topicProvider = createTopicProvider(
-    api,
-    config,
-    topicCache,
-    inFlightFetches
-  );
-
-  const wikipediaProvider = createWikipediaProvider(
-    config,
-    previewCache,
-    inFlightFetches
-  );
-
-  const externalProvider = createExternalProvider(
-    config,
-    previewCache,
-    inFlightFetches
-  );
+  const topicProvider = createTopicProvider(api, config, topicCache, inFlightFetches);
+  const wikipediaProvider = createWikipediaProvider(config, previewCache, inFlightFetches);
+  const externalProvider = createExternalProvider(config, previewCache, inFlightFetches);
 
   function providerForTarget(target) {
     switch (target?.providerKey) {
@@ -617,8 +492,12 @@ export default apiInitializer((api) => {
       // no-op
     }
 
+    currentAbortController = null;
+    currentRequestId += 1;
+
     while (cleanupFns.length) {
       const fn = cleanupFns.pop();
+
       try {
         fn?.();
       } catch {
@@ -628,7 +507,9 @@ export default apiInitializer((api) => {
   }
 
   function ensureTooltip() {
-    if (tooltip?.isConnected) return;
+    if (tooltip?.isConnected) {
+      return tooltip;
+    }
 
     tooltip = document.querySelector(TOOLTIP_SELECTOR);
 
@@ -640,24 +521,23 @@ export default apiInitializer((api) => {
       document.body.appendChild(tooltip);
 
       cleanupFns.push(() => {
-        if (tooltip?.isConnected) tooltip.remove();
+        if (tooltip?.isConnected) {
+          tooltip.remove();
+        }
         tooltip = null;
       });
     }
 
     tooltip.style.setProperty("--thc-width", config.cardWidth);
-    tooltip.style.setProperty(
-      "--thc-mobile-width",
-      `${config.mobileWidthPercent}vw`
-    );
-  }
+    tooltip.style.setProperty("--thc-mobile-width", `${config.mobileWidthPercent}vw`);
 
+    return tooltip;
+  }
 
   function applyTooltipProviderColor(providerKey) {
     ensureTooltip();
 
     const color = providerColor(providerKey, config, "var(--tertiary)");
-
     if (color) {
       tooltip.style.setProperty("--thc-provider-color", color);
     } else {
@@ -666,14 +546,17 @@ export default apiInitializer((api) => {
   }
 
   function positionTooltip(anchorRect) {
-    if (!tooltip) return;
+    if (!tooltip) {
+      return;
+    }
 
-    if (viewport.isMobileInteractionMode()) {
+    if (viewport.isMobileInteractionMode) {
       const left = Math.max(
         VIEWPORT_MARGIN,
         (window.innerWidth - tooltip.offsetWidth) / 2
       );
       const top = Math.max(VIEWPORT_MARGIN, 16);
+
       tooltip.style.top = `${top}px`;
       tooltip.style.left = `${left}px`;
       tooltip.classList.remove("is-above");
@@ -681,16 +564,14 @@ export default apiInitializer((api) => {
       if (currentAnchor) {
         currentAnchor.setAttribute("aria-describedby", TOOLTIP_ID);
       }
+
       return;
     }
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const cardH = tooltip.offsetHeight || 320;
-    const cardW = Math.min(
-      tooltip.offsetWidth || 512,
-      vw - VIEWPORT_MARGIN * 2
-    );
+    const cardW = Math.min(tooltip.offsetWidth || 512, vw - VIEWPORT_MARGIN * 2);
 
     const gapBelow = 10;
     const gapAbove = 4;
@@ -701,14 +582,15 @@ export default apiInitializer((api) => {
     if (top + cardH > vh - VIEWPORT_MARGIN) {
       top = anchorRect.top - cardH - gapAbove;
       isAbove = true;
+      top = Math.max(VIEWPORT_MARGIN, top);
     }
 
-    top = Math.max(VIEWPORT_MARGIN, top);
-
     let left = anchorRect.left;
+
     if (left + cardW > vw - VIEWPORT_MARGIN) {
       left = vw - cardW - VIEWPORT_MARGIN;
     }
+
     left = Math.max(VIEWPORT_MARGIN, left);
 
     tooltip.style.top = `${top}px`;
@@ -732,10 +614,12 @@ export default apiInitializer((api) => {
   function getRenderedCard(preview, isMobile) {
     const key = getRenderCacheKey(preview, isMobile);
     const cached = getCachedValue(renderCache, key);
-    if (cached) return cached;
+
+    if (cached) {
+      return cached;
+    }
 
     let html;
-
     if (preview.type === "topic" && preview.raw) {
       html = buildCardHTML(preview.raw, categories, config, isMobile);
     } else {
@@ -747,6 +631,8 @@ export default apiInitializer((api) => {
   }
 
   function abortCurrentRequest() {
+    currentRequestId += 1;
+
     if (!currentAbortController) {
       return;
     }
@@ -755,7 +641,11 @@ export default apiInitializer((api) => {
     currentAbortController = null;
 
     if (!controller.signal.aborted) {
-      controller.abort();
+      try {
+        controller.abort();
+      } catch {
+        // no-op
+      }
     }
   }
 
@@ -763,13 +653,16 @@ export default apiInitializer((api) => {
     if (currentAnchor?.removeAttribute) {
       currentAnchor.removeAttribute("aria-describedby");
     }
+
     currentAnchor = null;
   }
 
   function hideCard() {
     abortCurrentRequest();
 
-    if (!tooltip) return;
+    if (!tooltip) {
+      return;
+    }
 
     tooltip.classList.remove("is-visible");
     tooltip.style.removeProperty("--thc-provider-color");
@@ -784,8 +677,11 @@ export default apiInitializer((api) => {
 
   function scheduleHide() {
     cancel(hideTimer);
+
     hideTimer = later(() => {
-      if (!isInsideCard) hideCard();
+      if (!isInsideCard) {
+        hideCard();
+      }
       suppressNextClick = false;
     }, DELAY_HIDE);
   }
@@ -813,8 +709,9 @@ export default apiInitializer((api) => {
     }
 
     const provider = providerForTarget(target);
+
     if (!provider) {
-      throw new Error(`No provider for target ${target.key || "unknown"}`);
+      throw new Error(`No provider for target: ${target.key || "unknown"}`);
     }
 
     return provider.fetch(target, signal);
@@ -824,16 +721,14 @@ export default apiInitializer((api) => {
     ensureTooltip();
     cancel(hideTimer);
 
-    if (
-      currentPreviewKey === target.key &&
-      tooltip.classList.contains("is-visible")
-    ) {
+    if (currentPreviewKey === target.key && tooltip.classList.contains("is-visible")) {
       positionTooltipNextFrame(anchorRect);
       return;
     }
 
     abortCurrentRequest();
 
+    const requestId = currentRequestId;
     const controller = new AbortController();
     currentAbortController = controller;
     currentPreviewKey = target.key;
@@ -854,6 +749,7 @@ export default apiInitializer((api) => {
       const preview = await fetchPreview(target, controller.signal);
 
       if (
+        requestId !== currentRequestId ||
         controller.signal.aborted ||
         !tooltip ||
         currentAbortController !== controller ||
@@ -862,7 +758,7 @@ export default apiInitializer((api) => {
         return;
       }
 
-      if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode()) {
+      if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode) {
         tooltip.classList.remove("is-visible");
         currentPreviewKey = null;
         return;
@@ -877,10 +773,7 @@ export default apiInitializer((api) => {
           target?.type || "topic"
         );
 
-        tooltip.innerHTML = buildErrorPreviewHTML(
-          "No preview available.",
-          errorAttrs
-        );
+        tooltip.innerHTML = buildErrorPreviewHTML("No preview available.", errorAttrs);
         positionTooltipNextFrame(anchorRect);
         return;
       }
@@ -889,23 +782,18 @@ export default apiInitializer((api) => {
         preview?.providerKey || preview?.type || target?.providerKey || "topic"
       );
 
-      tooltip.innerHTML = getRenderedCard(
-        preview,
-        viewport.isMobileLayout()
-      );
+      tooltip.innerHTML = getRenderedCard(preview, viewport.isMobileLayout);
       positionTooltipNextFrame(anchorRect);
     } catch (error) {
       if (
         error?.name === "AbortError" ||
-        controller.signal.aborted
+        controller.signal.aborted ||
+        requestId !== currentRequestId
       ) {
         return;
       }
 
-      console.error("[discourse-rich-previews] Could not load preview", {
-        target,
-        error,
-      });
+      console.error("discourse-rich-previews: Could not load preview", target, error);
       logDebug(config, "Could not load preview", { target, error });
 
       if (
@@ -924,32 +812,52 @@ export default apiInitializer((api) => {
         target?.type || "topic"
       );
 
-      tooltip.innerHTML = buildErrorPreviewHTML(
-        "Could not load preview.",
-        errorAttrs
-      );
+      tooltip.innerHTML = buildErrorPreviewHTML("Could not load preview.", errorAttrs);
       positionTooltipNextFrame(anchorRect);
+    } finally {
+      if (currentAbortController === controller) {
+        currentAbortController = null;
+      }
     }
   }
 
   async function resolveUserFieldIdForAdmins() {
-    if (!config.resolveUserFieldIdForAdmins) return null;
-    if (!currentUserIsStaffLike(currentUser)) return null;
-    if (!config.userPreferenceFieldName) return null;
+    if (!config.resolveUserFieldIdForAdmins) {
+      return null;
+    }
+
+    if (!currentUserIsStaffLike(currentUser)) {
+      return null;
+    }
+
+    if (!config.userPreferenceFieldName) {
+      return null;
+    }
 
     const raw = String(config.userPreferenceFieldName).trim();
-    if (/^\d+$/.test(raw)) return raw;
-    if (/^user_field_\d+$/i.test(raw)) return raw.match(/\d+/)?.[0] ?? null;
 
-    if (resolvedUserFieldId !== null) return resolvedUserFieldId;
-    if (resolvedUserFieldIdPromise) return resolvedUserFieldIdPromise;
+    if (/^\d+$/.test(raw)) {
+      return raw;
+    }
+
+    if (/^user_field_\d+$/i.test(raw)) {
+      return raw.match(/\d+/)?.[0] ?? null;
+    }
+
+    if (resolvedUserFieldId !== null) {
+      return resolvedUserFieldId;
+    }
+
+    if (resolvedUserFieldIdPromise) {
+      return resolvedUserFieldIdPromise;
+    }
 
     resolvedUserFieldIdPromise = getJSON("/admin/config/user-fields.json")
       .then((result) => {
-        const fields = Array.isArray(result) ? result : result?.user_fields || [];
+        const fields = Array.isArray(result) ? result : result?.user_fields;
         const wanted = raw.toLowerCase();
 
-        const match = fields.find((field) => {
+        const match = fields?.find((field) => {
           const id = field?.id;
           const name = String(field?.name || "")
             .trim()
@@ -966,11 +874,7 @@ export default apiInitializer((api) => {
         return resolvedUserFieldId;
       })
       .catch((error) => {
-        logDebug(
-          config,
-          "Could not resolve user-field ID from admin endpoint",
-          error
-        );
+        logDebug(config, "Could not resolve user-field ID from admin endpoint", { error });
         resolvedUserFieldId = null;
         return null;
       })
@@ -982,62 +886,69 @@ export default apiInitializer((api) => {
   }
 
   async function fetchFullCurrentUser() {
-    if (!currentUser?.username) return null;
+    if (!currentUser?.username) {
+      return null;
+    }
 
     try {
       const store = api.container.lookup("service:store");
-      return (await store.find("user", currentUser.username)) || null;
+      return (await store.find("user", currentUser.username)) ?? null;
     } catch (error) {
-      logDebug(config, "Could not fetch full current user record", error);
+      logDebug(config, "Could not fetch full current user record", { error });
       return null;
     }
   }
 
   async function hoverCardsDisabledForUser() {
-    if (!currentUser || !config.userPreferenceFieldName) return false;
+    if (!currentUser || !config.userPreferenceFieldName) {
+      return false;
+    }
 
-    const directCandidates = normalizedFieldKeyVariants(
-      config.userPreferenceFieldName
-    );
-
-    const currentUserCustomFields = currentUser?.custom_fields || {};
-    const currentUserUserFields = currentUser?.user_fields || {};
+    const directCandidates = normalizedFieldKeyVariants(config.userPreferenceFieldName);
+    const currentUserCustomFields = currentUser?.custom_fields;
+    const currentUserUserFields = currentUser?.user_fields;
 
     let match =
       findTruthyFieldMatch(currentUserCustomFields, directCandidates) ||
       findTruthyFieldMatch(currentUserUserFields, directCandidates);
 
-    if (match) return true;
+    if (match) {
+      return true;
+    }
 
     const resolvedId = await resolveUserFieldIdForAdmins();
-    const resolvedCandidates = resolvedId
-      ? normalizedFieldKeyVariants(resolvedId)
-      : [];
+    const resolvedCandidates = resolvedId ? normalizedFieldKeyVariants(resolvedId) : [];
 
     if (resolvedCandidates.length) {
       match =
         findTruthyFieldMatch(currentUserCustomFields, resolvedCandidates) ||
         findTruthyFieldMatch(currentUserUserFields, resolvedCandidates);
 
-      if (match) return true;
+      if (match) {
+        return true;
+      }
     }
 
     const fullUser = await fetchFullCurrentUser();
-    const fullUserFields = fullUser?.user_fields || {};
-    const fullUserCustomFields = fullUser?.custom_fields || {};
+    const fullUserFields = fullUser?.user_fields;
+    const fullUserCustomFields = fullUser?.custom_fields;
 
     match =
       findTruthyFieldMatch(fullUserFields, directCandidates) ||
       findTruthyFieldMatch(fullUserCustomFields, directCandidates);
 
-    if (match) return true;
+    if (match) {
+      return true;
+    }
 
     if (resolvedCandidates.length) {
       match =
         findTruthyFieldMatch(fullUserFields, resolvedCandidates) ||
         findTruthyFieldMatch(fullUserCustomFields, resolvedCandidates);
 
-      if (match) return true;
+      if (match) {
+        return true;
+      }
     }
 
     return false;
@@ -1056,10 +967,15 @@ export default apiInitializer((api) => {
 
   function onTooltipClick(event) {
     const target = event.target;
-    if (!(target instanceof Element)) return;
+
+    if (!(target instanceof Element)) {
+      return;
+    }
 
     const inCard = target.closest(".topic-hover-card");
-    if (!inCard) return;
+    if (!inCard) {
+      return;
+    }
 
     const closeBtn = target.closest("[data-thc-close]");
     if (closeBtn) {
@@ -1078,32 +994,48 @@ export default apiInitializer((api) => {
       return;
     }
 
-    if (viewport.isMobileInteractionMode()) {
+    if (viewport.isMobileInteractionMode) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
   function onMouseOver(event) {
-    if (viewport.isMobileInteractionMode()) return;
-    if (!(event.target instanceof Element)) return;
+    if (viewport.isMobileInteractionMode) {
+      return;
+    }
+
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const target = matchPreviewTarget(link, config);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     mouseIsOverAnchor = true;
     scheduleShow(target, link.getBoundingClientRect(), link);
   }
 
   function onMouseOut(event) {
-    if (viewport.isMobileInteractionMode()) return;
-    if (!(event.target instanceof Element)) return;
+    if (viewport.isMobileInteractionMode) {
+      return;
+    }
+
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     mouseIsOverAnchor = false;
     cancel(showTimer);
@@ -1111,15 +1043,27 @@ export default apiInitializer((api) => {
   }
 
   function onTouchStart(event) {
-    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
-    if (!(event.target instanceof Element)) return;
-    if (event.target.closest(TOOLTIP_SELECTOR)) return;
+    if (!viewport.isMobileInteractionMode || !config.mobileEnabled) {
+      return;
+    }
+
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
+    if (event.target.closest(TOOLTIP_SELECTOR)) {
+      return;
+    }
 
     const link = event.target.closest("a[href]");
-    if (!link || !linkInSupportedArea(link, config)) return;
+    if (!link || !linkInSupportedArea(link, config)) {
+      return;
+    }
 
     const target = matchPreviewTarget(link, config);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     currentAnchor = link;
     event.preventDefault();
@@ -1130,8 +1074,13 @@ export default apiInitializer((api) => {
   }
 
   function onDocumentClick(event) {
-    if (!viewport.isMobileInteractionMode() || !config.mobileEnabled) return;
-    if (!(event.target instanceof Element)) return;
+    if (!viewport.isMobileInteractionMode || !config.mobileEnabled) {
+      return;
+    }
+
+    if (!(event.target instanceof Element)) {
+      return;
+    }
 
     if (event.target.closest("[data-thc-open-topic]")) {
       suppressNextClick = false;
@@ -1140,11 +1089,8 @@ export default apiInitializer((api) => {
 
     if (suppressNextClick) {
       const link = event.target.closest("a[href]");
-      if (
-        link &&
-        linkInSupportedArea(link, config) &&
-        matchPreviewTarget(link, config)
-      ) {
+
+      if (link && linkInSupportedArea(link, config) && matchPreviewTarget(link, config)) {
         event.preventDefault();
         event.stopPropagation();
         suppressNextClick = false;
@@ -1152,14 +1098,19 @@ export default apiInitializer((api) => {
       }
     }
 
-    if (event.target.closest(TOOLTIP_SELECTOR)) return;
+    if (event.target.closest(TOOLTIP_SELECTOR)) {
+      return;
+    }
 
-    if (tooltip?.classList.contains("is-visible")) hideCard();
+    if (tooltip?.classList.contains("is-visible")) {
+      hideCard();
+    }
+
     suppressNextClick = false;
   }
 
   function onScroll(event) {
-    if (event.target?.closest?.(`.topic-hover-card, ${TOOLTIP_SELECTOR}`)) {
+    if (event.target?.closest?.(".topic-hover-card, " + TOOLTIP_SELECTOR)) {
       return;
     }
 
@@ -1172,32 +1123,46 @@ export default apiInitializer((api) => {
     if (tooltip?.classList.contains("is-visible")) {
       hideCard();
     }
+
     suppressNextClick = false;
   }
 
   function setupPrefetch() {
-    if (!config.prefetchEnabled) return;
+    if (!config.prefetchEnabled) {
+      return;
+    }
 
     const prefetched = new Set();
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
+          if (!entry.isIntersecting) {
+            continue;
+          }
 
           const link = entry.target;
           const href = link?.href;
-          if (!href || prefetched.has(href)) continue;
+
+          if (!href || prefetched.has(href)) {
+            continue;
+          }
 
           prefetched.add(href);
           observer.unobserve(link);
 
           const target = matchPreviewTarget(link, config);
-          if (!target) continue;
+          if (!target) {
+            continue;
+          }
 
           const controller = new AbortController();
           const timeoutMs = providerTimeoutMs(target?.providerKey, config, 3000);
           const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          Promise.resolve(fetchPreview(target, controller.signal)).finally(() => {
+            clearTimeout(timeoutId);
+          });
         }
       },
       {
@@ -1219,7 +1184,9 @@ export default apiInitializer((api) => {
     const mutationObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (!(node instanceof Element)) continue;
+          if (!(node instanceof Element)) {
+            continue;
+          }
 
           if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
             observer.observe(node);
@@ -1234,15 +1201,10 @@ export default apiInitializer((api) => {
       }
     });
 
-    mutationObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
 
-    cleanupFns.push(() => {
-      observer.disconnect();
-      mutationObserver.disconnect();
-    });
+    cleanupFns.push(() => observer.disconnect());
+    cleanupFns.push(() => mutationObserver.disconnect());
   }
 
   function bindEvents() {
@@ -1251,7 +1213,6 @@ export default apiInitializer((api) => {
     addCleanup(tooltip, "mouseenter", onTooltipMouseEnter);
     addCleanup(tooltip, "mouseleave", onTooltipMouseLeave);
     addCleanup(tooltip, "click", onTooltipClick);
-
     addCleanup(document, "mouseover", onMouseOver, { passive: true });
     addCleanup(document, "mouseout", onMouseOut, { passive: true });
     addCleanup(document, "touchstart", onTouchStart, { passive: false });
@@ -1262,77 +1223,77 @@ export default apiInitializer((api) => {
     setupPrefetch();
   }
 
-function applyBodyClasses() {
-  const body = document.body;
-  if (!body) return;
-
-  body.classList.remove(
-    "previews-underline-always",
-    "previews-underline-hover",
-    "previews-icon-before",
-    "previews-icon-after"
-  );
-
-  if (config.previewsShowUnderline) {
-    body.classList.add(
-      config.previewsUnderlineAlways
-        ? "previews-underline-always"
-        : "previews-underline-hover"
-    );
-  }
-
-  if (config.previewsShowIcon) {
-    body.classList.add(
-      config.previewsIconPosition === "before"
-        ? "previews-icon-before"
-        : "previews-icon-after"
-    );
-  }
-}
-
-  (async () => {
-    const disabledForUser = await hoverCardsDisabledForUser();
-    if (disabledForUser) {
-      logDebug(config, "Hover cards disabled for current user");
+  function applyBodyClasses() {
+    const body = document.body;
+    if (!body) {
       return;
     }
 
-    bindEvents();
+    body.classList.remove(
+      "previews-underline-always",
+      "previews-underline-hover",
+      "previews-icon-before",
+      "previews-icon-after"
+    );
+
+    if (config.previewsShowUnderline) {
+      body.classList.add(
+        config.previewsUnderlineAlways
+          ? "previews-underline-always"
+          : "previews-underline-hover"
+      );
+    }
+
+    if (config.previewsShowIcon) {
+      body.classList.add(
+        config.previewsIconPosition === "before"
+          ? "previews-icon-before"
+          : "previews-icon-after"
+      );
+    }
+  }
+
+  const disabledForUser = await hoverCardsDisabledForUser();
+
+  if (disabledForUser) {
+    logDebug(config, "Hover cards disabled for current user");
+    return;
+  }
+
+  bindEvents();
+  applyBodyClasses();
+
+  api.onPageChange(() => {
+    cancel(showTimer);
+    cancel(hideTimer);
+    cancel(clearSuppressionTimer);
+    hideCard();
+    currentPreviewKey = null;
+    suppressNextClick = false;
+    mouseIsOverAnchor = false;
+    clearCurrentAnchorDescription();
     applyBodyClasses();
-
-    api.onPageChange(() => {
-      cancel(showTimer);
-      cancel(hideTimer);
-      cancel(clearSuppressionTimer);
-      hideCard();
-      currentPreviewKey = null;
-      suppressNextClick = false;
-      mouseIsOverAnchor = false;
-      clearCurrentAnchorDescription();
-      applyBodyClasses();
-    });
-
-    logDebug(config, "Hover cards initialized", {
-      mobileEnabled: config.mobileEnabled,
-      topicCacheMax: config.topicCacheMax,
-      configuredField: config.userPreferenceFieldName,
-      currentViewportIsMobile: viewport.isMobileInteractionMode(),
-      densityDesktop: config.densityDesktop,
-      densityMobile: config.densityMobile,
-      previewLayout: config.previewLayout,
-      thumbnailPlacementDesktop: config.thumbnailPlacementDesktop,
-      thumbnailPlacementMobile: config.thumbnailPlacementMobile,
-      thumbnailSizeModeDesktop: config.thumbnailSizeModeDesktop,
-      thumbnailSizeModeMobile: config.thumbnailSizeModeMobile,
-      thumbnailSizePercentDesktop: config.thumbnailSizePercentDesktop,
-      thumbnailSizePercentMobile: config.thumbnailSizePercentMobile,
-      previewsTopicMode: config.previewsTopicMode,
-      previewsExternalMode: config.previewsExternalMode,
-      previewsWikipediaMode: config.previewsWikipediaMode,
-      wikipediaPreviewsBaseUrl: config.wikipediaPreviewsBaseUrl,
-    });
-  })().catch((error) => {
-    console.error("[discourse-rich-previews] Fatal init error:", error);
-    runCleanup();
   });
+
+  logDebug(config, "Hover cards initialized", {
+    mobileEnabled: config.mobileEnabled,
+    topicCacheMax: config.topicCacheMax,
+    configuredField: config.userPreferenceFieldName,
+    currentViewportIsMobile: viewport.isMobileInteractionMode,
+    densityDesktop: config.densityDesktop,
+    densityMobile: config.densityMobile,
+    previewLayout: config.previewLayout,
+    thumbnailPlacementDesktop: config.thumbnailPlacementDesktop,
+    thumbnailPlacementMobile: config.thumbnailPlacementMobile,
+    thumbnailSizeModeDesktop: config.thumbnailSizeModeDesktop,
+    thumbnailSizeModeMobile: config.thumbnailSizeModeMobile,
+    thumbnailSizePercentDesktop: config.thumbnailSizePercentDesktop,
+    thumbnailSizePercentMobile: config.thumbnailSizePercentMobile,
+    previewsTopicMode: config.previewsTopicMode,
+    previewsExternalMode: config.previewsExternalMode,
+    previewsWikipediaMode: config.previewsWikipediaMode,
+    wikipediaPreviewsBaseUrl: config.wikipediaPreviewsBaseUrl,
+  });
+}).catch((error) => {
+  console.error("discourse-rich-previews: Fatal init error", error);
 });
