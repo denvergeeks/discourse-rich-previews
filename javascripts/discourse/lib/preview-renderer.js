@@ -393,11 +393,17 @@ function buildTopicCategoryHTML(category, categories, config, isMobile) {
     return "";
   }
 
-  const color = category?.color || category?.text_color;
+  // API returns bare hex (e.g. "4d7097") or #-prefixed — normalise to #rrggbb
+  const rawColor = category?.color || category?.text_color || "";
+  const color = rawColor
+    ? rawColor.startsWith("#")
+      ? rawColor
+      : `#${rawColor}`
+    : null;
 
   return `
     <span class="topic-hover-card__badge topic-hover-card__badge--category"${
-      color ? ` style="--thc-category-color:#${escapeHTML(String(color))};"` : ""
+      color ? ` style="--thc-category-color:${escapeHTML(color)};"` : ""
     }>
       ${escapeHTML(categoryName)}
     </span>
@@ -449,20 +455,25 @@ function buildAuthorHTML(preview, config, isMobile) {
     return "";
   }
 
+  // Accept both camelCase (normalised preview) and snake_case (raw API object)
+  const avatarTemplate =
+    preview?.author?.avatarTemplate ||
+    preview?.author?.avatar_template ||
+    preview?.avatarTemplate ||
+    preview?.avatar_template ||
+    "";
+
   const avatarUrl = sanitizeURL(
     preview?.author?.avatarUrl ||
       preview?.avatarUrl ||
-      safeAvatarURL(
-        preview?.author?.avatarTemplate || preview?.avatar_template,
-        48
-      )
+      safeAvatarURL(avatarTemplate, 48)
   );
 
   return `
     <span class="topic-hover-card__meta-item topic-hover-card__meta-item--op">
       ${
         avatarUrl
-          ? `<img class="topic-hover-card__avatar" src="${avatarUrl}" alt="" loading="lazy" decoding="async">`
+          ? `<img class="topic-hover-card__op-avatar" src="${avatarUrl}" alt="" loading="lazy" decoding="async">`
           : ""
       }
       <span>${escapeHTML(username)}</span>
@@ -592,6 +603,14 @@ function buildOneboxLayoutBody(preview, config, isMobile, options = {}) {
   `;
 }
 
+// ---------------------------------------------------------------------------
+// Topic preview — handles both normalised preview objects and raw API shapes.
+//
+// topic-provider emits a normalised object (camelCase). When the initializer's
+// legacy buildCardHTML was still in use it received preview.raw (snake_case).
+// Now that all rendering flows through buildPreviewHTML we must tolerate both
+// key shapes so remote-topic and local-topic cards render identically.
+// ---------------------------------------------------------------------------
 function buildTopicPreviewHTML(
   preview,
   _provider,
@@ -600,16 +619,51 @@ function buildTopicPreviewHTML(
   isMobile
 ) {
   const { rootAttrs } = buildProviderRootAttrs(preview, config, "topic");
-  const title = preview?.title || "";
+
+  const title =
+    preview?.title ||
+    preview?.fancy_title ||
+    preview?.raw?.fancy_title ||
+    preview?.raw?.title ||
+    "";
+
+  // Accept camelCase (normalised) and snake_case (raw Discourse API) for image
   const imageUrl =
     preview?.imageUrl ||
+    preview?.image_url ||
     preview?.thumbnail ||
-    preview?.image ||
     preview?.thumbnailUrl ||
     preview?.thumbnail_url ||
+    preview?.raw?.image_url ||
     "";
-  const category = preview?.category || preview?.raw?.category || null;
-  const tags = preview?.tags || preview?.raw?.tags || [];
+
+  // category may be a full object (normalised) or an id + name on the raw obj
+  const category =
+    preview?.category ||
+    preview?.raw?.category ||
+    (preview?.category_id || preview?.raw?.category_id
+      ? {
+          id: preview?.category_id || preview?.raw?.category_id,
+          name:
+            preview?.category_name ||
+            preview?.raw?.category_name ||
+            preview?.category_slug ||
+            preview?.raw?.category_slug ||
+            "",
+          color:
+            preview?.category_color ||
+            preview?.raw?.category_color ||
+            "",
+        }
+      : null);
+
+  // tags may be an array (normalised) or tag_list (raw)
+  const tags =
+    preview?.tags ||
+    preview?.tag_list ||
+    preview?.raw?.tags ||
+    preview?.raw?.tag_list ||
+    [];
 
   const showPublishDate = pick(
     config,
@@ -661,7 +715,9 @@ function buildTopicPreviewHTML(
     showPublishDate
       ? buildMetaItem(
           "Created",
-          preview?.createdAt || preview?.created_at,
+          preview?.createdAt ||
+            preview?.created_at ||
+            preview?.raw?.created_at,
           "topic-hover-card__meta-item--date"
         )
       : "",
@@ -671,14 +727,16 @@ function buildTopicPreviewHTML(
           preview?.lastPostedAt ||
             preview?.bumpedAt ||
             preview?.last_posted_at ||
-            preview?.bumped_at,
+            preview?.bumped_at ||
+            preview?.raw?.last_posted_at ||
+            preview?.raw?.bumped_at,
           "topic-hover-card__meta-item--date"
         )
       : "",
     showViews
       ? buildMetaItem(
           "Views",
-          formatNumber(preview?.views || 0),
+          formatNumber(preview?.views || preview?.raw?.views || 0),
           "topic-hover-card__meta-item--stats"
         )
       : "",
@@ -687,8 +745,11 @@ function buildTopicPreviewHTML(
           "Replies",
           formatNumber(
             preview?.replyCount ??
-              preview?.postsCount ??
               preview?.reply_count ??
+              preview?.postsCount ??
+              preview?.posts_count ??
+              preview?.raw?.reply_count ??
+              preview?.raw?.posts_count ??
               0
           ),
           "topic-hover-card__meta-item--stats"
@@ -698,7 +759,12 @@ function buildTopicPreviewHTML(
       ? buildMetaItem(
           "Likes",
           formatNumber(
-            preview?.likeCount ?? preview?.like_count ?? preview?.like_score ?? 0
+            preview?.likeCount ??
+              preview?.like_count ??
+              preview?.like_score ??
+              preview?.raw?.like_count ??
+              preview?.raw?.like_score ??
+              0
           ),
           "topic-hover-card__meta-item--stats"
         )
