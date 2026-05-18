@@ -204,11 +204,11 @@ export function matchesExternalTarget(link, config) {
       return false;
     }
 
-    if (/(^|\\.)wikipedia\\.org$/i.test(url.hostname)) {
+    if (/(^|\.)wikipedia\.org$/i.test(url.hostname)) {
       return false;
     }
 
-    if (/^\\/t\\//.test(url.pathname) || /^\\/t\\//.test(href)) {
+    if (/^\/t\//.test(url.pathname) || /^\/t\//.test(href)) {
       return false;
     }
 
