@@ -374,7 +374,10 @@ function createAnchorFromWrapper(wrapper) {
     return null;
   }
 
-  const text = wrapper.textContent?.trim() || href;
+  const text =
+  wrapper.dataset.previewText?.trim() ||
+  wrapper.textContent?.trim() ||
+  href;
 
   wrapper.textContent = "";
 
