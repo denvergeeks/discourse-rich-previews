@@ -1,15 +1,19 @@
 /**
- * Registers the [preview]...[/preview] wrapper handling and applies
- * preview decoration to both manual wrapped links and auto-detected
- * eligible links in cooked content.
+ * Applies preview decoration to both manual wrapped links and
+ * auto-detected eligible links in cooked content.
  *
- * This includes a very narrow cooked-stage repair for malformed bare-URL
- * preview output of the form:
+ * This file intentionally performs a small cooked-stage repair for a few
+ * malformed literal [preview]...[/preview] output shapes that can still
+ * appear after markdown processing:
  *
- *   [preview]<a href="https://example.com/%5B/preview%5D">https://example.com/[/preview]</a>
+ * 1. [preview]https://example.com/[/preview]
+ *    -> may autolink as href="https://example.com/%5B/preview%5D"
  *
- * The repair is intentionally conservative and only runs when that exact
- * broken shape is detected.
+ * 2. [preview]<a href="https://example.com/">Label</a>[/preview]
+ *
+ * 3. [preview=<a href="https://example.com/">https://example.com/</a>]Label[/preview]
+ *
+ * The repair is narrow and DOM-based on purpose, to minimize production risk.
  */
 
 import { linkInSupportedArea } from "./rich-preview-utils";
@@ -23,6 +27,7 @@ import {
 const WRAP_SELECTOR = ".rich-preview-wrap[data-rich-preview='true']";
 const OPEN_TAG = "[preview]";
 const CLOSE_TAG = "[/preview]";
+const OPEN_EQ_PREFIX = "[preview=";
 const ENCODED_CLOSE_TAG = "%5B/preview%5D";
 
 function clearWrapModifierClasses(wrapEl) {
@@ -46,14 +51,19 @@ function clearWrapModifierClasses(wrapEl) {
 }
 
 function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   root
     .querySelectorAll(
       "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
     )
     .forEach((link) => {
-      if (!(link instanceof HTMLAnchorElement)) return;
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
       clearDecoratedLink(link);
     });
 }
@@ -74,55 +84,7 @@ function stripCloseTagSuffix(value) {
 
   return value
     .replace(new RegExp(`${ENCODED_CLOSE_TAG}$`, "i"), "")
-    .replace(new RegExp(`${CLOSE_TAG.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"), "");
-}
-
-function unwrapLeadingPreviewText(container) {
-  if (!(container instanceof Element)) {
-    return;
-  }
-
-  const firstNode = container.firstChild;
-
-  if (firstNode?.nodeType !== Node.TEXT_NODE) {
-    return;
-  }
-
-  const value = firstNode.nodeValue || "";
-  if (!value.includes(OPEN_TAG)) {
-    return;
-  }
-
-  const cleaned = value.replace(OPEN_TAG, "");
-  if (cleaned) {
-    firstNode.nodeValue = cleaned;
-  } else {
-    firstNode.remove();
-  }
-}
-
-function removeTrailingPreviewTextNodes(container) {
-  if (!(container instanceof Element)) {
-    return;
-  }
-
-  for (const node of [...container.childNodes]) {
-    if (node.nodeType !== Node.TEXT_NODE) {
-      continue;
-    }
-
-    const value = node.nodeValue || "";
-    if (!value.includes(CLOSE_TAG)) {
-      continue;
-    }
-
-    const cleaned = value.replace(CLOSE_TAG, "");
-    if (cleaned) {
-      node.nodeValue = cleaned;
-    } else {
-      node.remove();
-    }
-  }
+    .replace(/\[\/preview\]$/i, "");
 }
 
 function ensureWrapAroundAnchor(anchor) {
@@ -145,6 +107,55 @@ function ensureWrapAroundAnchor(anchor) {
   return wrap;
 }
 
+function trimTextNodeValue(node, matcher, replacement = "") {
+  if (node?.nodeType !== Node.TEXT_NODE) {
+    return false;
+  }
+
+  const original = node.nodeValue || "";
+  const updated = original.replace(matcher, replacement);
+
+  if (updated === original) {
+    return false;
+  }
+
+  if (updated) {
+    node.nodeValue = updated;
+  } else {
+    node.remove();
+  }
+
+  return true;
+}
+
+function cleanupPreviewMarkerText(container) {
+  if (!(container instanceof Element)) {
+    return;
+  }
+
+  for (const node of [...container.childNodes]) {
+    if (node.nodeType !== Node.TEXT_NODE) {
+      continue;
+    }
+
+    const value = node.nodeValue || "";
+    const cleaned = value
+      .replaceAll(OPEN_TAG, "")
+      .replaceAll(CLOSE_TAG, "")
+      .replace(/\[preview=$/i, "");
+
+    if (cleaned === value) {
+      continue;
+    }
+
+    if (cleaned) {
+      node.nodeValue = cleaned;
+    } else {
+      node.remove();
+    }
+  }
+}
+
 function repairBrokenBareUrlPreview(container) {
   if (!(container instanceof Element)) {
     return false;
@@ -161,9 +172,8 @@ function repairBrokenBareUrlPreview(container) {
 
   const looksBroken =
     containerHtml.includes(OPEN_TAG) &&
-    (containerHtml.includes(CLOSE_TAG) ||
-      rawHref.toLowerCase().includes(ENCODED_CLOSE_TAG)) &&
-    rawText.includes(CLOSE_TAG);
+    rawText.includes(CLOSE_TAG) &&
+    rawHref.toLowerCase().includes(ENCODED_CLOSE_TAG);
 
   if (!looksBroken) {
     return false;
@@ -179,40 +189,119 @@ function repairBrokenBareUrlPreview(container) {
   anchor.setAttribute("href", repairedHref);
   anchor.textContent = repairedText;
 
-  unwrapLeadingPreviewText(container);
-  removeTrailingPreviewTextNodes(container);
+  trimTextNodeValue(container.firstChild, /\[preview\]/i, "");
+  cleanupPreviewMarkerText(container);
+  ensureWrapAroundAnchor(anchor);
 
-  const wrap = ensureWrapAroundAnchor(anchor);
-
-  // Remove any stray literal preview tags still present in the container HTML.
-  for (const node of [...container.childNodes]) {
-    if (node === wrap) {
-      continue;
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const value = node.nodeValue || "";
-      if (value.includes(OPEN_TAG) || value.includes(CLOSE_TAG)) {
-        const cleaned = value.replaceAll(OPEN_TAG, "").replaceAll(CLOSE_TAG, "");
-        if (cleaned) {
-          node.nodeValue = cleaned;
-        } else {
-          node.remove();
-        }
-      }
-    }
-  }
-
-  return !!wrap;
+  return true;
 }
 
-function repairBrokenBareUrlPreviews(root) {
+function repairLiteralWrappedAnchorPreview(container) {
+  if (!(container instanceof Element)) {
+    return false;
+  }
+
+  const anchor = container.querySelector(":scope > a[href]");
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return false;
+  }
+
+  const firstNode = container.firstChild;
+  const lastNode = container.lastChild;
+
+  const hasLeadingOpenTag =
+    firstNode?.nodeType === Node.TEXT_NODE &&
+    (firstNode.nodeValue || "").includes(OPEN_TAG);
+
+  const hasTrailingCloseTag =
+    lastNode?.nodeType === Node.TEXT_NODE &&
+    (lastNode.nodeValue || "").includes(CLOSE_TAG);
+
+  if (!hasLeadingOpenTag || !hasTrailingCloseTag) {
+    return false;
+  }
+
+  trimTextNodeValue(firstNode, /\[preview\]/i, "");
+  trimTextNodeValue(lastNode, /\[\/preview\]/i, "");
+  cleanupPreviewMarkerText(container);
+  ensureWrapAroundAnchor(anchor);
+
+  return true;
+}
+
+function repairPreviewEqualsAnchorSyntax(container) {
+  if (!(container instanceof Element)) {
+    return false;
+  }
+
+  const anchor = container.querySelector(":scope > a[href]");
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return false;
+  }
+
+  const firstNode = container.firstChild;
+  const afterAnchor = anchor.nextSibling;
+  const lastNode = container.lastChild;
+
+  const hasOpeningPrefix =
+    firstNode?.nodeType === Node.TEXT_NODE &&
+    (firstNode.nodeValue || "").includes(OPEN_EQ_PREFIX);
+
+  const closesBracketAfterAnchor =
+    afterAnchor?.nodeType === Node.TEXT_NODE &&
+    (afterAnchor.nodeValue || "").startsWith("]");
+
+  const hasClosingTag =
+    lastNode?.nodeType === Node.TEXT_NODE &&
+    (lastNode.nodeValue || "").includes(CLOSE_TAG);
+
+  if (!hasOpeningPrefix || !closesBracketAfterAnchor || !hasClosingTag) {
+    return false;
+  }
+
+  const href = anchor.getAttribute("href") || "";
+  if (!href) {
+    return false;
+  }
+
+  const labelText = (afterAnchor.nodeValue || "").replace(/^\]/, "");
+  const closingText = (lastNode.nodeValue || "").replace(CLOSE_TAG, "");
+  const finalLabel = `${labelText}${closingText}`.trim();
+
+  anchor.setAttribute("href", href);
+  anchor.textContent = finalLabel || anchor.textContent || href;
+
+  trimTextNodeValue(firstNode, /\[preview=$/i, "");
+
+  if (afterAnchor.nodeType === Node.TEXT_NODE) {
+    afterAnchor.nodeValue = "";
+    afterAnchor.remove();
+  }
+
+  trimTextNodeValue(lastNode, /\[\/preview\]/i, "");
+  cleanupPreviewMarkerText(container);
+  ensureWrapAroundAnchor(anchor);
+
+  return true;
+}
+
+function repairLiteralPreviewSyntax(root) {
   if (!(root instanceof Element)) {
     return;
   }
 
   root.querySelectorAll("p, li, td, div, blockquote").forEach((container) => {
-    repairBrokenBareUrlPreview(container);
+    if (!(container instanceof Element)) {
+      return;
+    }
+
+    if (container.querySelector(WRAP_SELECTOR)) {
+      return;
+    }
+
+    repairBrokenBareUrlPreview(container) ||
+      repairLiteralWrappedAnchorPreview(container) ||
+      repairPreviewEqualsAnchorSyntax(container);
   });
 }
 
@@ -283,7 +372,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
   }
 
   if (tagName === "preview") {
-    repairBrokenBareUrlPreviews(root);
+    repairLiteralPreviewSyntax(root);
   }
 
   if (!config) {
