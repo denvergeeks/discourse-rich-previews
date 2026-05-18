@@ -24,70 +24,36 @@ function normalizeUrlCandidate(value) {
   return "";
 }
 
-function classifyPreviewPayload(attrValue, inner) {
-  const trimmedAttr = String(attrValue ?? "").trim();
+function buildAnchorHTML(url, label) {
+  const safeUrl = normalizeUrlCandidate(url);
+  const safeLabel = String(label ?? "").trim();
+
+  if (!safeUrl) {
+    return safeLabel ? escapeHtml(safeLabel) : "";
+  }
+
+  return `<a href="${escapeHtml(safeUrl)}">${escapeHtml(
+    safeLabel || safeUrl
+  )}</a>`;
+}
+
+function transformPreviewInner(attrValue, inner) {
   const trimmedInner = String(inner ?? "").trim();
+  const trimmedAttr = String(attrValue ?? "").trim();
 
   if (trimmedAttr) {
-    return {
-      form: "explicit",
-      url: normalizeUrlCandidate(trimmedAttr),
-      label: trimmedInner,
-      markdown: "",
-    };
+    return buildAnchorHTML(trimmedAttr, trimmedInner);
   }
 
   if (!trimmedInner) {
-    return {
-      form: "empty",
-      url: "",
-      label: "",
-      markdown: "",
-    };
+    return "";
   }
 
   if (/^https?:\/\/\S+$/i.test(trimmedInner)) {
-    return {
-      form: "bare",
-      url: normalizeUrlCandidate(trimmedInner),
-      label: trimmedInner,
-      markdown: "",
-    };
+    return buildAnchorHTML(trimmedInner, trimmedInner);
   }
 
-  return {
-    form: "markdown",
-    url: "",
-    label: "",
-    markdown: trimmedInner,
-  };
-}
-
-function buildPlaceholderSpan(payload) {
-  const attrs = [
-    `class="rich-preview-wrap"`,
-    `data-rich-preview="true"`,
-    `data-preview-form="${escapeHtml(payload.form)}"`,
-  ];
-
-  if (payload.url) {
-    attrs.push(`data-preview-url="${escapeHtml(payload.url)}"`);
-  }
-
-  if (payload.label) {
-    attrs.push(`data-preview-label="${escapeHtml(payload.label)}"`);
-  }
-
-  if (payload.markdown) {
-    attrs.push(`data-preview-markdown="${escapeHtml(payload.markdown)}"`);
-    return `<span ${attrs.join(" ")}>${escapeHtml(payload.markdown)}</span>`;
-  }
-
-  if (payload.label) {
-    return `<span ${attrs.join(" ")}>${escapeHtml(payload.label)}</span>`;
-  }
-
-  return `<span ${attrs.join(" ")}></span>`;
+  return trimmedInner;
 }
 
 function wrapPreviewTags(source, tagName = "preview") {
@@ -103,7 +69,9 @@ function wrapPreviewTags(source, tagName = "preview") {
   );
 
   return source.replace(pattern, (_match, attrValue, inner) => {
-    return buildPlaceholderSpan(classifyPreviewPayload(attrValue, inner));
+    const renderedInner = transformPreviewInner(attrValue, inner);
+
+    return `<span class="rich-preview-wrap" data-rich-preview="true">${renderedInner}</span>`;
   });
 }
 
@@ -115,10 +83,7 @@ export function setup(helper) {
   helper.allowList([
     "span.rich-preview-wrap",
     "span[data-rich-preview]",
-    "span[data-preview-form]",
-    "span[data-preview-url]",
-    "span[data-preview-label]",
-    "span[data-preview-markdown]",
+    "a[href]",
   ]);
 
   helper.registerPlugin((md) => {
