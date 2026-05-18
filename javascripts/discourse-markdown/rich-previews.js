@@ -1,16 +1,6 @@
 console.log("[rich-previews canary] module evaluated");
 
 export function setup(helper) {
-  console.log("[rich-previews canary] setup called", helper);
-}
-
-export default {
-  setup(helper) {
-    console.log("[rich-previews canary] default.setup called", helper);
-  },
-};
-
-export function setup(helper) {
   console.log("[rich-previews canary] setup called", {
     helper,
     markdownIt: helper?.markdownIt,
@@ -31,7 +21,6 @@ export function setup(helper) {
 
   helper.registerPlugin((md) => {
     console.log("[rich-previews canary] registerPlugin called", {
-      md,
       hasInline: !!md?.inline,
       hasBbcode: !!md?.inline?.bbcode,
       hasRuler: !!md?.inline?.bbcode?.ruler,
@@ -49,8 +38,6 @@ export function setup(helper) {
         console.log("[rich-previews canary] wrap fired", {
           tagInfo,
           content,
-          startToken,
-          endToken,
         });
 
         startToken.type = "html_inline";
