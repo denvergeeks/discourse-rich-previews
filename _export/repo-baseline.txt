@@ -1,7 +1,7 @@
 REPO: discourse-rich-previews
 BRANCH: main
-COMMIT: d6544ad2f21ff0b887da39d98606f3d5d51a3269
-GENERATED: 2026-05-17 16:31:56 -0600
+COMMIT: f7bac43c063de7e5ca3530a5b34fd963e44c9de0
+GENERATED: 2026-05-17 19:43:21 -0600
 
 === FILE TREE ===
 .discourse-compatibility
@@ -926,59 +926,60 @@ https://github.com/denvergeeks/discourse-proxy-safe.git
   }
 }
 
-// ─── Rich Preview Inline Links (auto + manual) ──────────────────────────────
-
-.rich-preview-wrap {
-  display: inline;
-  --rp-color: var(--tertiary);
-
-  > a {
-    display: inline;
-    color: inherit;
-    overflow-wrap: anywhere;
-  }
-}
+// ─── Rich Preview Inline Links (auto + wrapped BBCode) ───────────────────────
 
 .rich-preview-link {
   --rp-color: var(--tertiary);
+
   display: inline;
+  color: inherit;
   overflow-wrap: anywhere;
+  text-decoration-skip-ink: auto;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration-color: var(--rp-color, var(--tertiary)) !important;
+  }
+
+  > .thc-inline-glyph {
+    position: relative;
+    top: 0.02em;
+  }
+
+  > .thc-inline-glyph,
+  > .thc-inline-glyph .d-icon,
+  > .thc-inline-glyph svg {
+    color: currentColor;
+    fill: currentColor;
+  }
+
+  &.rich-preview-link--icon-after > .thc-inline-glyph {
+    margin-inline-start: 0.22em;
+    margin-inline-end: 0;
+  }
+
+  &.rich-preview-link--icon-before > .thc-inline-glyph {
+    margin-inline-start: 0;
+    margin-inline-end: 0.22em;
+  }
 }
 
-.rich-preview-wrap--topic,
 .rich-preview-link--topic {
   --rp-color: var(--success);
 }
 
-.rich-preview-wrap--remote_topic,
 .rich-preview-link--remote_topic {
   --rp-color: var(--success);
 }
 
-.rich-preview-wrap--external,
 .rich-preview-link--external {
   --rp-color: var(--tertiary);
 }
 
-.rich-preview-wrap--wikipedia,
 .rich-preview-link--wikipedia {
   --rp-color: var(--love);
 }
 
-// Manual / wrapped underline
-.rich-preview-wrap--underline-always > a,
-.rich-preview-wrap--underline-hover > a:hover {
-  text-decoration-line: underline;
-  text-decoration-style: dotted;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 0.18em;
-  text-decoration-color: var(--rp-color, var(--tertiary));
-  transition:
-    text-decoration-color 120ms ease,
-    color 120ms ease;
-}
-
-// Auto-link underline
 .cooked a.rich-preview-link.rich-preview-link--underline-always,
 .d-editor-preview a.rich-preview-link.rich-preview-link--underline-always,
 a.rich-preview-link.rich-preview-link--underline-always {
@@ -993,8 +994,11 @@ a.rich-preview-link.rich-preview-link--underline-always {
 }
 
 .cooked a.rich-preview-link.rich-preview-link--underline-hover:hover,
+.cooked a.rich-preview-link.rich-preview-link--underline-hover:focus-visible,
 .d-editor-preview a.rich-preview-link.rich-preview-link--underline-hover:hover,
-a.rich-preview-link.rich-preview-link--underline-hover:hover {
+.d-editor-preview a.rich-preview-link.rich-preview-link--underline-hover:focus-visible,
+a.rich-preview-link.rich-preview-link--underline-hover:hover,
+a.rich-preview-link.rich-preview-link--underline-hover:focus-visible {
   text-decoration-line: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1.5px;
@@ -1005,7 +1009,6 @@ a.rich-preview-link.rich-preview-link--underline-hover:hover {
     color 120ms ease;
 }
 
-// Shared glyph styling
 .thc-inline-glyph,
 .thc-inline-glyph-wrap {
   display: inline-flex;
@@ -1028,7 +1031,6 @@ a.rich-preview-link.rich-preview-link--underline-hover:hover {
   }
 }
 
-// Glyph spacing for auto links
 a.rich-preview-link.rich-preview-link--icon-after > .thc-inline-glyph {
   margin-inline-start: 0.22em;
 }
@@ -1037,7 +1039,61 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
 }
 
-// Glyph spacing for wrapped/manual links
+// Wrapper-based rich preview links for cooked [preview]...[/preview] output.
+.rich-preview-wrap {
+  --rp-color: var(--tertiary);
+
+  display: inline;
+  color: inherit;
+
+  > a {
+    display: inline;
+    color: inherit;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+    text-decoration-skip-ink: auto;
+  }
+}
+
+.rich-preview-wrap--topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--remote_topic {
+  --rp-color: var(--success);
+}
+
+.rich-preview-wrap--external {
+  --rp-color: var(--tertiary);
+}
+
+.rich-preview-wrap--wikipedia {
+  --rp-color: var(--love);
+}
+
+.rich-preview-wrap--underline-always > a {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rp-color, var(--tertiary));
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
+}
+
+.rich-preview-wrap--underline-hover > a:hover,
+.rich-preview-wrap--underline-hover > a:focus-visible {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--rp-color, var(--tertiary));
+  transition:
+    text-decoration-color 120ms ease,
+    color 120ms ease;
+}
+
 .rich-preview-wrap--icon-after > .thc-inline-glyph-wrap {
   margin-inline-start: 0.22em;
 }
@@ -1046,13 +1102,11 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
 }
 
-// Inline-onebox protection
 .cooked a.inline-onebox.rich-preview-link,
 .d-editor-preview a.inline-onebox.rich-preview-link {
   text-decoration-skip-ink: auto;
 }
 
-// Fine vertical alignment in compact contexts
 .cooked a.rich-preview-link > .thc-inline-glyph,
 .d-editor-preview a.rich-preview-link > .thc-inline-glyph,
 .rich-preview-wrap > .thc-inline-glyph-wrap {
@@ -1591,81 +1645,68 @@ export default [...DiscourseRecommendedTheme];
 
 === FILE: javascripts/discourse-markdown/rich-previews.js ===
 ```js
-function normalizeAttrValue(value) {
-  return String(value ?? "").trim();
-}
-
-function getPreviewHref(attrs, content) {
-  const explicitHref = normalizeAttrValue(attrs?._default);
-  const fallbackHref = normalizeAttrValue(content);
-
-  return explicitHref || fallbackHref;
-}
-
-function copyAttrs(token, attrs = {}) {
-  Object.entries(attrs).forEach(([name, value]) => {
-    if (value === null || value === undefined || value === "") {
-      return;
-    }
-
-    token.attrSet(name, String(value));
-  });
-}
-
-function buildAnchorTokens(startToken, endToken, tagInfo, content) {
-  const href = getPreviewHref(tagInfo?.attrs, content);
-
-  if (!href) {
-    startToken.type = "text";
-    startToken.tag = "";
-    startToken.nesting = 0;
-    startToken.content = "";
-
-    endToken.type = "text";
-    endToken.tag = "";
-    endToken.nesting = 0;
-    endToken.content = "";
-
-    return false;
-  }
-
-  startToken.type = "link_open";
-  startToken.tag = "a";
-  startToken.nesting = 1;
-  startToken.content = "";
-  startToken.attrs = [];
-
-  copyAttrs(startToken, {
-    href,
-    "data-bbcode": "true",
-  });
-
-  const title = normalizeAttrValue(tagInfo?.attrs?.title);
-  if (title) {
-    startToken.attrSet("title", title);
-  }
-
-  endToken.type = "link_close";
-  endToken.tag = "a";
-  endToken.nesting = -1;
-  endToken.content = "";
-
-  return false;
-}
+console.log("[rich-previews canary] module evaluated");
 
 export function setup(helper) {
+  console.log("[rich-previews canary] setup called", {
+    helper,
+    markdownIt: helper?.markdownIt,
+  });
+
   if (!helper?.markdownIt) {
+    console.log("[rich-previews canary] helper.markdownIt missing, aborting");
     return;
   }
 
+  helper.allowList([
+    "span.rich-preview-wrap",
+    "span[data-canary]",
+    "span[data-bbcode]",
+  ]);
+
+  console.log("[rich-previews canary] allowList applied");
+
   helper.registerPlugin((md) => {
+    console.log("[rich-previews canary] registerPlugin called", {
+      hasInline: !!md?.inline,
+      hasBbcode: !!md?.inline?.bbcode,
+      hasRuler: !!md?.inline?.bbcode?.ruler,
+    });
+
+    if (!md?.inline?.bbcode?.ruler) {
+      console.log("[rich-previews canary] bbcode ruler missing");
+      return;
+    }
+
     md.inline.bbcode.ruler.push("preview", {
       tag: "preview",
 
       wrap(startToken, endToken, tagInfo, content) {
-        return buildAnchorTokens(startToken, endToken, tagInfo, content);
+        console.log("[rich-previews canary] wrap fired", {
+          tagInfo,
+          content,
+        });
+
+        startToken.type = "html_inline";
+        startToken.tag = "";
+        startToken.nesting = 0;
+        startToken.attrs = null;
+        startToken.content =
+          '<span class="rich-preview-wrap" data-canary="true" data-bbcode="true">';
+        startToken.children = null;
+
+        endToken.type = "html_inline";
+        endToken.tag = "";
+        endToken.nesting = 0;
+        endToken.attrs = null;
+        endToken.content = "</span>";
+        endToken.children = null;
+
+        return false;
       },
     });
+
+    console.log("[rich-previews canary] preview rule registered");
   });
 }
 ```
@@ -1712,8 +1753,12 @@ import {
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 import { createExternalProvider } from "../lib/providers/external-provider";
-import { registerPreviewBBCode } from "../lib/preview-bbcode";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
+import {
+  decorateAutoDetectedLink,
+  decorateWrappedPreviewLink,
+  clearDecoratedLink,
+} from "../lib/link-decorator";
 
 function discourseIcon(name) {
   try {
@@ -2239,14 +2284,97 @@ function buildCardHTML(topic, categories, config, isMobile = false) {
   }
 }
 
+function isPreviewWrapper(element) {
+  return element?.classList?.contains("rich-preview-wrap");
+}
+
+function findDirectPreviewAnchor(wrapper) {
+  const anchor = wrapper?.querySelector?.(":scope > a[href]");
+  return anchor instanceof HTMLAnchorElement ? anchor : null;
+}
+
+function clearPreviewDecorationForElement(element) {
+  if (!(element instanceof Element)) {
+    return;
+  }
+
+  if (isPreviewWrapper(element)) {
+    const anchor = findDirectPreviewAnchor(element);
+    clearDecoratedLink(anchor, element);
+    return;
+  }
+
+  if (element instanceof HTMLAnchorElement) {
+    clearDecoratedLink(element);
+  }
+}
+
+function decoratePreviewElement(element, config) {
+  if (!(element instanceof Element)) {
+    return;
+  }
+
+  if (isPreviewWrapper(element)) {
+    const anchor = findDirectPreviewAnchor(element);
+    if (!anchor || !linkInSupportedArea(anchor, config)) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    const target = matchPreviewTarget(anchor, config);
+    if (!target) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    decorateWrappedPreviewLink(element, anchor, target, config);
+    return;
+  }
+
+  if (element instanceof HTMLAnchorElement) {
+    if (!linkInSupportedArea(element, config)) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    const target = matchPreviewTarget(element, config);
+    if (!target) {
+      clearPreviewDecorationForElement(element);
+      return;
+    }
+
+    decorateAutoDetectedLink(element, target, config);
+  }
+}
+
+function decorateCooked(root, config) {
+  if (!(root instanceof Element)) {
+    return;
+  }
+
+  root.querySelectorAll(".rich-preview-wrap").forEach((wrapper) => {
+    decoratePreviewElement(wrapper, config);
+  });
+
+  root.querySelectorAll("a[href]").forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    if (link.closest(".rich-preview-wrap")) {
+      return;
+    }
+
+    decoratePreviewElement(link, config);
+  });
+}
+
 export default apiInitializer((api) => {
   const config = readConfig(settings);
 
   if (!config.enabled) {
     return;
   }
-
-  registerPreviewBBCode(api, config);
 
   if (composerButtonShouldShow(config)) {
     registerPreviewComposerButton(api, config);
@@ -3117,6 +3245,13 @@ export default apiInitializer((api) => {
     setupPrefetch();
   }
 
+  api.decorateCookedElement(
+    (element) => {
+      decorateCooked(element, config);
+    },
+    { id: "discourse-rich-previews-cooked" }
+  );
+
   (async () => {
     const disabledForUser = await hoverCardsDisabledForUser();
     if (disabledForUser) {
@@ -3518,13 +3653,8 @@ export default class RichPreviewLinkModal extends Component {
 
 === FILE: javascripts/discourse/lib/link-decorator.js ===
 ```js
-import { iconHTML } from "discourse/lib/icon-library";
-
-import {
-  providerColor,
-  sanitizeURL,
-  getPreviewProvider,
-} from "./rich-preview-utils";
+import iconHTML from "discourse/lib/icon-library";
+import { providerColor, sanitizeURL, getPreviewProvider } from "./rich-preview-utils";
 
 const WRAP_TYPE_CLASSES = [
   "rich-preview-wrap--topic",
@@ -3589,6 +3719,7 @@ function clearWrapperState(wrapper) {
   wrapper.classList.remove(...WRAP_TYPE_CLASSES, ...WRAP_MODE_CLASSES);
   wrapper.style.removeProperty("--rp-color");
   delete wrapper.dataset.providerKey;
+  delete wrapper.dataset.richPreview;
   removeWrapperGlyphNode(wrapper);
 }
 
@@ -3597,15 +3728,14 @@ function clearInlineProviderPresentation(link, wrapper = null) {
     link.style.removeProperty("--rp-color");
     removeInlineGlyphNode(link);
     clearLinkClasses(link);
-
     delete link.dataset.richPreviewType;
     delete link.dataset.richPreviewUnderline;
     delete link.dataset.richPreviewIcon;
+    delete link.dataset.richPreview;
   }
 
   if (wrapper) {
-    wrapper.style.removeProperty("--rp-color");
-    removeWrapperGlyphNode(wrapper);
+    clearWrapperState(wrapper);
   }
 }
 
@@ -3614,18 +3744,19 @@ function renderInlineProviderGlyph(providerKey, config) {
   const iconName = provider?.icon;
 
   if (!iconName) {
-    return "";
+    return null;
   }
 
-  let html = "";
+  let html;
+
   try {
-    html = iconHTML(iconName) || "";
+    html = iconHTML(iconName);
   } catch {
     html = "";
   }
 
   if (!html) {
-    return "";
+    return null;
   }
 
   return `<span class="thc-inline-glyph" aria-hidden="true">${html}</span>`;
@@ -3640,13 +3771,14 @@ function buildInlineGlyphFragment(providerKey, config, wrapperMode = false) {
 
   const template = document.createElement("template");
   template.innerHTML = html.trim();
-
   const node = template.content.firstElementChild || null;
+
   if (!node) {
     return null;
   }
 
   if (wrapperMode) {
+    node.classList.remove("thc-inline-glyph");
     node.classList.add("thc-inline-glyph-wrap");
   }
 
@@ -3674,6 +3806,12 @@ function normalizeIconMode(config, providerKey) {
     return null;
   }
 
+  const provider = getPreviewProvider(config, providerKey);
+
+  if (!provider || provider.enabled === false || provider.glyphMode === "none") {
+    return null;
+  }
+
   return normalizeInlineGlyphPosition(config);
 }
 
@@ -3683,7 +3821,19 @@ function anchorHasComplexInlineContent(link) {
   }
 
   return !!link.querySelector(
-    "img, picture, video, audio, svg:not(.thc-inline-glyph svg), .onebox, .badge-wrapper"
+    [
+      ":scope > img",
+      ":scope > picture",
+      ":scope > video",
+      ":scope > audio",
+      ":scope > svg:not(.thc-inline-glyph svg)",
+      ":scope > .onebox",
+      ":scope > .badge-wrapper",
+      ":scope > br",
+      ":scope > blockquote",
+      ":scope > code",
+      ":scope > pre",
+    ].join(", ")
   );
 }
 
@@ -3723,6 +3873,7 @@ function wrapperGlyphNodeIsInPosition(wrapper, glyphNode, position) {
   }
 
   const anchor = wrapper.querySelector(":scope > a[href]");
+
   if (!anchor) {
     return false;
   }
@@ -3746,6 +3897,7 @@ function placeWrapperGlyphNode(wrapper, glyphNode, position = "after") {
   glyphNode.remove();
 
   const anchor = wrapper.querySelector(":scope > a[href]");
+
   if (!anchor) {
     return;
   }
@@ -3782,15 +3934,11 @@ function applyLinkDecorationClasses(link, providerKey, underlineMode, iconMode) 
     delete link.dataset.richPreviewIcon;
   }
 
+  link.dataset.richPreview = "true";
   link.dataset.richPreviewType = providerKey;
 }
 
-function applyWrapperDecorationClasses(
-  wrapper,
-  providerKey,
-  underlineMode,
-  iconMode
-) {
+function applyWrapperDecorationClasses(wrapper, providerKey, underlineMode, iconMode) {
   if (!wrapper) {
     return;
   }
@@ -3813,6 +3961,7 @@ function applyWrapperDecorationClasses(
 
 function applyProviderColor(link, wrapper, providerKey, config) {
   const color = providerColor(providerKey, config, "var(--tertiary)");
+
   if (!color) {
     return;
   }
@@ -3838,6 +3987,7 @@ function ensureInlineGlyph(link, providerKey, config, iconMode) {
   }
 
   let glyphNode = link.querySelector(":scope > .thc-inline-glyph");
+
   if (!glyphNode) {
     glyphNode = buildInlineGlyphFragment(providerKey, config, false);
   }
@@ -3856,6 +4006,7 @@ function ensureWrapperGlyph(wrapper, providerKey, config, iconMode) {
   }
 
   let glyphNode = wrapper.querySelector(":scope > .thc-inline-glyph-wrap");
+
   if (!glyphNode) {
     glyphNode = buildInlineGlyphFragment(providerKey, config, true);
   }
@@ -3867,12 +4018,83 @@ function ensureWrapperGlyph(wrapper, providerKey, config, iconMode) {
   placeWrapperGlyphNode(wrapper, glyphNode, iconMode);
 }
 
-function decorateAnchorOnlyPreviewLink(link, target, config) {
+function createAnchorFromWrapper(wrapper) {
+  if (!(wrapper instanceof Element)) {
+    return null;
+  }
+
+  const href = sanitizeURL(wrapper.dataset.previewHref || wrapper.dataset.href);
+
+  if (!href) {
+    return null;
+  }
+
+  const text =
+  wrapper.dataset.previewText?.trim() ||
+  wrapper.textContent?.trim() ||
+  href;
+
+  wrapper.textContent = "";
+
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.textContent = text;
+  anchor.setAttribute("data-bbcode", "true");
+
+  const title = wrapper.dataset.previewTitle?.trim();
+  if (title) {
+    anchor.title = title;
+  }
+
+  wrapper.appendChild(anchor);
+  return anchor;
+}
+
+function ensureWrappedAnchor(wrapper, link = null) {
+  const existing = resolveLink(wrapper, link);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createAnchorFromWrapper(wrapper);
+}
+
+function normalizeWrappedAnchor(wrapper, link = null) {
+  const resolvedLink = ensureWrappedAnchor(wrapper, link);
+
+  if (!(resolvedLink instanceof HTMLAnchorElement)) {
+    return null;
+  }
+
+  const href = sanitizeURL(
+    resolvedLink.getAttribute("href") || wrapper?.dataset?.previewHref
+  );
+
+  if (!href) {
+    return null;
+  }
+
+  resolvedLink.setAttribute("href", href);
+  resolvedLink.setAttribute("data-bbcode", "true");
+
+  if (wrapper?.dataset?.previewTitle && !resolvedLink.getAttribute("title")) {
+    resolvedLink.setAttribute("title", wrapper.dataset.previewTitle);
+  }
+
+  return resolvedLink;
+}
+
+function wrappedProviderKey(target) {
+  return target?.glyphProviderKey || target?.providerKey || target?.type || null;
+}
+
+export function decorateAnchorOnlyPreviewLink(link, target, config) {
   if (!(link instanceof HTMLAnchorElement) || !target?.providerKey) {
     return;
   }
 
-  const providerKey = target.providerKey;
+  const providerKey = wrappedProviderKey(target);
   const underlineMode = normalizeUnderlineMode(config);
   const iconMode = normalizeIconMode(config, providerKey);
 
@@ -3893,38 +4115,37 @@ export function decorateAutoDetectedLink(link, target, config) {
 }
 
 export function decorateWrappedPreviewLink(wrapper, link, target, config) {
-  const resolvedLink = resolveLink(wrapper, link);
-  if (!(resolvedLink instanceof HTMLAnchorElement) || !target?.providerKey) {
+  if (!(wrapper instanceof Element) || !target?.providerKey) {
     return;
   }
 
-  const providerKey = target.providerKey;
+  const resolvedLink = normalizeWrappedAnchor(wrapper, link);
+
+  if (!(resolvedLink instanceof HTMLAnchorElement)) {
+    return;
+  }
+
+  const providerKey = wrappedProviderKey(target);
   const underlineMode = normalizeUnderlineMode(config);
   const iconMode = normalizeIconMode(config, providerKey);
 
   clearInlineProviderPresentation(resolvedLink, wrapper);
-  clearWrapperState(wrapper);
-
-  const href = sanitizeURL(resolvedLink.getAttribute("href"));
-  if (href) {
-    resolvedLink.setAttribute("href", href);
-  }
 
   applyLinkDecorationClasses(resolvedLink, providerKey, underlineMode, iconMode);
+  applyWrapperDecorationClasses(wrapper, providerKey, underlineMode, iconMode);
   applyProviderColor(resolvedLink, wrapper, providerKey, config);
 
-  if (wrapper instanceof Element) {
-    applyWrapperDecorationClasses(wrapper, providerKey, underlineMode, iconMode);
+  if (anchorHasComplexInlineContent(resolvedLink)) {
     ensureWrapperGlyph(wrapper, providerKey, config, iconMode);
     removeInlineGlyphNode(resolvedLink);
   } else {
+    removeWrapperGlyphNode(wrapper);
     ensureInlineGlyph(resolvedLink, providerKey, config, iconMode);
   }
 }
 
 export function clearDecoratedLink(link, wrapper = null) {
   const resolvedLink = resolveLink(wrapper, link);
-
   clearInlineProviderPresentation(resolvedLink, wrapper);
   clearWrapperState(wrapper);
 }
@@ -3932,199 +4153,78 @@ export function clearDecoratedLink(link, wrapper = null) {
 
 === FILE: javascripts/discourse/lib/preview-bbcode.js ===
 ```js
-import { iconHTML } from "discourse/lib/icon-library";
-
-import { matchPreviewTarget } from "./preview-router";
-import {
-  escapeHTML,
-  getPreviewProvider,
-  providerColor,
-  sanitizeURL,
-} from "./rich-preview-utils";
-
-function discourseIcon(name) {
-  try {
-    return iconHTML(name) || "";
-  } catch {
-    return "";
-  }
+function normalizeAttrValue(value) {
+  return String(value ?? "").trim();
 }
 
-function glyphHTMLForTarget(target, config) {
-  const providerKey = target?.providerKey || target?.type || "external";
-  const provider = getPreviewProvider(config, providerKey);
+function getPreviewHref(attrs, content) {
+  const explicitHref = normalizeAttrValue(attrs?._default);
+  const fallbackHref = normalizeAttrValue(content);
 
-  if (!provider || provider.enabled === false || provider.glyphMode === "none") {
-    return "";
-  }
-
-  if (provider.glyphMode === "emoji") {
-    const emoji = String(provider.emoji || "").trim();
-    return emoji
-      ? `<span class="thc-inline-glyph" aria-hidden="true">${escapeHTML(
-          emoji
-        )}</span>`
-      : "";
-  }
-
-  const iconName = String(provider.icon || "").trim();
-  if (!iconName) {
-    return "";
-  }
-
-  const icon = discourseIcon(iconName);
-  return icon
-    ? `<span class="thc-inline-glyph" aria-hidden="true">${icon}</span>`
-    : "";
+  return explicitHref || fallbackHref;
 }
 
-function shouldDecorateTarget(target, config) {
-  const providerKey = target?.providerKey || target?.type;
-  const provider = getPreviewProvider(config, providerKey);
+function copyAttrs(token, attrs = {}) {
+  Object.entries(attrs).forEach(([name, value]) => {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
 
-  if (!provider || provider.enabled === false) {
+    token.attrSet(name, String(value));
+  });
+}
+
+function buildAnchorTokens(startToken, endToken, tagInfo, content) {
+  const href = getPreviewHref(tagInfo?.attrs, content);
+
+  if (!href) {
+    startToken.type = "text";
+    startToken.tag = "";
+    startToken.nesting = 0;
+    startToken.content = "";
+
+    endToken.type = "text";
+    endToken.tag = "";
+    endToken.nesting = 0;
+    endToken.content = "";
+
     return false;
   }
 
-  switch (providerKey) {
-    case "topic":
-      return (
-        config.previewsTopicMode === "composer_only" ||
-        config.previewsTopicMode === "auto_and_composer"
-      );
+  startToken.type = "link_open";
+  startToken.tag = "a";
+  startToken.nesting = 1;
+  startToken.content = "";
+  startToken.attrs = [];
 
-    case "remote_topic":
-      return (
-        config.previewsRemoteTopicMode === "composer_only" ||
-        config.previewsRemoteTopicMode === "auto_and_composer"
-      );
+  copyAttrs(startToken, {
+    href,
+    "data-bbcode": "true",
+  });
 
-    case "external":
-      return (
-        config.previewsExternalMode === "composer_only" ||
-        config.previewsExternalMode === "auto_and_composer"
-      );
-
-    case "wikipedia":
-      return (
-        config.previewsWikipediaMode === "composer_only" ||
-        config.previewsWikipediaMode === "auto_and_composer"
-      );
-
-    default:
-      return false;
+  const title = normalizeAttrValue(tagInfo?.attrs?.title);
+  if (title) {
+    startToken.attrSet("title", title);
   }
+
+  endToken.type = "link_close";
+  endToken.tag = "a";
+  endToken.nesting = -1;
+  endToken.content = "";
+
+  return false;
 }
 
-function applyPreviewClasses(anchor, target, config) {
-  const providerKey = target?.providerKey || target?.type || "external";
+export function registerPreviewBBCode(api) {
+  api.registerMarkdownItPlugin((md) => {
+    md.inline.bbcode.ruler.push("preview", {
+      tag: "preview",
 
-  anchor.classList.add("rich-preview-link");
-  anchor.classList.add(`rich-preview-link--${providerKey}`);
-
-  if (config.previewsShowUnderline) {
-    anchor.classList.add(
-      config.previewsUnderlineAlways
-        ? "rich-preview-link--underline-always"
-        : "rich-preview-link--underline-hover"
-    );
-  }
-
-  if (config.previewsShowIcon) {
-    anchor.classList.add(
-      config.previewsIconPosition === "before"
-        ? "rich-preview-link--icon-before"
-        : "rich-preview-link--icon-after"
-    );
-  }
-}
-
-function applyPreviewDataAttributes(anchor, target, config) {
-  const providerKey = target?.providerKey || target?.type || "external";
-  const color = providerColor(providerKey, config, "");
-
-  anchor.dataset.richPreview = "true";
-  anchor.dataset.richPreviewType = providerKey;
-  anchor.dataset.bbcode = "true";
-
-  if (config.previewsShowUnderline) {
-    anchor.dataset.richPreviewUnderline = config.previewsUnderlineAlways
-      ? "always"
-      : "hover";
-  }
-
-  if (config.previewsShowIcon) {
-    anchor.dataset.richPreviewIcon = config.previewsIconPosition;
-  }
-
-  if (color) {
-    anchor.style.setProperty("--rp-color", color);
-  }
-}
-
-function appendGlyph(anchor, target, config) {
-  if (!config.previewsShowIcon) {
-    return;
-  }
-
-  if (anchor.querySelector(":scope > .thc-inline-glyph")) {
-    return;
-  }
-
-  const glyph = glyphHTMLForTarget(target, config);
-  if (!glyph) {
-    return;
-  }
-
-  if (config.previewsIconPosition === "before") {
-    anchor.insertAdjacentHTML("afterbegin", glyph);
-  } else {
-    anchor.insertAdjacentHTML("beforeend", glyph);
-  }
-}
-
-function decoratePreviewAnchor(anchor, config) {
-  if (!(anchor instanceof HTMLAnchorElement)) {
-    return;
-  }
-
-  if (anchor.dataset.richPreviewDecorated === "true") {
-    return;
-  }
-
-  if (anchor.closest(".onebox, .inline-onebox")) {
-    return;
-  }
-
-  const href = sanitizeURL(anchor.getAttribute("href"));
-  if (!href) {
-    return;
-  }
-
-  const target = matchPreviewTarget(href, config);
-  if (!target || !shouldDecorateTarget(target, config)) {
-    return;
-  }
-
-  applyPreviewClasses(anchor, target, config);
-  applyPreviewDataAttributes(anchor, target, config);
-  appendGlyph(anchor, target, config);
-
-  anchor.dataset.richPreviewDecorated = "true";
-}
-
-function decorateCooked(container, config) {
-  const anchors = container.querySelectorAll('a[data-bbcode="true"]');
-  anchors.forEach((anchor) => decoratePreviewAnchor(anchor, config));
-}
-
-export function registerPreviewBBCode(api, config) {
-  api.decorateCookedElement(
-    (element) => {
-      decorateCooked(element, config);
-    },
-    { id: "discourse-rich-previews-bbcode" }
-  );
+      wrap(startToken, endToken, tagInfo, content) {
+        return buildAnchorTokens(startToken, endToken, tagInfo, content);
+      },
+    });
+  });
 }
 ```
 
@@ -5358,6 +5458,24 @@ function parseExternalHTML(html, target) {
   };
 }
 
+function looksLikeHTMLDocument(text) {
+  const sample = textValue(text).slice(0, 256).toLowerCase();
+  return (
+    sample.startsWith("<!doctype html") ||
+    sample.startsWith("<html") ||
+    sample.includes("<head") ||
+    sample.includes("<body")
+  );
+}
+
+function safeParseJSON(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 function normalizeExternalPreview(target, payload, config) {
   const title = firstNonEmpty(
     payload?.title,
@@ -5410,6 +5528,46 @@ function normalizeExternalPreview(target, payload, config) {
   };
 }
 
+async function parseProxyResponse(response, target) {
+  const contentType = response.headers.get("content-type") || "";
+  const bodyText = await response.text();
+
+  if (!bodyText.trim()) {
+    return {};
+  }
+
+  if (contentType.includes("application/json")) {
+    const parsed = safeParseJSON(bodyText);
+
+    if (parsed !== null) {
+      return parsed;
+    }
+
+    if (looksLikeHTMLDocument(bodyText)) {
+      return parseExternalHTML(bodyText, target);
+    }
+
+    throw new Error(
+      `Proxy claimed JSON but returned invalid JSON for ${target.url}`
+    );
+  }
+
+  if (
+    contentType.includes("text/html") ||
+    contentType.includes("application/xhtml+xml") ||
+    looksLikeHTMLDocument(bodyText)
+  ) {
+    return parseExternalHTML(bodyText, target);
+  }
+
+  const parsed = safeParseJSON(bodyText);
+  if (parsed !== null) {
+    return parsed;
+  }
+
+  return parseExternalHTML(bodyText, target);
+}
+
 export function createExternalProvider(config) {
   return {
     key: "external",
@@ -5450,16 +5608,7 @@ export function createExternalProvider(config) {
           throw new Error(`HTTP ${response.status} for ${target.url}`);
         }
 
-        const contentType = response.headers.get("content-type") || "";
-        let payload;
-
-        if (contentType.includes("application/json")) {
-          payload = await response.json();
-        } else {
-          const html = await response.text();
-          payload = parseExternalHTML(html, target);
-        }
-
+        const payload = await parseProxyResponse(response, target);
         return normalizeExternalPreview(target, payload, config);
       } finally {
         clearTimeout(timeout);
@@ -11805,29 +11954,163 @@ require "rails_helper"
 
 RSpec.describe "Rich preview BBCode", type: :system do
   fab!(:user) { Fabricate(:user) }
-  fab!(:topic) { Fabricate(:topic) }
-  fab!(:linked_topic) { Fabricate(:topic) }
+
+  let!(:theme) { upload_theme_component }
 
   before do
-    upload_theme_component
+    theme.update_setting(:providers, <<~JSON)
+      {
+        "topic": {
+          "enabled": true,
+          "icon": "comment",
+          "glyphMode": "auto"
+        },
+        "remote_topic": {
+          "enabled": true,
+          "icon": "fab-discourse",
+          "glyphMode": "auto",
+          "remoteHosts": ["noobish.me", "meta.discourse.org"]
+        },
+        "external": {
+          "enabled": true,
+          "icon": "eye",
+          "glyphMode": "auto"
+        },
+        "wikipedia": {
+          "enabled": true,
+          "icon": "fab-wikipedia-w",
+          "glyphMode": "auto"
+        }
+      }
+    JSON
+
+    theme.update_setting(:previews_show_icon, true)
+    theme.update_setting(:previews_icon_position, "after")
+    theme.update_setting(:previews_show_underline, true)
+    theme.update_setting(:previews_underline_always, true)
+
     sign_in(user)
   end
 
-  it "renders preview-wrapped links without showing raw preview tags" do
-    create_post(
-      topic: topic,
-      raw: "[preview][linked topic](#{linked_topic.url})[/preview]"
+  def cooked_html_for(post)
+    post.reload
+    post.cooked
+  end
+
+  def expect_no_preview_literals(cooked)
+    expect(cooked).not_to include("[preview]")
+    expect(cooked).not_to include("[/preview]")
+  end
+
+  def expect_wrapped_preview(cooked, href:, text: nil, title: nil)
+    expect(cooked).to include('class="rich-preview-wrap')
+    expect(cooked).to include(%(data-preview-href="#{href}"))
+
+    if text
+      expect(cooked).to include(%(data-preview-text="#{text}"))
+    end
+
+    if title
+      expect(cooked).to include(%(data-preview-title="#{title}"))
+    end
+  end
+
+  shared_examples "wrapped preview bbcode syntax" do |raw:, href:, text:, title: nil|
+    it "cooks without visible bbcode literals for #{raw.inspect}" do
+      post = create_post(user: user, raw: raw)
+      cooked = cooked_html_for(post)
+
+      expect_no_preview_literals(cooked)
+      expect_wrapped_preview(cooked, href: href, text: text, title: title)
+    end
+
+    it "renders a decorated wrapped link for #{raw.inspect}" do
+      post = create_post(user: user, raw: raw)
+
+      visit(post.topic.url)
+
+      within(".topic-post:first-of-type .cooked") do
+        expect(page).to have_no_text("[preview]")
+        expect(page).to have_no_text("[/preview]")
+
+        expect(page).to have_css(
+          ".rich-preview-wrap .rich-preview-link",
+          text: text
+        )
+      end
+    end
+  end
+
+  include_examples(
+    "wrapped preview bbcode syntax",
+    raw: '[preview=https://denverit.com/ title="Brief Description"]Text for the Link[/preview]',
+    href: "https://denverit.com/",
+    text: "Text for the Link",
+    title: "Brief Description"
+  )
+
+  include_examples(
+    "wrapped preview bbcode syntax",
+    raw: "[preview][Text for the Link](https://denverit.com/)[/preview]",
+    href: "https://denverit.com/",
+    text: "Text for the Link"
+  )
+
+  include_examples(
+    "wrapped preview bbcode syntax",
+    raw: "[preview]https://denverit.com/[/preview]",
+    href: "https://denverit.com/",
+    text: "https://denverit.com/"
+  )
+
+  it "supports remote topic preview bbcode without leaking literals" do
+    post = create_post(
+      user: user,
+      raw: '[preview=https://noobish.me/t/html-kitchen-sink/770 title="Brief description of the link on hover"]Text for the Link[/preview]'
     )
 
-    visit topic_path(topic)
+    cooked = cooked_html_for(post)
 
-    expect(page).to have_link("linked topic")
-    expect(page).to have_css(".rich-preview-wrap[data-rich-preview='true']")
-    expect(page).not_to have_text("[preview]")
-    expect(page).not_to have_text("[/preview]")
+    expect_no_preview_literals(cooked)
+    expect_wrapped_preview(
+      cooked,
+      href: "https://noobish.me/t/html-kitchen-sink/770",
+      text: "Text for the Link",
+      title: "Brief description of the link on hover"
+    )
+  end
+
+  it "supports wikipedia preview bbcode without leaking literals" do
+    post = create_post(
+      user: user,
+      raw: "[preview][Wikipedia - Discourse](https://en.wikipedia.org/wiki/Discourse)[/preview]"
+    )
+
+    cooked = cooked_html_for(post)
+
+    expect_no_preview_literals(cooked)
+    expect_wrapped_preview(
+      cooked,
+      href: "https://en.wikipedia.org/wiki/Discourse",
+      text: "Wikipedia - Discourse"
+    )
+  end
+
+  it "keeps auto-detected plain links working" do
+    post = create_post(
+      user: user,
+      raw: "https://denverit.com/"
+    )
+
+    visit(post.topic.url)
+
+    within(".topic-post:first-of-type .cooked") do
+      expect(page).to have_css("a.rich-preview-link.rich-preview-link--external")
+      expect(page).to have_no_text("[preview]")
+      expect(page).to have_no_text("[/preview]")
+    end
   end
 end
-
 ```
 
 === FILE: spec/system/rich_previews_external_spec.rb ===
@@ -12090,28 +12373,17 @@ RSpec.describe "Rich preview modes", type: :system do
 
     create_post(
       topic: topic,
-      raw: "[preview][linked topic](#{linked_topic.url})[/preview]"
+      raw: "[preview][Linked topic](#{linked_topic.url})[/preview]"
     )
 
     visit topic_path(topic)
 
-    expect(page).to have_css("a.rich-preview-link.rich-preview-link--topic[data-bbcode='true']")
-    expect(page).to have_link("linked topic")
-  end
-
-  it "does not expose raw preview tags when topic mode is composer_only" do
-    @theme.update_setting(:previews_topic_mode, "composer_only")
-    @theme.save!
-
-    create_post(
-      topic: topic,
-      raw: "[preview][linked topic](#{linked_topic.url})[/preview]"
+    expect(page).to have_css(
+      "a.rich-preview-link.rich-preview-link--topic[data-bbcode='true']",
+      text: "Linked topic"
     )
-
-    visit topic_path(topic)
-
-    expect(page).not_to have_text("[preview]")
-    expect(page).not_to have_text("[/preview]")
+    expect(page).to have_no_text("[preview]")
+    expect(page).to have_no_text("[/preview]")
   end
 end
 ```
@@ -12122,34 +12394,46 @@ end
 
 require "rails_helper"
 
-RSpec.describe "Rich preview remote-topic indicators", type: :system do
-  fab!(:user) { Fabricate(:user) }
-  fab!(:topic) { Fabricate(:topic) }
+describe "Rich previews remote topic icon placement", type: :system do
+  let(:theme_id) { upload_theme_component }
 
   before do
-    @theme = upload_theme_component
-    sign_in(user)
+    theme.update_setting(theme_id, :enabled, true)
+    theme.update_setting(theme_id, :previews_show_icon, true)
+    theme.update_setting(theme_id, :previews_icon_position, "after")
+    theme.update_setting(theme_id, :previews_show_underline, true)
+    theme.update_setting(theme_id, :previews_underline_always, true)
+    theme.update_setting(theme_id, :remote_hosts, "noobish.me")
 
-    @theme.update_setting(:previews_remote_topic_mode, "auto_and_composer")
-    @theme.update_setting(:previews_show_icon, true)
-    @theme.update_setting(:previews_icon_position, "after")
-    @theme.save!
+    sign_in(Fabricate(:admin))
   end
 
-  it "adds remote-topic classes to wrapped remote-topic links" do
-    create_post(
-      topic: topic,
-      raw: <<~MD
-        [preview][Remote discussion](https://meta.discourse.org/t/discourse-icon/143374)[/preview]
-      MD
-    )
+  it "renders remote topic preview bbcode as a single decorated anchor with inline icon" do
+    topic = Fabricate(:topic)
+    post =
+      create_post(
+        topic: topic,
+        raw:
+          '[preview="https://noobish.me/t/html-kitchen-sink/770" title="Brief description of the link on hover"]Text for the Link[/preview]'
+      )
 
-    visit topic_path(topic)
+    visit post.url
 
-    expect(page).to have_css(
-      "a.rich-preview-link.rich-preview-link--remote_topic.rich-preview-link--icon-after[data-bbcode='true']"
-    )
-    expect(page).to have_link("Remote discussion")
+    within(".cooked") do
+      expect(page).to have_css(
+        'a.rich-preview-link.rich-preview-link--remote_topic[href="https://noobish.me/t/html-kitchen-sink/770"]'
+      )
+      expect(page).to have_css(
+        'a.rich-preview-link.rich-preview-link--remote_topic[title="Brief description of the link on hover"]',
+        text: "Text for the Link"
+      )
+      expect(page).to have_css(
+        "a.rich-preview-link.rich-preview-link--icon-after > .thc-inline-glyph"
+      )
+      expect(page).to have_no_css(".rich-preview-wrap")
+      expect(page).to have_no_text("[preview]")
+      expect(page).to have_no_text("[/preview]")
+    end
   end
 end
 ```
