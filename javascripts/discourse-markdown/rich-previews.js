@@ -1,6 +1,16 @@
 console.log("[rich-previews canary] module evaluated");
 
 export function setup(helper) {
+  console.log("[rich-previews canary] setup called", helper);
+}
+
+export default {
+  setup(helper) {
+    console.log("[rich-previews canary] default.setup called", helper);
+  },
+};
+
+export function setup(helper) {
   console.log("[rich-previews canary] setup called", {
     helper,
     markdownIt: helper?.markdownIt,
