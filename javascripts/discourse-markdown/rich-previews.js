@@ -1,5 +1,3 @@
-THIS_WILL_BREAK_PARSE
-
 function normalizeAttrValue(value) {
   return String(value ?? "").trim();
 }
