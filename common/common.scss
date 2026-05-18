@@ -1162,34 +1162,6 @@ a.rich-preview-link {
   background: rgba(var(--tertiary-rgb), 0.04);
 }
 
-.rplm-mode-option:has(.rplm-mode-radio:checked) {
-  border-color: color-mix(
-    in srgb,
-    var(--thc-provider-color, var(--tertiary)) 40%,
-    transparent
-  );
-  background: color-mix(
-    in srgb,
-    var(--thc-provider-color, var(--tertiary)) 8%,
-    transparent
-  );
-  box-shadow: 0 0 0 1px
-    color-mix(
-      in srgb,
-      var(--thc-provider-color, var(--tertiary)) 18%,
-      transparent
-    );
-}
-
-.rplm-mode-option:has(.rplm-mode-radio:checked) .rplm-mode-title {
-  color: var(--thc-provider-color, var(--tertiary));
-}
-
-.rplm-mode-option:has(.rplm-mode-radio:disabled) {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .rplm-mode-radio {
   flex: 0 0 auto;
   margin: 0.15rem 0 0;
@@ -1214,6 +1186,29 @@ a.rich-preview-link {
   font-size: var(--font-down-2);
   color: var(--primary-medium);
   line-height: 1.45;
+}
+
+.rplm-mode-option:has(.rplm-mode-radio:checked) {
+  border-color: color-mix(
+    in srgb,
+    var(--thc-provider-color, var(--tertiary)) 40%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--thc-provider-color, var(--tertiary)) 8%,
+    transparent
+  );
+  box-shadow: 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--thc-provider-color, var(--tertiary)) 18%,
+      transparent
+    );
+}
+
+.rplm-mode-option:has(.rplm-mode-radio:checked) .rplm-mode-title {
+  color: var(--thc-provider-color, var(--tertiary));
 }
 
 .rplm-preview-section {

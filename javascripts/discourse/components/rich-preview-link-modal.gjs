@@ -226,23 +226,33 @@ export default class RichPreviewLinkModal extends Component {
     return [
       {
         id: "markdown",
+        inputId: "rplm-mode-markdown",
         value: "markdown",
         label: INSERTION_MODE_LABELS.markdown,
         hint: INSERTION_MODE_HINTS.markdown,
+        checked: this.normalizedInsertionMode === "markdown",
       },
       {
         id: "explicit",
+        inputId: "rplm-mode-explicit",
         value: "explicit",
         label: INSERTION_MODE_LABELS.explicit,
         hint: INSERTION_MODE_HINTS.explicit,
+        checked: this.normalizedInsertionMode === "explicit",
       },
       {
         id: "bare",
+        inputId: "rplm-mode-bare",
         value: "bare",
         label: INSERTION_MODE_LABELS.bare,
         hint: INSERTION_MODE_HINTS.bare,
+        checked: this.normalizedInsertionMode === "bare",
       },
     ];
+  }
+
+  get isBareMode() {
+    return this.normalizedInsertionMode === "bare";
   }
 
   @action
@@ -330,14 +340,14 @@ export default class RichPreviewLinkModal extends Component {
               <legend class="rplm-label">Insertion format</legend>
 
               {{#each this.modeOptions as |mode|}}
-                <label class="rplm-mode-option" for={{concat "rplm-mode-" mode.id}}>
+                <label class="rplm-mode-option" for={{mode.inputId}}>
                   <input
-                    id={{concat "rplm-mode-" mode.id}}
+                    id={{mode.inputId}}
                     type="radio"
                     name="rplm-insertion-mode"
                     class="rplm-mode-radio"
                     value={{mode.value}}
-                    checked={{eq this.normalizedInsertionMode mode.value}}
+                    checked={{mode.checked}}
                     {{on "change" this.onInsertionModeChange}}
                   />
                   <span class="rplm-mode-copy">
@@ -362,7 +372,7 @@ export default class RichPreviewLinkModal extends Component {
               class="rplm-input"
               placeholder="Display text for the link"
               value={{this.linkText}}
-              disabled={{eq this.normalizedInsertionMode "bare"}}
+              disabled={{this.isBareMode}}
               {{on "input" this.onLinkTextInput}}
             />
           </div>
