@@ -232,10 +232,7 @@ export function createExternalProvider(config) {
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        externalTimeoutMs(config)
-      );
+      const timeout = setTimeout(() => controller.abort(), externalTimeoutMs(config));
 
       const abortHandler = () => controller.abort();
       signal?.addEventListener?.("abort", abortHandler, { once: true });
