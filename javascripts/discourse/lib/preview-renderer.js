@@ -7,6 +7,7 @@ import {
   safeAvatarURL,
   sanitizeExcerpt,
   sanitizeURL,
+  normalizeTag,
 } from "./rich-preview-utils";
 
 export function buildPreviewHTML(preview, categories, config, isMobile = false) {
@@ -359,6 +360,13 @@ function buildMetaRow(items) {
   `;
 }
 
+function formatMetaDate(value) {
+  if (!value) return String(value ?? "");
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
 function buildMetaItem(label, value, extraClass = "") {
   if (value === null || value === undefined || value === "") {
     return "";
@@ -367,7 +375,7 @@ function buildMetaItem(label, value, extraClass = "") {
   return `
     <span class="topic-hover-card__meta-item ${escapeHTML(extraClass)}">
       <span class="topic-hover-card__meta-label">${escapeHTML(label)}:</span>
-      <span>${escapeHTML(String(value))}</span>
+      <span>${escapeHTML(formatMetaDate(value))
     </span>
   `;
 }
@@ -428,7 +436,7 @@ function buildTagsHTML(tags, config, isMobile) {
         .map(
           (tag) => `
             <span class="topic-hover-card__badge topic-hover-card__badge--tag">
-              ${escapeHTML(String(tag))}
+              ${escapeHTML(normalizeTag(tag))}
             </span>
           `
         )
