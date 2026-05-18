@@ -177,7 +177,6 @@ export function readConfig(settings) {
   return {
     enabled: settings.enabled !== false,
     debugMode: !!settings.debug_mode,
-
     prefetchEnabled: settings.prefetch_enabled !== false,
     prefetchViewportMargin: stringSetting(
       settings.prefetch_viewport_margin,
@@ -205,7 +204,6 @@ export function readConfig(settings) {
 
     previewsShowUnderline: settings.previews_show_underline !== false,
     previewsUnderlineAlways: settings.previews_underline_always !== false,
-
     previewsShowIcon: settings.previews_show_icon !== false,
     previewsIconPosition: stringSetting(settings.previews_icon_position, "after"),
 
@@ -213,23 +211,14 @@ export function readConfig(settings) {
 
     delayShow: intSetting(settings.delay_show, 300, 0, 2000),
     cardWidth: stringSetting(settings.card_width, "32rem"),
-    mobileWidthPercent: intSetting(
-      settings.mobile_width_percent,
-      100,
-      70,
-      100
-    ),
+    mobileWidthPercent: intSetting(settings.mobile_width_percent, 100, 70, 100),
     mobileEnabled: settings.mobile_enabled !== false,
 
     densityDesktop: stringSetting(settings.density, "default"),
     densityMobile: stringSetting(settings.density_mobile, "default"),
-
     previewLayout: stringSetting(settings.preview_layout, "hover_card"),
 
-    wikipediaDensityDesktop: stringSetting(
-      settings.wikipedia_density,
-      "cozy"
-    ),
+    wikipediaDensityDesktop: stringSetting(settings.wikipedia_density, "cozy"),
     wikipediaDensityMobile: stringSetting(
       settings.wikipedia_density_mobile,
       "compact"
@@ -289,14 +278,8 @@ export function readConfig(settings) {
 
     showExcerptDesktop: settings.show_excerpt !== false,
     excerptLengthDesktop: intSetting(settings.excerpt_length, 3, 1, 12),
-
     showExcerptMobile: settings.show_excerpt_mobile !== false,
-    excerptLengthMobile: intSetting(
-      settings.excerpt_length_mobile,
-      3,
-      1,
-      12
-    ),
+    excerptLengthMobile: intSetting(settings.excerpt_length_mobile, 3, 1, 12),
 
     showCategoryDesktop: settings.show_category !== false,
     showCategoryMobile: settings.show_category_mobile !== false,
@@ -306,7 +289,6 @@ export function readConfig(settings) {
 
     showOpDesktop: settings.show_op !== false,
     showOpMobile: settings.show_op_mobile !== false,
-
     showOpAvatarDesktop: settings.show_op_avatar !== false,
     showOpAvatarMobile: settings.show_op_avatar_mobile !== false,
 
@@ -346,7 +328,11 @@ export function readConfig(settings) {
     ),
     wikipediaPreviewsShowImage:
       settings.wikipedia_previews_show_image !== false,
+    wikipediaShowImage:
+      settings.wikipedia_previews_show_image !== false,
     wikipediaPreviewsUseExtractHtml:
+      settings.wikipedia_previews_use_extract_html !== false,
+    wikipediaUseExtractHtml:
       settings.wikipedia_previews_use_extract_html !== false,
 
     userPreferenceFieldName: stringSetting(
