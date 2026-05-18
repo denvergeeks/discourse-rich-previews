@@ -11,7 +11,6 @@ import {
   providerSupportsComposer,
   previewTypeEnabled,
   providerColor,
-  renderProviderGlyph,
 } from "../lib/rich-preview-utils";
 import { buildPreviewWrappedMarkdown } from "../lib/preview-markup";
 
@@ -53,6 +52,13 @@ const FORMAT_LABELS = {
   markdown: "Markdown link",
   explicit: "Explicit preview attribute",
   bare: "Bare URL",
+};
+
+const FALLBACK_GLYPHS = {
+  topic: "🔗",
+  remote_topic: "🌐",
+  external: "↗",
+  wikipedia: "📖",
 };
 
 export default class RichPreviewLinkModal extends Component {
@@ -135,18 +141,11 @@ export default class RichPreviewLinkModal extends Component {
 
     const provider = this.config?.previewProviders?.[this.detectedType] || {};
 
-    if (provider.glyph_mode === "emoji" && provider.emoji) {
+    if (provider.glyphmode === "emoji" && provider.emoji) {
       return provider.emoji;
     }
 
-    const fallbackGlyphs = {
-      topic: "🔗",
-      remote_topic: "🌐",
-      external: "↗",
-      wikipedia: "📖",
-    };
-
-    return fallbackGlyphs[this.detectedType] || "";
+    return FALLBACK_GLYPHS[this.detectedType] || "";
   }
 
   get showIconAfter() {
@@ -324,7 +323,9 @@ export default class RichPreviewLinkModal extends Component {
 
             {{#if this.typeLabel}}
               <div class={{this.typeBadgeClass}}>
-                {{~renderProviderGlyph this.detectedType this.config~}}
+                {{#if this.providerGlyphText}}
+                  <span aria-hidden="true">{{this.providerGlyphText}}</span>
+                {{/if}}
                 <span>{{this.typeLabel}}</span>
               </div>
             {{/if}}
@@ -348,7 +349,7 @@ export default class RichPreviewLinkModal extends Component {
               {{on "change" this.updateFormat}}
             >
               {{#each this.formatOptions as |option|}}
-                <option value={{option.id}} selected={{eq this.format option.id}}>
+                <option value={{option.id}}>
                   {{option.label}}
                 </option>
               {{/each}}
@@ -397,9 +398,11 @@ export default class RichPreviewLinkModal extends Component {
 
               <div class="rplm-visual-preview">
                 {{#if this.showIconBefore}}
-                  <span class="rplm-icon" aria-hidden="true">
-                    {{this.providerGlyphText}}
-                  </span>
+                  {{#if this.providerGlyphText}}
+                    <span class="rplm-icon" aria-hidden="true">
+                      {{this.providerGlyphText}}
+                    </span>
+                  {{/if}}
                 {{/if}}
 
                 <a href={{this.url}} class={{this.previewLinkClass}}>
@@ -407,9 +410,11 @@ export default class RichPreviewLinkModal extends Component {
                 </a>
 
                 {{#if this.showIconAfter}}
-                  <span class="rplm-icon" aria-hidden="true">
-                    {{this.providerGlyphText}}
-                  </span>
+                  {{#if this.providerGlyphText}}
+                    <span class="rplm-icon" aria-hidden="true">
+                      {{this.providerGlyphText}}
+                    </span>
+                  {{/if}}
                 {{/if}}
               </div>
 
@@ -424,13 +429,13 @@ export default class RichPreviewLinkModal extends Component {
       <:footer>
         <DButton
           @action={{this.insert}}
-          @label={{this.insertLabel}}
+          @translatedLabel={{this.insertLabel}}
           class="btn btn-primary"
           disabled={{this.cannotInsert}}
         />
         <DButton
           @action={{@closeModal}}
-          @label="Cancel"
+          @translatedLabel="Cancel"
           class="btn btn-default"
         />
       </:footer>
