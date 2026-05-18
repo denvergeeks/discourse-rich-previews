@@ -1,4 +1,4 @@
-import { linkInSupportedArea } from "./rich-preview-utils";
+import linkInSupportedArea from "./rich-preview-utils";
 import { matchPreviewTarget } from "./preview-router";
 import {
   decorateAutoDetectedLink,
@@ -34,9 +34,7 @@ function clearAutoLinkIndicators(root) {
   }
 
   root
-    .querySelectorAll(
-      'a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]'
-    )
+    .querySelectorAll('a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]')
     .forEach((link) => {
       if (!(link instanceof HTMLAnchorElement)) {
         return;
