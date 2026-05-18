@@ -585,47 +585,19 @@
   }
 }
 
-// ─── Rich Preview Inline Links ───────────────────────────────────────────────
+// ─── Rich Preview Inline Links (auto + wrapped BBCode) ───────────────────────
 
 .rich-preview-link {
   --rp-color: var(--tertiary);
 
   display: inline;
+  color: inherit;
   overflow-wrap: anywhere;
-  color: var(--rp-color);
-  text-decoration: none;
   text-decoration-skip-ink: auto;
-  text-underline-offset: 0.18em;
-  text-decoration-thickness: 1.5px;
-  transition:
-    text-decoration-color 120ms ease,
-    color 120ms ease,
-    opacity 120ms ease;
-
-  &:visited {
-    color: var(--rp-color);
-  }
 
   &:hover,
   &:focus-visible {
-    color: var(--rp-color);
-  }
-
-  &.rich-preview-link--underline-always {
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
     text-decoration-color: var(--rp-color, var(--tertiary)) !important;
-  }
-
-  &.rich-preview-link--underline-hover {
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: transparent !important;
-
-    &:hover,
-    &:focus-visible {
-      text-decoration-color: var(--rp-color, var(--tertiary)) !important;
-    }
   }
 
   > .thc-inline-glyph {
@@ -655,7 +627,8 @@
   --rp-color: var(--success);
 }
 
-.rich-preview-link--remote_topic {
+.rich-preview-link--remote_topic,
+.rich-preview-link--remotetopic {
   --rp-color: var(--success);
 }
 
@@ -726,14 +699,12 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   margin-inline-end: 0.22em;
 }
 
-// Backward-tolerant wrapper fallback only; not primary output anymore.
+// Wrapper-based rich preview links for cooked [preview]...[/preview] output.
 .rich-preview-wrap {
   --rp-color: var(--tertiary);
 
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.2em;
-  color: var(--rp-color);
+  display: inline;
+  color: inherit;
 
   > a {
     display: inline;
@@ -748,7 +719,8 @@ a.rich-preview-link.rich-preview-link--icon-before > .thc-inline-glyph {
   --rp-color: var(--success);
 }
 
-.rich-preview-wrap--remote_topic {
+.rich-preview-wrap--remote_topic,
+.rich-preview-wrap--remotetopic {
   --rp-color: var(--success);
 }
 
