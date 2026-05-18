@@ -107,19 +107,6 @@ function ensureWrapAroundAnchor(anchor) {
   return wrap;
 }
 
-function removeExactTextNode(node, exactValue) {
-  if (node?.nodeType !== Node.TEXT_NODE) {
-    return false;
-  }
-
-  if ((node.nodeValue || "") !== exactValue) {
-    return false;
-  }
-
-  node.remove();
-  return true;
-}
-
 function trimTextNodeValue(node, matcher, replacement = "") {
   if (node?.nodeType !== Node.TEXT_NODE) {
     return false;
@@ -285,6 +272,7 @@ function repairPreviewEqualsAnchorSyntax(container) {
   anchor.textContent = finalLabel || anchor.textContent || href;
 
   trimTextNodeValue(firstNode, /\[preview=$/i, "");
+
   if (afterAnchor.nodeType === Node.TEXT_NODE) {
     afterAnchor.nodeValue = "";
     afterAnchor.remove();
