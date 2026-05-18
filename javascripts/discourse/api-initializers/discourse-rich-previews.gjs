@@ -134,8 +134,6 @@ function buildCategoryHTML(topic, categories, config, isMobile) {
     topic.category_slug ||
     "";
 
-  // Bug 3 fix: strip any existing '#' prefix before re-adding it,
-  // preventing double-hash '##ab1234' when the API returns '#rrggbb'.
   const rawColor = category?.color || topic.category_color || null;
   const color = rawColor ? `#${String(rawColor).replace(/^#/, "")}` : null;
 
@@ -217,9 +215,6 @@ function buildExcerptHTML(topic, config, isMobile) {
     return "";
   }
 
-  // Bug 5 fix: use the config-driven lines value for overflow detection
-  // instead of the hard-coded CHARS_PER_LINE = 90 heuristic, so the
-  // CSS line-clamp class is applied consistently with the actual setting.
   const lines = pick(
     config,
     "excerptLengthDesktop",
@@ -239,10 +234,11 @@ function buildExcerptHTML(topic, config, isMobile) {
     return "";
   }
 
-  // Use the configured lines value as the multiline threshold:
-  // if lines > 1 the excerpt is expected to span multiple lines.
-  const overflowClass =
-    lines > 1 ? " topic-hover-card__excerpt--overflows" : "";
+  const CHARS_PER_LINE = 90;
+  const isLikelyMultiLine = finalExcerpt.length > CHARS_PER_LINE;
+  const overflowClass = isLikelyMultiLine
+    ? " topic-hover-card__excerpt--overflows"
+    : "";
 
   return `
     <div
@@ -402,14 +398,7 @@ function buildMobileActionsHTML(topic, isMobile) {
 
   const slug = escapeHTML(String(topic.slug || topic.id || ""));
   const id = escapeHTML(String(topic.id || ""));
-
-  // Bug 6 fix: include postNumber in the URL when present so mobile
-  // tap links to the correct post anchor, not just the topic root.
-  const postNumber = topic.post_number || topic.postNumber || null;
-  const postSuffix = postNumber ? `/${escapeHTML(String(postNumber))}` : "";
-  const topicUrl = sanitizeURL(
-    `${window.location.origin}/t/${slug}/${id}${postSuffix}`
-  );
+  const topicUrl = sanitizeURL(`${window.location.origin}/t/${slug}/${id}`);
 
   return `
     <div class="topic-hover-card__actions topic-hover-card__actions--mobile">
@@ -797,10 +786,6 @@ export default apiInitializer(async (api) => {
       return `${preview.type}:${id}:${isMobile ? "mobile" : "desktop"}`;
     }
 
-    // Bug 1 fix: always use buildPreviewHTML (the canonical modular renderer)
-    // for all preview types, including "topic". The legacy buildCardHTML branch
-    // was routing topic previews away from the unified renderer in
-    // preview-renderer.js, causing divergent rendering and stale logic.
     function getRenderedCard(preview, isMobile) {
       const key = getRenderCacheKey(preview, isMobile);
       const cached = getCachedValue(renderCache, key);
@@ -809,7 +794,14 @@ export default apiInitializer(async (api) => {
         return cached;
       }
 
-      const html = buildPreviewHTML(preview, categories, config, isMobile);
+      let html;
+
+      if (preview.type === "topic" && preview.raw) {
+        html = buildCardHTML(preview.raw, categories, config, isMobile);
+      } else {
+        html = buildPreviewHTML(preview, categories, config, isMobile);
+      }
+
       setCachedValue(renderCache, key, html, config.topicCacheMax * 2);
       return html;
     }
