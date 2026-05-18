@@ -487,19 +487,18 @@ function buildTagsHTML(tags, config, isMobile) {
     return "";
   }
 
-  return `
-    <div class="topic-hover-card__tags">
-      ${normalizedTags
-        .map(
-          (tag) => `
-            <span class="topic-hover-card__badge topic-hover-card__badge--tag">
-              ${escapeHTML(String(tag))}
-            </span>
-          `
-        )
-        .join("")}
-    </div>
-  `;
+  return (
+    '<div class="topic-hover-card__tags">' +
+    normalizedTags
+      .map(
+        (tag) =>
+          '<span class="topic-hover-card__badge topic-hover-card__badge--tag">' +
+          escapeHTML(String(tag)) +
+          "</span>"
+      )
+      .join("") +
+    "</div>"
+  );
 }
 
 function buildAuthorHTML(preview, config, isMobile) {
