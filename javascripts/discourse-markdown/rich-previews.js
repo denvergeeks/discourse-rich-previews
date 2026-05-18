@@ -23,9 +23,7 @@ function parseMarkdownInlineLink(content) {
     return null;
   }
 
-  const match = normalized.match(
-    /^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/
-  );
+  const match = normalized.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
 
   if (!match) {
     return null;
