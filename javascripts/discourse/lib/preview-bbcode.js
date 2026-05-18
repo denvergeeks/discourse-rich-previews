@@ -2,9 +2,7 @@
  * Applies preview decoration to both manual wrapped links and
  * auto-detected eligible links in cooked content.
  *
- * The [preview] BBCode itself is handled in discourse-markdown/rich-previews.js
- * using a proper markdown-it BBCode rule, so this module should not try to
- * parse literal [preview]...[/preview] text from cooked HTML.
+ * The [preview] BBCode itself is handled in discourse-markdown/rich-previews.js.
  */
 
 import { linkInSupportedArea } from "./rich-preview-utils";

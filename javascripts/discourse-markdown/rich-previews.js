@@ -11,10 +11,9 @@ function isValidHttpUrl(value) {
   }
 }
 
-function setPreviewWrapperAttrs(token) {
+function addAttr(token, name, value) {
   token.attrs ||= [];
-  token.attrs.push(["class", "rich-preview-wrap"]);
-  token.attrs.push(["data-rich-preview", "true"]);
+  token.attrs.push([name, value]);
 }
 
 export function setup(helper) {
@@ -30,38 +29,56 @@ export function setup(helper) {
   helper.registerPlugin((md) => {
     md.inline.bbcode.ruler.push("preview", {
       tag: "preview",
-      wrap(startToken, endToken, tagInfo, content) {
+
+      wrap(startToken, endToken, _tagInfo, content) {
         const inner = (content || "").trim();
 
-        // Bare URL case:
-        // [preview]https://example.com/[/preview]
-        //
-        // Emit a real anchor directly so markdown-it does not have to guess
-        // autolink boundaries around the closing BBCode marker.
         if (isValidHttpUrl(inner)) {
           startToken.type = "html_inline";
           startToken.tag = "";
-          startToken.attrs = null;
-          startToken.content =
-            `<span class="rich-preview-wrap" data-rich-preview="true">` +
-            `<a href="${inner}">`;
+          startToken.nesting = 0;
+          startToken.content = "";
 
           endToken.type = "html_inline";
           endToken.tag = "";
-          endToken.attrs = null;
-          endToken.content = "</a></span>";
+          endToken.nesting = 0;
+          endToken.content = "";
+
+          const spanOpen = new startToken.constructor("span_open", "span", 1);
+          addAttr(spanOpen, "class", "rich-preview-wrap");
+          addAttr(spanOpen, "data-rich-preview", "true");
+
+          const linkOpen = new startToken.constructor("link_open", "a", 1);
+          addAttr(linkOpen, "href", inner);
+
+          const text = new startToken.constructor("text", "", 0);
+          text.content = inner;
+
+          const linkClose = new startToken.constructor("link_close", "a", -1);
+          const spanClose = new startToken.constructor("span_close", "span", -1);
+
+          startToken.meta = {
+            richPreviewReplacementTokens: [spanOpen, linkOpen, text],
+          };
+
+          endToken.meta = {
+            richPreviewReplacementTokens: [linkClose, spanClose],
+          };
+
+          startToken.type = "rich_preview_open";
+          endToken.type = "rich_preview_close";
+
           return false;
         }
 
-        // Default case:
-        // [preview][Label](https://example.com)[/preview]
-        //
-        // Keep the inner markdown content intact and only wrap it.
         startToken.type = "span_open";
         startToken.tag = "span";
         startToken.nesting = 1;
         startToken.content = "";
-        setPreviewWrapperAttrs(startToken);
+        startToken.attrs = [
+          ["class", "rich-preview-wrap"],
+          ["data-rich-preview", "true"],
+        ];
 
         endToken.type = "span_close";
         endToken.tag = "span";
@@ -70,6 +87,40 @@ export function setup(helper) {
 
         return false;
       },
+    });
+
+    md.core.ruler.push("rich-preview-token-expander", (state) => {
+      for (const blockToken of state.tokens) {
+        if (!blockToken.children?.length) {
+          continue;
+        }
+
+        const expanded = [];
+
+        for (const token of blockToken.children) {
+          if (
+            token.type === "rich_preview_open" &&
+            token.meta?.richPreviewReplacementTokens
+          ) {
+            expanded.push(...token.meta.richPreviewReplacementTokens);
+            continue;
+          }
+
+          if (
+            token.type === "rich_preview_close" &&
+            token.meta?.richPreviewReplacementTokens
+          ) {
+            expanded.push(...token.meta.richPreviewReplacementTokens);
+            continue;
+          }
+
+          expanded.push(token);
+        }
+
+        blockToken.children = expanded;
+      }
+
+      return false;
     });
   });
 }
