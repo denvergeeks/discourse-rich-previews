@@ -507,32 +507,44 @@ function buildAuthorHTML(preview, config, isMobile) {
     return "";
   }
 
+  const showAvatar = pick(
+    config,
+    "showOpAvatarDesktop",
+    "showOpAvatarMobile",
+    isMobile
+  );
+
   const username =
     preview?.author?.username ||
     preview?.username ||
     preview?.op?.username ||
+    preview?.raw?.username ||
     "";
 
   if (!username) {
     return "";
   }
 
-  const avatarUrl = sanitizeURL(
-    preview?.author?.avatarUrl ||
-      preview?.avatarUrl ||
-      safeAvatarURL(
-        preview?.author?.avatarTemplate || preview?.avatar_template,
-        48
+  const avatarUrl = showAvatar
+    ? sanitizeURL(
+        preview?.author?.avatarUrl ||
+          preview?.avatarUrl ||
+          safeAvatarURL(
+            preview?.author?.avatarTemplate || preview?.avatar_template,
+            24
+          )
       )
-  );
+    : "";
+
+  const avatarHtml = avatarUrl
+    ? `<img class="topic-hover-card__avatar" src="${escapeHTML(
+        avatarUrl
+      )}" alt="" loading="lazy" decoding="async">`
+    : "";
 
   return `
     <span class="topic-hover-card__meta-item topic-hover-card__meta-item--op">
-      ${
-        avatarUrl
-          ? `<img class="topic-hover-card__avatar" src="${avatarUrl}" alt="" loading="lazy" decoding="async">`
-          : ""
-      }
+      ${avatarHtml}
       <span>${escapeHTML(username)}</span>
     </span>
   `;

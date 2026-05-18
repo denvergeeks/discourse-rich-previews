@@ -437,12 +437,22 @@ show_tags_mobile:
 show_op:
   default: true
   type: bool
-  description: Show the original poster avatar and username on desktop.
+  description: Show the original poster username on desktop.
 
 show_op_mobile:
   default: true
   type: bool
-  description: Show the original poster avatar and username on mobile.
+  description: Show the original poster username on mobile.
+
+show_op_avatar:
+  default: true
+  type: bool
+  description: Show the original poster avatar on desktop.
+
+show_op_avatar_mobile:
+  default: true
+  type: bool
+  description: Show the original poster avatar on mobile.
 
 show_publish_date:
   default: true

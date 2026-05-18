@@ -307,6 +307,9 @@ export function readConfig(settings) {
     showOpDesktop: settings.show_op !== false,
     showOpMobile: settings.show_op_mobile !== false,
 
+    showOpAvatarDesktop: settings.show_op_avatar !== false,
+    showOpAvatarMobile: settings.show_op_avatar_mobile !== false,
+
     showPublishDateDesktop: settings.show_publish_date !== false,
     showPublishDateMobile: settings.show_publish_date_mobile !== false,
 
