@@ -223,11 +223,11 @@ function buildSharedThumbnailHTML(imageUrl, title, config, isMobile, options = {
 
   const autoMaxWidth = isMobile
     ? config?.thumbnailAutoFitMaxWidthMobile || "8rem"
-    : config?.thumbnailAutoFitMaxWidth || "10rem";
+    : config?.thumbnailAutoFitMaxWidthDesktop || "10rem";
 
   const thumbTopBottomHeight = isMobile
     ? config?.thumbnailHeightTopBottomMobile || "auto"
-    : config?.thumbnailHeightTopBottom || "auto";
+    : config?.thumbnailHeightTopBottomDesktop || "auto";
 
   const imgClasses = ["topic-hover-card__thumb"];
   const wrapStyles = [`--thc-thumbnail-size-percent:${escapeHTML(String(sizePercent))};`];
