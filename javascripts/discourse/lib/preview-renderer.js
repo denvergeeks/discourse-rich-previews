@@ -268,12 +268,12 @@ function buildSharedThumbnailHTML(
       15;
 
   const autoMaxWidth = isMobile
-    ? config?.autoThumbnailMaxWidthMobile || "8rem"
-    : config?.autoThumbnailMaxWidth || "10rem";
+    ? config?.thumbnailAutoFitMaxWidthMobile || "8rem"
+    : config?.thumbnailAutoFitMaxWidthDesktop || "10rem";
 
   const thumbTopBottomHeight = isMobile
-    ? config?.thumbnailTopBottomHeightMobile || "auto"
-    : config?.thumbnailTopBottomHeight || "auto";
+    ? config?.thumbnailHeightTopBottomMobile || "auto"
+    : config?.thumbnailHeightTopBottomDesktop || "auto";
 
   const imgClasses = ["topic-hover-card__thumb"];
   const wrapStyles = [
