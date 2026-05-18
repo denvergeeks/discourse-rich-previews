@@ -72,31 +72,24 @@ function buildBarePreview(url) {
 
 export function buildPreviewWrappedMarkdown(
   url,
-  linkText,
+  linkText = "",
   title = "",
   form = "markdown"
 ) {
-  if (!url) {
-    return "";
+  const normalizedForm = String(form || "markdown").trim().toLowerCase();
+
+  switch (normalizedForm) {
+    case "explicit":
+    case "explicit-attr":
+    case "attribute":
+      return buildExplicitPreview(url, linkText);
+
+    case "bare":
+    case "bare-url":
+      return buildBarePreview(url);
+
+    case "markdown":
+    default:
+      return `[preview]${buildMarkdownLink(url, linkText, title)}[/preview]`;
   }
-
-  const trimmedUrl = url.trim();
-  const trimmedText = linkText?.trim() || "";
-  const trimmedTitle = title?.trim();
-
-  if (form === "explicit") {
-    const visibleText = trimmedText || trimmedUrl;
-    return `[preview=${trimmedUrl}]${visibleText}[/preview]`;
-  }
-
-  if (form === "bare") {
-    return `[preview]${trimmedUrl}[/preview]`;
-  }
-
-  const displayText = trimmedText || trimmedUrl;
-  const mdLink = trimmedTitle
-    ? `[${displayText}](${trimmedUrl} "${trimmedTitle}")`
-    : `[${displayText}](${trimmedUrl})`;
-
-  return `[preview]${mdLink}[/preview]`;
 }
