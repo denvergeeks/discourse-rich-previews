@@ -3,13 +3,18 @@
  * preview decoration to both manual wrapped links and auto-detected
  * eligible links in cooked content.
  *
- * This includes a very narrow cooked-stage repair for malformed bare-URL
- * preview output of the form:
+ * Supported manual syntaxes:
  *
- *   [preview]<a href="https://example.com/%5B/preview%5D">https://example.com/[/preview]</a>
+ * 1. [preview]https://example.com/[/preview]
+ *    -> repaired from malformed bare-URL cooked output when needed
  *
- * The repair is intentionally conservative and only runs when that exact
- * broken shape is detected.
+ * 2. [preview][Label](https://example.com/)[/preview]
+ *    -> repaired when cooked output becomes:
+ *       [preview]<a href="https://example.com/">Label</a>[/preview]
+ *
+ * Intentionally unsupported here:
+ * - [preview]<a href="...">Label</a>[/preview] authored as raw HTML
+ * - [preview=<a href="...">...</a>]Label[/preview]
  */
 
 import { linkInSupportedArea } from "./rich-preview-utils";
@@ -46,14 +51,19 @@ function clearWrapModifierClasses(wrapEl) {
 }
 
 function clearAutoLinkIndicators(root) {
-  if (!(root instanceof Element)) return;
+  if (!(root instanceof Element)) {
+    return;
+  }
 
   root
     .querySelectorAll(
       "a[data-rich-preview-type], a.rich-preview-link, .rich-preview-wrap a[href]"
     )
     .forEach((link) => {
-      if (!(link instanceof HTMLAnchorElement)) return;
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+
       clearDecoratedLink(link);
     });
 }
@@ -77,54 +87,6 @@ function stripCloseTagSuffix(value) {
     .replace(new RegExp(`${CLOSE_TAG.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"), "");
 }
 
-function unwrapLeadingPreviewText(container) {
-  if (!(container instanceof Element)) {
-    return;
-  }
-
-  const firstNode = container.firstChild;
-
-  if (firstNode?.nodeType !== Node.TEXT_NODE) {
-    return;
-  }
-
-  const value = firstNode.nodeValue || "";
-  if (!value.includes(OPEN_TAG)) {
-    return;
-  }
-
-  const cleaned = value.replace(OPEN_TAG, "");
-  if (cleaned) {
-    firstNode.nodeValue = cleaned;
-  } else {
-    firstNode.remove();
-  }
-}
-
-function removeTrailingPreviewTextNodes(container) {
-  if (!(container instanceof Element)) {
-    return;
-  }
-
-  for (const node of [...container.childNodes]) {
-    if (node.nodeType !== Node.TEXT_NODE) {
-      continue;
-    }
-
-    const value = node.nodeValue || "";
-    if (!value.includes(CLOSE_TAG)) {
-      continue;
-    }
-
-    const cleaned = value.replace(CLOSE_TAG, "");
-    if (cleaned) {
-      node.nodeValue = cleaned;
-    } else {
-      node.remove();
-    }
-  }
-}
-
 function ensureWrapAroundAnchor(anchor) {
   if (!(anchor instanceof HTMLAnchorElement)) {
     return null;
@@ -143,6 +105,54 @@ function ensureWrapAroundAnchor(anchor) {
   wrap.appendChild(anchor);
 
   return wrap;
+}
+
+function cleanupPreviewTextNode(node, marker) {
+  if (node?.nodeType !== Node.TEXT_NODE) {
+    return false;
+  }
+
+  const value = node.nodeValue || "";
+  if (!value.includes(marker)) {
+    return false;
+  }
+
+  const cleaned = value.replace(marker, "");
+  if (cleaned) {
+    node.nodeValue = cleaned;
+  } else {
+    node.remove();
+  }
+
+  return true;
+}
+
+function cleanupResidualPreviewMarkers(container, preserveNode = null) {
+  if (!(container instanceof Element)) {
+    return;
+  }
+
+  for (const node of [...container.childNodes]) {
+    if (node === preserveNode) {
+      continue;
+    }
+
+    if (node.nodeType !== Node.TEXT_NODE) {
+      continue;
+    }
+
+    const value = node.nodeValue || "";
+    if (!value.includes(OPEN_TAG) && !value.includes(CLOSE_TAG)) {
+      continue;
+    }
+
+    const cleaned = value.replaceAll(OPEN_TAG, "").replaceAll(CLOSE_TAG, "");
+    if (cleaned) {
+      node.nodeValue = cleaned;
+    } else {
+      node.remove();
+    }
+  }
 }
 
 function repairBrokenBareUrlPreview(container) {
@@ -179,40 +189,67 @@ function repairBrokenBareUrlPreview(container) {
   anchor.setAttribute("href", repairedHref);
   anchor.textContent = repairedText;
 
-  unwrapLeadingPreviewText(container);
-  removeTrailingPreviewTextNodes(container);
+  cleanupPreviewTextNode(container.firstChild, OPEN_TAG);
+  cleanupPreviewTextNode(container.lastChild, CLOSE_TAG);
 
   const wrap = ensureWrapAroundAnchor(anchor);
-
-  // Remove any stray literal preview tags still present in the container HTML.
-  for (const node of [...container.childNodes]) {
-    if (node === wrap) {
-      continue;
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      const value = node.nodeValue || "";
-      if (value.includes(OPEN_TAG) || value.includes(CLOSE_TAG)) {
-        const cleaned = value.replaceAll(OPEN_TAG, "").replaceAll(CLOSE_TAG, "");
-        if (cleaned) {
-          node.nodeValue = cleaned;
-        } else {
-          node.remove();
-        }
-      }
-    }
-  }
+  cleanupResidualPreviewMarkers(container, wrap);
 
   return !!wrap;
 }
 
-function repairBrokenBareUrlPreviews(root) {
+function repairWrappedMarkdownLinkPreview(container) {
+  if (!(container instanceof Element)) {
+    return false;
+  }
+
+  const anchor = container.querySelector(":scope > a[href]");
+  if (!(anchor instanceof HTMLAnchorElement)) {
+    return false;
+  }
+
+  if (anchor.closest(WRAP_SELECTOR)) {
+    return false;
+  }
+
+  const firstNode = container.firstChild;
+  const lastNode = container.lastChild;
+
+  const matchesMarkdownWrappedShape =
+    firstNode?.nodeType === Node.TEXT_NODE &&
+    (firstNode.nodeValue || "") === OPEN_TAG &&
+    lastNode?.nodeType === Node.TEXT_NODE &&
+    (lastNode.nodeValue || "") === CLOSE_TAG;
+
+  if (!matchesMarkdownWrappedShape) {
+    return false;
+  }
+
+  cleanupPreviewTextNode(firstNode, OPEN_TAG);
+  cleanupPreviewTextNode(lastNode, CLOSE_TAG);
+
+  const wrap = ensureWrapAroundAnchor(anchor);
+  cleanupResidualPreviewMarkers(container, wrap);
+
+  return !!wrap;
+}
+
+function repairSupportedPreviewSyntax(root) {
   if (!(root instanceof Element)) {
     return;
   }
 
   root.querySelectorAll("p, li, td, div, blockquote").forEach((container) => {
-    repairBrokenBareUrlPreview(container);
+    if (!(container instanceof Element)) {
+      return;
+    }
+
+    if (container.querySelector(WRAP_SELECTOR)) {
+      return;
+    }
+
+    repairBrokenBareUrlPreview(container) ||
+      repairWrappedMarkdownLinkPreview(container);
   });
 }
 
@@ -283,7 +320,7 @@ export function applyPreviewWraps(root, tagName = "preview", config = null) {
   }
 
   if (tagName === "preview") {
-    repairBrokenBareUrlPreviews(root);
+    repairSupportedPreviewSyntax(root);
   }
 
   if (!config) {
