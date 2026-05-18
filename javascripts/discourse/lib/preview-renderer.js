@@ -453,15 +453,47 @@ function buildTagsHTML(tags, config, isMobile) {
     return "";
   }
 
+  const normalizedTags = tags
+    .map((tag) => {
+      const normalized = normalizeTag(tag);
+
+      if (normalized) {
+        return normalized;
+      }
+
+      if (typeof tag === "string") {
+        const trimmed = tag.trim();
+        return trimmed || null;
+      }
+
+      if (tag && typeof tag === "object") {
+        const fallback =
+          tag.name ??
+          tag.text ??
+          tag.slug ??
+          tag.value ??
+          tag.id ??
+          null;
+
+        return fallback ? String(fallback).trim() : null;
+      }
+
+      return null;
+    })
+    .filter(Boolean)
+    .slice(0, 5);
+
+  if (!normalizedTags.length) {
+    return "";
+  }
+
   return `
     <div class="topic-hover-card__tags">
-      ${tags
-        .filter(Boolean)
-        .slice(0, 5)
+      ${normalizedTags
         .map(
           (tag) => `
             <span class="topic-hover-card__badge topic-hover-card__badge--tag">
-              ${escapeHTML(normalizeTag(tag))}
+              ${escapeHTML(String(tag))}
             </span>
           `
         )
