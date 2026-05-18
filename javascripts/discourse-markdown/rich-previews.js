@@ -1,45 +1,77 @@
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function buildPreviewAnchor(url, label) {
-  const safeUrl = String(url || "").trim();
-  const safeLabel = String(label || "").trim() || safeUrl;
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
 
-  if (!safeUrl) {
+function normalizeUrlCandidate(value) {
+  const trimmed = String(value ?? "").trim();
+
+  if (!trimmed) {
     return "";
   }
 
-  return `<a href="${escapeHtml(safeUrl)}">${escapeHtml(safeLabel)}</a>`;
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return "";
+}
+
+function buildAnchorHTML(url, label) {
+  const safeUrl = normalizeUrlCandidate(url);
+  const safeLabel = String(label ?? "").trim();
+
+  if (!safeUrl) {
+    return safeLabel ? escapeHtml(safeLabel) : "";
+  }
+
+  return `<a href="${escapeHtml(safeUrl)}">${escapeHtml(
+    safeLabel || safeUrl
+  )}</a>`;
+}
+
+function transformPreviewInner(attrValue, inner) {
+  const trimmedInner = String(inner ?? "").trim();
+  const trimmedAttr = String(attrValue ?? "").trim();
+
+  if (trimmedAttr) {
+    return buildAnchorHTML(trimmedAttr, trimmedInner);
+  }
+
+  if (!trimmedInner) {
+    return "";
+  }
+
+  if (/^https?:\/\/\S+$/i.test(trimmedInner)) {
+    return buildAnchorHTML(trimmedInner, trimmedInner);
+  }
+
+  return trimmedInner;
 }
 
 function wrapPreviewTags(source, tagName = "preview") {
-  if (!source?.includes(`[${tagName}`)) {
+  if (!source?.toLowerCase().includes(`[${tagName}`)) {
     return source;
   }
 
   const pattern = new RegExp(
-    `\\[${tagName}(?:=([^\\]]+))?\\]([\\s\\S]*?)\\[\\/${tagName}\\]`,
+    `\\[${escapeRegExp(tagName)}(?:=([^\\]]+))?\\]([\\s\\S]*?)\\[\\/${escapeRegExp(
+      tagName
+    )}\\]`,
     "gi"
   );
 
-  return source.replace(pattern, (_match, attrUrl, inner) => {
-    const trimmedInner = String(inner || "").trim();
-    const explicitUrl = String(attrUrl || "").trim();
+  return source.replace(pattern, (_match, attrValue, inner) => {
+    const renderedInner = transformPreviewInner(attrValue, inner);
 
-    let content = trimmedInner;
-
-    if (explicitUrl) {
-      content = buildPreviewAnchor(explicitUrl, trimmedInner);
-    } else if (/^https?:\/\/[^\s<>"']+$/i.test(trimmedInner)) {
-      content = buildPreviewAnchor(trimmedInner, trimmedInner);
-    }
-
-    return `<span class="rich-preview-wrap" data-rich-preview="true">${content}</span>`;
+    return `<span class="rich-preview-wrap" data-rich-preview="true">${renderedInner}</span>`;
   });
 }
 
@@ -48,7 +80,11 @@ export function setup(helper) {
     return;
   }
 
-  helper.allowList(["span.rich-preview-wrap", "span[data-rich-preview]", "a[href]"]);
+  helper.allowList([
+    "span.rich-preview-wrap",
+    "span[data-rich-preview]",
+    "a[href]",
+  ]);
 
   helper.registerPlugin((md) => {
     md.core.ruler.push("rich-previews-bbcode", (state) => {

@@ -48,25 +48,24 @@ const TYPE_LABELS = {
   wikipedia: "Wikipedia",
 };
 
-const FORMAT_LABELS = {
+const INSERTION_MODE_LABELS = {
   markdown: "Markdown link",
-  explicit: "Explicit preview attribute",
+  explicit: "Explicit BBCode URL",
   bare: "Bare URL",
 };
 
-const FALLBACK_GLYPHS = {
-  topic: "🔗",
-  remote_topic: "🌐",
-  external: "↗",
-  wikipedia: "📖",
+const INSERTION_MODE_HINTS = {
+  markdown: "Outputs [preview][Label](URL)[/preview]. Best default for normal authoring.",
+  explicit: "Outputs [preview=URL]Label[/preview]. Keeps label text outside markdown syntax.",
+  bare: "Outputs [preview]URL[/preview]. Uses the URL itself as visible text.",
 };
 
 export default class RichPreviewLinkModal extends Component {
   @tracked url = this.args.model?.initialUrl || "";
   @tracked linkText = this.args.model?.initialLinkText || "";
-  @tracked title = this.args.model?.initialTitle || "";
-  @tracked format = this.args.model?.initialFormat || "markdown";
+  @tracked title = "";
   @tracked urlError = "";
+  @tracked insertionMode = this.args.model?.initialInsertionMode || "markdown";
 
   get config() {
     return this.args.model?.config || {};
@@ -141,11 +140,18 @@ export default class RichPreviewLinkModal extends Component {
 
     const provider = this.config?.previewProviders?.[this.detectedType] || {};
 
-    if (provider.glyphmode === "emoji" && provider.emoji) {
+    if (provider.glyph_mode === "emoji" && provider.emoji) {
       return provider.emoji;
     }
 
-    return FALLBACK_GLYPHS[this.detectedType] || "";
+    const fallbackGlyphs = {
+      topic: "🔗",
+      remote_topic: "🌐",
+      external: "↗",
+      wikipedia: "📖",
+    };
+
+    return fallbackGlyphs[this.detectedType] || "";
   }
 
   get showIconAfter() {
@@ -164,21 +170,23 @@ export default class RichPreviewLinkModal extends Component {
     );
   }
 
-  get effectiveFormat() {
-    if (this.format === "bare") {
-      return "bare";
-    }
+  get normalizedInsertionMode() {
+    return ["markdown", "explicit", "bare"].includes(this.insertionMode)
+      ? this.insertionMode
+      : "markdown";
+  }
 
-    if (this.format === "explicit") {
-      return "explicit";
-    }
+  get insertionModeLabel() {
+    return INSERTION_MODE_LABELS[this.normalizedInsertionMode];
+  }
 
-    return "markdown";
+  get insertionModeHint() {
+    return INSERTION_MODE_HINTS[this.normalizedInsertionMode];
   }
 
   get displayText() {
-    if (this.effectiveFormat === "bare") {
-      return this.url.trim() || "link text";
+    if (this.normalizedInsertionMode === "bare") {
+      return this.url.trim() || "https://example.com/";
     }
 
     return this.linkText.trim() || this.url.trim() || "link text";
@@ -191,9 +199,9 @@ export default class RichPreviewLinkModal extends Component {
   get bbcodePreview() {
     return buildPreviewWrappedMarkdown(
       this.url.trim(),
-      this.effectiveFormat === "bare" ? "" : this.linkText,
+      this.linkText,
       this.title,
-      this.effectiveFormat
+      this.normalizedInsertionMode
     );
   }
 
@@ -211,210 +219,197 @@ export default class RichPreviewLinkModal extends Component {
     }
 
     const color = providerColor(this.detectedType, this.config);
-
     return color ? `--thc-provider-color: ${color};` : "";
   }
 
-  get showLinkTextField() {
-    return this.effectiveFormat !== "bare";
-  }
-
-  get showTitleField() {
-    return this.effectiveFormat === "markdown";
-  }
-
-  get formatOptions() {
+  get modeOptions() {
     return [
-      { id: "markdown", label: FORMAT_LABELS.markdown },
-      { id: "explicit", label: FORMAT_LABELS.explicit },
-      { id: "bare", label: FORMAT_LABELS.bare },
+      {
+        id: "markdown",
+        value: "markdown",
+        label: INSERTION_MODE_LABELS.markdown,
+        hint: INSERTION_MODE_HINTS.markdown,
+      },
+      {
+        id: "explicit",
+        value: "explicit",
+        label: INSERTION_MODE_LABELS.explicit,
+        hint: INSERTION_MODE_HINTS.explicit,
+      },
+      {
+        id: "bare",
+        value: "bare",
+        label: INSERTION_MODE_LABELS.bare,
+        hint: INSERTION_MODE_HINTS.bare,
+      },
     ];
   }
 
   @action
-  updateUrl(event) {
+  onUrlInput(event) {
     this.url = event.target.value;
     this.urlError = "";
   }
 
   @action
-  updateLinkText(event) {
+  onLinkTextInput(event) {
     this.linkText = event.target.value;
   }
 
   @action
-  updateTitle(event) {
+  onTitleInput(event) {
     this.title = event.target.value;
   }
 
   @action
-  updateFormat(event) {
-    this.format = event.target.value;
+  onInsertionModeChange(event) {
+    this.insertionMode = event.target.value;
   }
 
   @action
-  onKeydown(event) {
-    if (event.key === "Enter" && !this.cannotInsert) {
-      event.preventDefault();
-      this.insert();
-    }
-  }
-
-  @action
-  insert() {
-    const trimmedUrl = this.url.trim();
-
-    if (!trimmedUrl) {
-      this.urlError = "URL is required.";
-      return;
-    }
-
-    if (!this.isValidUrl) {
-      this.urlError = "Please enter a valid URL.";
-      return;
-    }
-
-    if (!this.isSupported) {
-      this.urlError = "This link type is not enabled for composer previews.";
+  onInsert() {
+    if (this.cannotInsert) {
+      this.urlError =
+        "Please enter a URL that is enabled for manual rich previews.";
       return;
     }
 
     const bbcode = buildPreviewWrappedMarkdown(
-      trimmedUrl,
-      this.effectiveFormat === "bare" ? "" : this.linkText,
+      this.url.trim(),
+      this.linkText,
       this.title,
-      this.effectiveFormat
+      this.normalizedInsertionMode
     );
 
     this.args.model?.onInsert?.(bbcode);
-    this.args.closeModal?.();
+    this.args.closeModal();
+  }
+
+  @action
+  onCancel() {
+    this.args.closeModal();
   }
 
   <template>
     <DModal
-      @closeModal={{@closeModal}}
-      @title="Preview Link"
+      @title="Insert Rich Preview Link"
+      @closeModal={{this.onCancel}}
       class="rich-preview-link-modal"
     >
       <:body>
-        <div
-          class="rich-preview-link-modal__content"
-          style={{this.modalProviderColorStyle}}
-          {{on "keydown" this.onKeydown}}
-        >
+        <div style={{this.modalProviderColorStyle}}>
           <div class="rplm-field">
-            <label class="rplm-label" for="rplm-url">
-              URL
-              <span class="rplm-required">*</span>
-            </label>
-
+            <label class="rplm-label" for="rplm-url">URL</label>
             <input
               id="rplm-url"
-              class={{if this.urlError "rplm-input rplm-input--error" "rplm-input"}}
               type="url"
+              class="rplm-input"
+              placeholder="https://..."
               value={{this.url}}
-              placeholder="https://example.com/page"
-              {{on "input" this.updateUrl}}
+              {{on "input" this.onUrlInput}}
+              autofocus
             />
-
             {{#if this.urlError}}
               <p class="rplm-error">{{this.urlError}}</p>
             {{/if}}
-
             {{#if this.typeLabel}}
               <div class={{this.typeBadgeClass}}>
-                {{#if this.providerGlyphText}}
-                  <span aria-hidden="true">{{this.providerGlyphText}}</span>
-                {{/if}}
-                <span>{{this.typeLabel}}</span>
+                {{this.typeLabel}}
               </div>
             {{/if}}
-
             {{#if this.showUnsupportedWarning}}
               <p class="rplm-warning">
-                This preview type is not currently enabled for composer insertion.
+                This link type is currently unavailable for manual rich previews
+                based on your theme component settings.
               </p>
             {{/if}}
           </div>
 
           <div class="rplm-field">
-            <label class="rplm-label" for="rplm-format">
-              Output format
-            </label>
+            <fieldset class="rplm-mode-fieldset">
+              <legend class="rplm-label">Insertion format</legend>
 
-            <select
-              id="rplm-format"
-              class="rplm-input"
-              value={{this.format}}
-              {{on "change" this.updateFormat}}
-            >
-              {{#each this.formatOptions as |option|}}
-                <option value={{option.id}}>
-                  {{option.label}}
-                </option>
+              {{#each this.modeOptions as |mode|}}
+                <label class="rplm-mode-option" for={{concat "rplm-mode-" mode.id}}>
+                  <input
+                    id={{concat "rplm-mode-" mode.id}}
+                    type="radio"
+                    name="rplm-insertion-mode"
+                    class="rplm-mode-radio"
+                    value={{mode.value}}
+                    checked={{eq this.normalizedInsertionMode mode.value}}
+                    {{on "change" this.onInsertionModeChange}}
+                  />
+                  <span class="rplm-mode-copy">
+                    <span class="rplm-mode-title">{{mode.label}}</span>
+                    <span class="rplm-mode-hint">{{mode.hint}}</span>
+                  </span>
+                </label>
               {{/each}}
-            </select>
+            </fieldset>
           </div>
 
-          {{#if this.showLinkTextField}}
-            <div class="rplm-field">
-              <label class="rplm-label" for="rplm-link-text">
-                Link text
-                <span class="rplm-optional">(preserved as visible label)</span>
-              </label>
+          <div class="rplm-field">
+            <label class="rplm-label" for="rplm-linktext">
+              Link text
+            </label>
+            <p class="rplm-hint">
+              Optional for markdown and explicit modes. Bare URL mode ignores this field.
+            </p>
+            <input
+              id="rplm-linktext"
+              type="text"
+              class="rplm-input"
+              placeholder="Display text for the link"
+              value={{this.linkText}}
+              disabled={{eq this.normalizedInsertionMode "bare"}}
+              {{on "input" this.onLinkTextInput}}
+            />
+          </div>
 
-              <input
-                id="rplm-link-text"
-                class="rplm-input"
-                type="text"
-                value={{this.linkText}}
-                placeholder="Text for the link"
-                {{on "input" this.updateLinkText}}
-              />
-            </div>
-          {{/if}}
-
-          {{#if this.showTitleField}}
-            <div class="rplm-field">
-              <label class="rplm-label" for="rplm-title">
-                Title
-                <span class="rplm-optional">(optional markdown title)</span>
-              </label>
-
-              <input
-                id="rplm-title"
-                class="rplm-input"
-                type="text"
-                value={{this.title}}
-                placeholder="Optional title attribute"
-                {{on "input" this.updateTitle}}
-              />
-            </div>
-          {{/if}}
+          <div class="rplm-field">
+            <label class="rplm-label" for="rplm-title">
+              Title attribute
+            </label>
+            <p class="rplm-hint">Optional. Included when your helper supports it.</p>
+            <input
+              id="rplm-title"
+              type="text"
+              class="rplm-input"
+              placeholder="Brief description of the link destination"
+              value={{this.title}}
+              {{on "input" this.onTitleInput}}
+            />
+          </div>
 
           {{#if this.showPreview}}
             <div class="rplm-preview-section">
-              <p class="rplm-preview-label">Preview</p>
+              <p class="rplm-preview-label">
+                Preview — {{this.insertionModeLabel}}
+              </p>
+              <p class="rplm-hint">{{this.insertionModeHint}}</p>
 
               <div class="rplm-visual-preview">
                 {{#if this.showIconBefore}}
-                  {{#if this.providerGlyphText}}
-                    <span class="rplm-icon" aria-hidden="true">
-                      {{this.providerGlyphText}}
-                    </span>
-                  {{/if}}
+                  <span class="rplm-icon" aria-hidden="true">
+                    {{this.providerGlyphText}}
+                  </span>
                 {{/if}}
 
-                <a href={{this.url}} class={{this.previewLinkClass}}>
+                <a
+                  href={{this.url}}
+                  title={{this.title}}
+                  class={{this.previewLinkClass}}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {{this.displayText}}
                 </a>
 
                 {{#if this.showIconAfter}}
-                  {{#if this.providerGlyphText}}
-                    <span class="rplm-icon" aria-hidden="true">
-                      {{this.providerGlyphText}}
-                    </span>
-                  {{/if}}
+                  <span class="rplm-icon" aria-hidden="true">
+                    {{this.providerGlyphText}}
+                  </span>
                 {{/if}}
               </div>
 
@@ -428,15 +423,15 @@ export default class RichPreviewLinkModal extends Component {
 
       <:footer>
         <DButton
-          @action={{this.insert}}
+          @action={{this.onInsert}}
           @translatedLabel={{this.insertLabel}}
-          class="btn btn-primary"
-          disabled={{this.cannotInsert}}
+          @disabled={{this.cannotInsert}}
+          class="btn-primary"
         />
         <DButton
-          @action={{@closeModal}}
-          @translatedLabel="Cancel"
-          class="btn btn-default"
+          @action={{this.onCancel}}
+          @label="cancel"
+          class="btn-flat"
         />
       </:footer>
     </DModal>
