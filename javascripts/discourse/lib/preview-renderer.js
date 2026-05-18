@@ -375,7 +375,7 @@ function buildMetaItem(label, value, extraClass = "") {
   return `
     <span class="topic-hover-card__meta-item ${escapeHTML(extraClass)}">
       <span class="topic-hover-card__meta-label">${escapeHTML(label)}:</span>
-      <span>${escapeHTML(formatMetaDate(value))
+      <span>${escapeHTML(formatMetaDate(value))}</span>
     </span>
   `;
 }
