@@ -58,7 +58,7 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
   return {
     async fetch(target, signal) {
       const link = target?.link;
-      if (!link) {
+      if (!link || signal?.aborted) {
         return null;
       }
 
@@ -77,11 +77,21 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
       }
 
       if (inFlightFetches.has(cacheKey)) {
-        return inFlightFetches.get(cacheKey);
+        try {
+          return await inFlightFetches.get(cacheKey);
+        } catch (error) {
+          if (error?.name === "AbortError" || signal?.aborted) {
+            return null;
+          }
+
+          throw error;
+        }
       }
 
-      const promise = fetchWikipediaPreview(host, title, config, signal)
-        .then((data) => {
+      const promise = (async () => {
+        try {
+          const data = await fetchWikipediaPreview(host, title, config, signal);
+
           if (data) {
             setCachedValue(
               previewCache,
@@ -90,76 +100,90 @@ export function createWikipediaProvider(config, previewCache, inFlightFetches) {
               config?.topicCacheMax || 100
             );
           }
+
           return data;
-        })
-        .finally(() => {
+        } catch (error) {
+          if (error?.name === "AbortError" || signal?.aborted) {
+            return null;
+          }
+
+          throw error;
+        } finally {
           inFlightFetches.delete(cacheKey);
-        });
+        }
+      })();
 
       inFlightFetches.set(cacheKey, promise);
-      return promise;
+      return await promise;
     },
   };
 }
 
 async function fetchWikipediaPreview(host, title, config, signal) {
-  const headers = {
-    "Api-User-Agent": "Discourse Rich Previews Wikipedia Provider",
-  };
+  try {
+    const headers = {
+      "Api-User-Agent": "Discourse Rich Previews Wikipedia Provider",
+    };
 
-  const searchRes = await fetch(
-    `https://${host}/w/rest.php/v1/search/page?q=${encodeURIComponent(title)}&limit=1`,
-    { headers, signal }
-  );
+    const searchRes = await fetch(
+      `https://${host}/w/rest.php/v1/search/page?q=${encodeURIComponent(
+        title
+      )}&limit=1`,
+      { headers, signal }
+    );
 
-  if (!searchRes.ok) {
-    throw new Error(`Wikipedia search failed: ${searchRes.status}`);
+    if (!searchRes.ok) {
+      throw new Error(`Wikipedia search failed: ${searchRes.status}`);
+    }
+
+    const searchData = await searchRes.json();
+    const page = searchData?.pages?.[0];
+
+    if (!page?.key) {
+      return null;
+    }
+
+    const summaryRes = await fetch(
+      `https://${host}/api/rest_v1/page/summary/${encodeURIComponent(page.key)}`,
+      { headers, signal }
+    );
+
+    let summary = null;
+    if (summaryRes.ok) {
+      summary = await summaryRes.json();
+    }
+
+    const excerpt = sanitizeExcerpt(page.excerpt || summary?.extract || "");
+
+    return {
+      type: "wikipedia",
+      providerKey: "wikipedia",
+      id: `wikipedia:${host}:${page.key}`,
+      key: page.key,
+      title: summary?.title || page.title || title,
+      excerpt,
+      image_url:
+        summary?.thumbnail?.source ||
+        summary?.originalimage?.source ||
+        null,
+      url: `https://${host}/wiki/${encodeURIComponent(page.key)}`,
+      source: host,
+      raw: {
+        page,
+        summary,
+      },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError" || signal?.aborted) {
+      return null;
+    }
+
+    logDebug(config, "Wikipedia preview fetch failed", {
+      host,
+      title,
+      error,
+    });
+
+    throw error;
   }
-
-  const searchData = await searchRes.json();
-  const page = searchData?.pages?.[0];
-
-  if (!page?.key) {
-    return null;
-  }
-
-  const summaryRes = await fetch(
-    `https://${host}/api/rest_v1/page/summary/${encodeURIComponent(page.key)}`,
-    { headers, signal }
-  );
-
-  let summary = null;
-  if (summaryRes.ok) {
-    summary = await summaryRes.json();
-  }
-
-  const excerpt = sanitizeExcerpt(page.excerpt || summary?.extract || "");
-
-  const result = {
-    type: "wikipedia",
-    id: `wikipedia:${host}:${page.key}`,
-    title: summary?.title || page.title || title,
-    excerpt,
-    html:
-      config?.wikipediaPreviewsUseExtractHtml !== false
-        ? summary?.extract_html || null
-        : null,
-    imageUrl:
-      config?.wikipediaPreviewsShowImage !== false
-        ? summary?.thumbnail?.source ||
-          summary?.originalimage?.source ||
-          null
-        : null,
-    url:
-      summary?.content_urls?.desktop?.page ||
-      `https://${host}/wiki/${encodeURIComponent(page.key)}`,
-    raw: {
-      search: searchData,
-      summary,
-      page,
-    },
-  };
-
-  logDebug(config, "Wikipedia preview fetched", result);
-  return result;
 }

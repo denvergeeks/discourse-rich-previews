@@ -755,7 +755,7 @@ export default apiInitializer((api) => {
     currentAbortController = null;
 
     if (!controller.signal.aborted) {
-      controller.abort(new DOMException("Preview request canceled", "AbortError"));
+      controller.abort();
     }
   }
 
