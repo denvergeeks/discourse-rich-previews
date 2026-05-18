@@ -380,40 +380,65 @@ function buildMetaItem(label, value, extraClass = "") {
   `;
 }
 
-function buildTopicCategoryHTML(category, categories, config, isMobile) {
-  const showCategory = pick(
-    config,
-    "showCategoryDesktop",
-    "showCategoryMobile",
-    isMobile
-  );
-
-  if (!showCategory || !category) {
+function buildTopicCategoryHTML(preview, categories, config, isMobile) {
+  if (!pick(config, "showCategoryDesktop", "showCategoryMobile", isMobile)) {
     return "";
   }
 
-  const categoryName =
+  const previewCategory =
+    preview?.category ||
+    (preview?.categoryId
+      ? {
+          id: preview.categoryId,
+          name: preview.categoryName || null,
+          slug: preview.categorySlug || null,
+          color: preview.categoryColor || null,
+          text_color: preview.categoryTextColor || null,
+        }
+      : null);
+
+  const categoryId = previewCategory?.id ?? preview?.categoryId ?? preview?.raw?.category_id;
+  const matchedCategory =
+    categoryId && Array.isArray(categories)
+      ? categories.find((c) => Number(c?.id) === Number(categoryId))
+      : null;
+
+  const category = matchedCategory || previewCategory;
+
+  const name =
     category?.name ||
-    categories?.find?.((c) => Number(c.id) === Number(category?.id))?.name ||
-    "";
+    category?.slug ||
+    preview?.categoryName ||
+    preview?.categorySlug ||
+    preview?.raw?.category_name ||
+    preview?.raw?.category_slug;
 
-  if (!categoryName) {
+  if (!name) {
     return "";
   }
 
-  // Bug #4 fix: strip any leading '#' from the API color value before
-  // prepending our own '#', so both 'ab1234' and '#ab1234' produce
-  // a valid '--thc-category-color:#ab1234' in the style attribute.
-  const rawColor = category?.color || category?.text_color;
-  const color = rawColor ? String(rawColor).replace(/^#/, "") : null;
+  const rawColor =
+    category?.color ||
+    category?.text_color ||
+    category?.textColor ||
+    preview?.categoryColor ||
+    preview?.categoryTextColor ||
+    preview?.raw?.category_color ||
+    preview?.raw?.categoryColor ||
+    null;
 
-  return `
-    <span class="topic-hover-card__badge topic-hover-card__badge--category"${
-      color ? ` style="--thc-category-color:#${escapeHTML(color)};"` : ""
-    }>
-      ${escapeHTML(categoryName)}
-    </span>
-  `;
+  const normalizedColor = rawColor ? String(rawColor).trim() : "";
+  const color = normalizedColor.startsWith("#")
+    ? normalizedColor.slice(1)
+    : normalizedColor || null;
+
+  const styleAttr = color
+    ? ` style="--thc-category-color:#${escapeHTML(color)};"`
+    : "";
+
+  return `<span class="topic-hover-card__badge topic-hover-card__badge--category"${styleAttr}>${escapeHTML(
+    String(name)
+  )}</span>`;
 }
 
 function buildTagsHTML(tags, config, isMobile) {
