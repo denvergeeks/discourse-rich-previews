@@ -589,7 +589,13 @@ export default class RichPreviewLinkModal extends Component {
                   class="rplm-visual-preview"
                   data-rich-preview-modal-host
                   {{did-insert this.enhanceRenderedPreview}}
-                  {{did-update this.enhanceRenderedPreview this.trimmedUrl this.linkText this.title this.insertionMode}}
+                  {{did-update
+                    this.enhanceRenderedPreview
+                    this.trimmedUrl
+                    this.linkText
+                    this.title
+                    this.insertionMode
+                  }}
                 >
                   <a
                     href={{this.url}}

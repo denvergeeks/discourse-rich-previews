@@ -136,7 +136,7 @@ function normalizePreviewProviders(rawProviders = []) {
     onebox: {
       key: "onebox",
       enabled: true,
-      label: "Onebox",
+      label: "Cooked Onebox",
       glyph_mode: "icon",
       icon: "link",
       emoji: "📦",
