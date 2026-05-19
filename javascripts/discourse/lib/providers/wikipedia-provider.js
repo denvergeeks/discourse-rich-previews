@@ -27,39 +27,58 @@ export function matchesWikipediaTarget(link, config) {
   }
 }
 
-function getWikipediaHost(link, config) {
+function getWikipediaUrl(target, config) {
   try {
-    const url = new URL(link.href, window.location.origin);
-    return url.hostname || config?.wikipediaBaseUrl || "en.wikipedia.org";
+    return new URL(
+      target?.href || target?.url || "",
+      window.location.origin
+    );
   } catch {
-    return config?.wikipediaBaseUrl || "en.wikipedia.org";
+    try {
+      return new URL(`https://${config?.wikipediaBaseUrl || "en.wikipedia.org"}`);
+    } catch {
+      return null;
+    }
   }
 }
 
-function getWikipediaTitle(link) {
-  try {
-    const url = new URL(link.href, window.location.origin);
+function getWikipediaHost(target, config) {
+  const url = getWikipediaUrl(target, config);
+  return url?.hostname || config?.wikipediaBaseUrl || "en.wikipedia.org";
+}
 
-    return decodeURIComponent(url.pathname.replace(/^\/wiki\//, ""))
+function getWikipediaTitle(target, config) {
+  const url = getWikipediaUrl(target, config);
+
+  if (!url) {
+    return "";
+  }
+
+  const path = url.pathname || "";
+
+  if (!path.startsWith("/wiki/")) {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(path.replace(/^\/wiki\//, ""))
       .replaceAll("_", " ")
       .replace(/\s+/g, " ")
       .trim();
   } catch {
-    return (link?.textContent || "").replace(/\s+/g, " ").trim();
+    return path.replace(/^\/wiki\//, "").replaceAll("_", " ").trim();
   }
 }
 
 export function createWikipediaProvider(config, previewCache, inFlightFetches) {
   return {
     async fetch(target, signal) {
-      const link = target?.link;
-
-      if (!link || signal?.aborted) {
+      if (!target || signal?.aborted) {
         return null;
       }
 
-      const host = getWikipediaHost(link, config);
-      const title = getWikipediaTitle(link);
+      const host = getWikipediaHost(target, config);
+      const title = getWikipediaTitle(target, config);
 
       if (!title) {
         return null;
