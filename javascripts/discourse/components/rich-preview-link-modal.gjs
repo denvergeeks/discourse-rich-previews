@@ -86,7 +86,7 @@ const TYPE_LABELS = {
 export default class RichPreviewLinkModal extends Component {
   @tracked url = this.args.model?.initialUrl || "";
   @tracked linkText = this.args.model?.initialLinkText || "";
-  @tracked title = "";
+  @tracked title = this.args.model?.initialTitle || "";
   @tracked urlError = "";
   @tracked insertionMode = this.args.model?.initialInsertionMode || "rich_preview";
 
@@ -131,6 +131,10 @@ export default class RichPreviewLinkModal extends Component {
     }
   }
 
+  get markdownSupported() {
+    return this.isValidUrl;
+  }
+
   get richPreviewSupported() {
     return (
       this.isValidUrl &&
@@ -141,11 +145,10 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get bareUrlSupported() {
-    return this.isValidUrl && isPlausibleCoreOneboxCandidate(this.trimmedUrl, this.detectedType);
-  }
-
-  get markdownSupported() {
-    return this.isValidUrl;
+    return (
+      this.isValidUrl &&
+      isPlausibleCoreOneboxCandidate(this.trimmedUrl, this.detectedType)
+    );
   }
 
   get enabledModes() {
@@ -197,15 +200,15 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get markdownModeChecked() {
-    return this.effectiveInsertionMode === "markdown";
+    return this.isMarkdownMode;
   }
 
   get richPreviewModeChecked() {
-    return this.effectiveInsertionMode === "rich_preview";
+    return this.isRichPreviewMode;
   }
 
   get bareUrlModeChecked() {
-    return this.effectiveInsertionMode === "bare_url";
+    return this.isBareMode;
   }
 
   get markdownModeDisabled() {
@@ -427,7 +430,7 @@ export default class RichPreviewLinkModal extends Component {
 
   <template>
     <DModal
-      @title="Insert Rich Preview Link"
+      @title="Insert Link"
       @closeModal={{this.onCancel}}
       class="rich-preview-link-modal"
     >
@@ -476,9 +479,7 @@ export default class RichPreviewLinkModal extends Component {
                   {{on "change" this.onInsertionModeChange}}
                 />
                 <span class="rplm-mode-copy">
-                  <span class="rplm-mode-title">
-                    Markdown link
-                  </span>
+                  <span class="rplm-mode-title">Markdown link</span>
                   <span class="rplm-mode-hint">
                     Insert a normal markdown link without rich preview behavior.
                   </span>
@@ -497,9 +498,7 @@ export default class RichPreviewLinkModal extends Component {
                   {{on "change" this.onInsertionModeChange}}
                 />
                 <span class="rplm-mode-copy">
-                  <span class="rplm-mode-title">
-                    Rich preview link
-                  </span>
+                  <span class="rplm-mode-title">Rich preview link</span>
                   <span class="rplm-mode-hint">
                     Insert a [preview]...[/preview] link using this theme component’s provider rules and styling.
                   </span>
@@ -530,9 +529,7 @@ export default class RichPreviewLinkModal extends Component {
           </div>
 
           <div class="rplm-field">
-            <label class="rplm-label" for="rplm-linktext">
-              Link text
-            </label>
+            <label class="rplm-label" for="rplm-linktext">Link text</label>
             <p class="rplm-hint">
               Optional for markdown and rich preview modes. Bare URL mode ignores this field.
             </p>
@@ -548,10 +545,10 @@ export default class RichPreviewLinkModal extends Component {
           </div>
 
           <div class="rplm-field">
-            <label class="rplm-label" for="rplm-title">
-              Title attribute
-            </label>
-            <p class="rplm-hint">Optional. Used for normal markdown links and preview output where supported.</p>
+            <label class="rplm-label" for="rplm-title">Title attribute</label>
+            <p class="rplm-hint">
+              Optional. Used for normal markdown links and preview output where supported.
+            </p>
             <input
               id="rplm-title"
               type="text"
