@@ -966,7 +966,6 @@ export default apiInitializer(async (api) => {
       previewsRemoteTopicMode: config.previewsRemoteTopicMode,
       previewsExternalMode: config.previewsExternalMode,
       previewsWikipediaMode: config.previewsWikipediaMode,
-      previewsOneboxMode: config.previewsOneboxMode,
       wikipediaBaseUrl: config.wikipediaBaseUrl,
       wikipediaShowImage: config.wikipediaShowImage,
       wikipediaUseExtractHtml: config.wikipediaUseExtractHtml,
