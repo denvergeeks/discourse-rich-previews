@@ -284,6 +284,15 @@ export default apiInitializer(async (api) => {
       currentAnchor = null;
     }
 
+    function pointerIsWithinCurrentAnchor() {
+      if (!currentAnchor?.matches?.("a[href]")) {
+        return false;
+      }
+
+      const hovered = document.querySelector(":hover");
+      return hovered instanceof Element && currentAnchor.contains(hovered);
+    }
+
     function hideCard() {
       abortCurrentRequest();
 
@@ -391,9 +400,13 @@ export default apiInitializer(async (api) => {
           return;
         }
 
-        if (!mouseIsOverAnchor && !viewport.isMobileInteractionMode()) {
-          tooltip.classList.remove("is-visible");
-          currentPreviewKey = null;
+        if (
+          !viewport.isMobileInteractionMode() &&
+          !mouseIsOverAnchor &&
+          !isInsideCard &&
+          !pointerIsWithinCurrentAnchor()
+        ) {
+          hideCard();
           return;
         }
 
