@@ -670,6 +670,11 @@ export default apiInitializer(async (api) => {
         return;
       }
 
+      const related = event.relatedTarget;
+      if (related instanceof Element && link.contains(related)) {
+        return;
+      }
+
       const target = matchPreviewTarget(link, config);
       if (!target) {
         return;
@@ -691,6 +696,18 @@ export default apiInitializer(async (api) => {
       const link = event.target.closest("a[href]");
       if (!link || !linkInSupportedArea(link, config)) {
         return;
+      }
+
+      const related = event.relatedTarget;
+
+      if (related instanceof Element) {
+        if (link.contains(related)) {
+          return;
+        }
+
+        if (related.closest?.(TOOLTIP_SELECTOR)) {
+          return;
+        }
       }
 
       mouseIsOverAnchor = false;
