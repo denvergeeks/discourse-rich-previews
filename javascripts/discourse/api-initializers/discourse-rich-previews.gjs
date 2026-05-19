@@ -33,7 +33,6 @@ import {
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 import { createExternalProvider } from "../lib/providers/external-provider";
-import { createOneboxProvider } from "../lib/providers/onebox-provider";
 
 import { registerPreviewBBCode } from "../lib/preview-bbcode";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
@@ -124,11 +123,6 @@ export default apiInitializer(async (api) => {
       previewCache,
       inFlightFetches
     );
-    const oneboxProvider = createOneboxProvider(
-      config,
-      previewCache,
-      inFlightFetches
-    );
 
     function providerForTarget(target) {
       switch (target?.providerKey) {
@@ -139,8 +133,6 @@ export default apiInitializer(async (api) => {
           return wikipediaProvider;
         case "external":
           return externalProvider;
-        case "onebox":
-          return oneboxProvider;
         default:
           return null;
       }
@@ -251,7 +243,8 @@ export default apiInitializer(async (api) => {
     }
 
     function getRenderCacheKey(preview, isMobile) {
-      const id = preview?.id ?? preview?.key ?? preview?.url ?? preview?.title ?? "";
+      const id =
+        preview?.id ?? preview?.key ?? preview?.url ?? preview?.title ?? "";
       return `${preview?.type || "unknown"}:${id}:${isMobile ? "mobile" : "desktop"}`;
     }
 
@@ -405,7 +398,9 @@ export default apiInitializer(async (api) => {
         }
 
         if (!preview) {
-          applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
+          applyTooltipProviderColor(
+            target?.providerKey || target?.type || "topic"
+          );
 
           const errorAttrs = buildRootAttrsForTarget(
             target,
@@ -422,7 +417,10 @@ export default apiInitializer(async (api) => {
         }
 
         applyTooltipProviderColor(
-          preview?.providerKey || preview?.type || target?.providerKey || "topic"
+          preview?.providerKey ||
+            preview?.type ||
+            target?.providerKey ||
+            "topic"
         );
 
         tooltip.innerHTML = getRenderedCard(
