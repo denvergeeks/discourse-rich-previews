@@ -1054,6 +1054,12 @@ export function linkInSupportedArea(link, config) {
     return true;
   }
 
+  const inModalPreview = !!link.closest("[data-rich-preview-modal-host]");
+
+  if (inModalPreview) {
+    return true;
+  }
+
   const inComposerPreview = !!link.closest(
     ".d-editor-preview, .composer-preview, .preview, .composer .cooked"
   );

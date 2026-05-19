@@ -4,6 +4,7 @@ import { action } from "@ember/object";
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
 import { on } from "@ember/modifier";
+import { didInsert, didUpdate } from "@ember/render-modifiers";
 import {
   parseTopicUrl,
   parseRemoteDiscourseTopicUrl,
@@ -12,6 +13,12 @@ import {
   previewTypeEnabled,
   providerColor,
 } from "../lib/rich-preview-utils";
+import { matchPreviewTarget } from "../lib/preview-router";
+import {
+  decorateAutoDetectedLink,
+  decorateWrappedPreviewLink,
+  clearDecoratedLink,
+} from "../lib/link-decorator";
 import {
   buildMarkdownLink,
   buildBareUrl,
@@ -243,45 +250,6 @@ export default class RichPreviewLinkModal extends Component {
     return `rplm-type-badge rplm-type-badge--${this.detectedType || "unsupported"}`;
   }
 
-  get providerGlyphText() {
-    if (!this.detectedType || !this.isValidUrl) {
-      return "";
-    }
-
-    const provider = this.config?.previewProviders?.[this.detectedType] || {};
-
-    if (provider.glyph_mode === "emoji" && provider.emoji) {
-      return provider.emoji;
-    }
-
-    const fallbackGlyphs = {
-      topic: "💬",
-      remote_topic: "🌐",
-      external: "🔗",
-      wikipedia: "📚",
-    };
-
-    return fallbackGlyphs[this.detectedType] || "";
-  }
-
-  get showIconAfter() {
-    return (
-      this.config?.previewsShowIcon &&
-      this.config?.previewsIconPosition !== "before" &&
-      this.richPreviewSupported &&
-      this.isRichPreviewMode
-    );
-  }
-
-  get showIconBefore() {
-    return (
-      this.config?.previewsShowIcon &&
-      this.config?.previewsIconPosition === "before" &&
-      this.richPreviewSupported &&
-      this.isRichPreviewMode
-    );
-  }
-
   get insertionModeLabel() {
     switch (this.effectiveInsertionMode) {
       case "markdown":
@@ -315,7 +283,17 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get previewLinkClass() {
-    return `rplm-preview-link rplm-preview-link--${this.detectedType || "unsupported"}`;
+    const classes = ["rplm-preview-link"];
+
+    if (this.detectedType) {
+      classes.push(`rplm-preview-link--${this.detectedType}`);
+    }
+
+    if (this.isRichPreviewMode && this.richPreviewSupported) {
+      classes.push("rich-preview-link");
+    }
+
+    return classes.join(" ");
   }
 
   get insertionPreview() {
@@ -366,6 +344,42 @@ export default class RichPreviewLinkModal extends Component {
     }
 
     this.insertionMode = this.enabledModes[0] || "markdown";
+  }
+
+  decoratePreviewContainer(container) {
+    if (!(container instanceof Element)) {
+      return;
+    }
+
+    const link = container.querySelector("a[href]");
+    const wrapper = container.querySelector(".rich-preview-wrap");
+
+    if (!link) {
+      return;
+    }
+
+    clearDecoratedLink(link, wrapper);
+
+    if (!this.isRichPreviewMode || !this.richPreviewSupported) {
+      return;
+    }
+
+    const target = matchPreviewTarget(link, this.config);
+
+    if (!target) {
+      return;
+    }
+
+    if (wrapper) {
+      decorateWrappedPreviewLink(wrapper, link, target, this.config);
+    } else {
+      decorateAutoDetectedLink(link, target, this.config);
+    }
+  }
+
+  @action
+  enhanceRenderedPreview(container) {
+    this.decoratePreviewContainer(container);
   }
 
   @action
@@ -567,17 +581,16 @@ export default class RichPreviewLinkModal extends Component {
               <p class="rplm-hint">{{this.insertionModeHint}}</p>
 
               {{#if this.isBareMode}}
-                <div class="rplm-visual-preview">
+                <div class="rplm-visual-preview" data-rich-preview-modal-host>
                   <span>{{this.trimmedUrl}}</span>
                 </div>
               {{else}}
-                <div class="rplm-visual-preview">
-                  {{#if this.showIconBefore}}
-                    <span class="rplm-icon" aria-hidden="true">
-                      {{this.providerGlyphText}}
-                    </span>
-                  {{/if}}
-
+                <div
+                  class="rplm-visual-preview"
+                  data-rich-preview-modal-host
+                  {{did-insert this.enhanceRenderedPreview}}
+                  {{did-update this.enhanceRenderedPreview this.trimmedUrl this.linkText this.title this.insertionMode}}
+                >
                   <a
                     href={{this.url}}
                     title={{this.title}}
@@ -587,12 +600,6 @@ export default class RichPreviewLinkModal extends Component {
                   >
                     {{this.displayText}}
                   </a>
-
-                  {{#if this.showIconAfter}}
-                    <span class="rplm-icon" aria-hidden="true">
-                      {{this.providerGlyphText}}
-                    </span>
-                  {{/if}}
                 </div>
               {{/if}}
 
