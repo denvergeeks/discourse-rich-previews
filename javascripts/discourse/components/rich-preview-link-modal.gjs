@@ -1,9 +1,10 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
+import { scheduleOnce } from "@ember/runloop";
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
-import { didInsert, didUpdate } from "@ember/render-modifiers";
+
 import {
   parseTopicUrl,
   parseRemoteDiscourseTopicUrl,
@@ -12,12 +13,15 @@ import {
   previewTypeEnabled,
   providerColor,
 } from "../lib/rich-preview-utils";
+
 import { matchPreviewTarget } from "../lib/preview-router";
+
 import {
   decorateAutoDetectedLink,
   decorateWrappedPreviewLink,
   clearDecoratedLink,
 } from "../lib/link-decorator";
+
 import {
   buildMarkdownLink,
   buildBareUrl,
@@ -96,6 +100,11 @@ export default class RichPreviewLinkModal extends Component {
   @tracked urlError = "";
   @tracked insertionMode =
     this.args.model?.initialInsertionMode || "rich_preview";
+
+  constructor(owner, args) {
+    super(owner, args);
+    this.queuePreviewDecoration();
+  }
 
   get config() {
     return this.args.model?.config || {};
@@ -204,30 +213,6 @@ export default class RichPreviewLinkModal extends Component {
 
   get isBareMode() {
     return this.effectiveInsertionMode === "bare_url";
-  }
-
-  get markdownModeChecked() {
-    return this.isMarkdownMode;
-  }
-
-  get richPreviewModeChecked() {
-    return this.isRichPreviewMode;
-  }
-
-  get bareUrlModeChecked() {
-    return this.isBareMode;
-  }
-
-  get markdownModeDisabled() {
-    return !this.markdownSupported;
-  }
-
-  get richPreviewModeDisabled() {
-    return !this.richPreviewSupported;
-  }
-
-  get bareUrlModeDisabled() {
-    return !this.bareUrlSupported;
   }
 
   get cannotInsert() {
@@ -348,7 +333,15 @@ export default class RichPreviewLinkModal extends Component {
     this.insertionMode = this.enabledModes[0] || "markdown";
   }
 
-  decoratePreviewContainer(container) {
+  queuePreviewDecoration() {
+    scheduleOnce("afterRender", this, this.decorateRenderedPreview);
+  }
+
+  decorateRenderedPreview() {
+    const container = document.getElementById(
+      "rich-preview-link-modal-preview-root"
+    );
+
     if (!(container instanceof Element)) {
       return;
     }
@@ -380,31 +373,30 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   @action
-  enhanceRenderedPreview(container) {
-    this.decoratePreviewContainer(container);
-  }
-
-  @action
   onUrlInput(event) {
-    this.url = event.target.value;
+    this.url = event?.target?.value || "";
     this.urlError = "";
     this.ensureValidModeSelection();
+    this.queuePreviewDecoration();
   }
 
   @action
   onLinkTextInput(event) {
-    this.linkText = event.target.value;
+    this.linkText = event?.target?.value || "";
+    this.queuePreviewDecoration();
   }
 
   @action
   onTitleInput(event) {
-    this.title = event.target.value;
+    this.title = event?.target?.value || "";
+    this.queuePreviewDecoration();
   }
 
   @action
   onInsertionModeChange(event) {
-    this.insertionMode = event.target.value;
+    this.insertionMode = event?.target?.value || "markdown";
     this.urlError = "";
+    this.queuePreviewDecoration();
   }
 
   @action
@@ -460,7 +452,7 @@ export default class RichPreviewLinkModal extends Component {
               class="rplm-input"
               placeholder="https://..."
               value={{this.url}}
-              {{on "input" this.onUrlInput}}
+              oninput={{this.onUrlInput}}
               autofocus
             />
             {{#if this.urlError}}
@@ -490,9 +482,9 @@ export default class RichPreviewLinkModal extends Component {
                   name="rplm-insertion-mode"
                   class="rplm-mode-radio"
                   value="markdown"
-                  checked={{this.markdownModeChecked}}
-                  disabled={{this.markdownModeDisabled}}
-                  {{on "change" this.onInsertionModeChange}}
+                  checked={{this.isMarkdownMode}}
+                  disabled={{not this.markdownSupported}}
+                  onchange={{this.onInsertionModeChange}}
                 />
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">Markdown link</span>
@@ -509,9 +501,9 @@ export default class RichPreviewLinkModal extends Component {
                   name="rplm-insertion-mode"
                   class="rplm-mode-radio"
                   value="rich_preview"
-                  checked={{this.richPreviewModeChecked}}
-                  disabled={{this.richPreviewModeDisabled}}
-                  {{on "change" this.onInsertionModeChange}}
+                  checked={{this.isRichPreviewMode}}
+                  disabled={{not this.richPreviewSupported}}
+                  onchange={{this.onInsertionModeChange}}
                 />
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">Rich preview link</span>
@@ -529,9 +521,9 @@ export default class RichPreviewLinkModal extends Component {
                   name="rplm-insertion-mode"
                   class="rplm-mode-radio"
                   value="bare_url"
-                  checked={{this.bareUrlModeChecked}}
-                  disabled={{this.bareUrlModeDisabled}}
-                  {{on "change" this.onInsertionModeChange}}
+                  checked={{this.isBareMode}}
+                  disabled={{not this.bareUrlSupported}}
+                  onchange={{this.onInsertionModeChange}}
                 />
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">
@@ -559,7 +551,7 @@ export default class RichPreviewLinkModal extends Component {
               placeholder="Display text for the link"
               value={{this.linkText}}
               disabled={{this.isBareMode}}
-              {{on "input" this.onLinkTextInput}}
+              oninput={{this.onLinkTextInput}}
             />
           </div>
 
@@ -575,7 +567,7 @@ export default class RichPreviewLinkModal extends Component {
               class="rplm-input"
               placeholder="Brief description of the link destination"
               value={{this.title}}
-              {{on "input" this.onTitleInput}}
+              oninput={{this.onTitleInput}}
             />
           </div>
 
@@ -587,21 +579,18 @@ export default class RichPreviewLinkModal extends Component {
               <p class="rplm-hint">{{this.insertionModeHint}}</p>
 
               {{#if this.isBareMode}}
-                <div class="rplm-visual-preview" data-rich-preview-modal-host>
+                <div
+                  id="rich-preview-link-modal-preview-root"
+                  class="rplm-visual-preview"
+                  data-rich-preview-modal-host
+                >
                   <span>{{this.trimmedUrl}}</span>
                 </div>
               {{else}}
                 <div
+                  id="rich-preview-link-modal-preview-root"
                   class="rplm-visual-preview"
                   data-rich-preview-modal-host
-                  {{didInsert this.enhanceRenderedPreview}}
-                  {{didUpdate
-                    this.enhanceRenderedPreview
-                    this.trimmedUrl
-                    this.linkText
-                    this.title
-                    this.insertionMode
-                  }}
                 >
                   <a
                     href={{this.url}}
@@ -630,7 +619,11 @@ export default class RichPreviewLinkModal extends Component {
           @disabled={{this.cannotInsert}}
           class="btn-primary"
         />
-        <DButton @action={{this.onCancel}} @label="cancel" class="btn-flat" />
+        <DButton
+          @action={{this.onCancel}}
+          @label="cancel"
+          class="btn-flat"
+        />
       </:footer>
     </DModal>
   </template>
