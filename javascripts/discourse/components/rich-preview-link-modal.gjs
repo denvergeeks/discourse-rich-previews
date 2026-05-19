@@ -167,6 +167,18 @@ export default class RichPreviewLinkModal extends Component {
     );
   }
 
+  get markdownDisabled() {
+    return !this.markdownSupported;
+  }
+
+  get richPreviewDisabled() {
+    return !this.richPreviewSupported;
+  }
+
+  get bareUrlDisabled() {
+    return !this.bareUrlSupported;
+  }
+
   get enabledModes() {
     const modes = [];
 
@@ -482,7 +494,7 @@ export default class RichPreviewLinkModal extends Component {
                   class="rplm-mode-radio"
                   value="markdown"
                   checked={{this.isMarkdownMode}}
-                  disabled={{not this.markdownSupported}}
+                  disabled={{this.markdownDisabled}}
                   data-rplm-field="mode"
                   onchange={{this.updateField}}
                 />
@@ -502,7 +514,7 @@ export default class RichPreviewLinkModal extends Component {
                   class="rplm-mode-radio"
                   value="rich_preview"
                   checked={{this.isRichPreviewMode}}
-                  disabled={{not this.richPreviewSupported}}
+                  disabled={{this.richPreviewDisabled}}
                   data-rplm-field="mode"
                   onchange={{this.updateField}}
                 />
@@ -523,7 +535,7 @@ export default class RichPreviewLinkModal extends Component {
                   class="rplm-mode-radio"
                   value="bare_url"
                   checked={{this.isBareMode}}
-                  disabled={{not this.bareUrlSupported}}
+                  disabled={{this.bareUrlDisabled}}
                   data-rplm-field="mode"
                   onchange={{this.updateField}}
                 />
