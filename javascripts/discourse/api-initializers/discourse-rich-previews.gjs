@@ -96,6 +96,7 @@ export default apiInitializer(async (api) => {
     let currentPreviewKey = null;
     let currentRequestId = 0;
     let currentAnchor = null;
+    let currentTarget = null;
     let isInsideCard = false;
     let mouseIsOverAnchor = false;
     let suppressNextClick = false;
@@ -165,6 +166,16 @@ export default apiInitializer(async (api) => {
         "--thc-mobile-width",
         `${config.mobileWidthPercent}vw`
       );
+    }
+
+    function setTooltipVisible(visible) {
+      ensureTooltip();
+
+      tooltip.classList.toggle("is-visible", visible);
+
+      if (!visible) {
+        tooltip.style.removeProperty("--thc-provider-color");
+      }
     }
 
     function applyTooltipProviderColor(providerKey) {
@@ -281,16 +292,18 @@ export default apiInitializer(async (api) => {
       if (currentAnchor?.removeAttribute) {
         currentAnchor.removeAttribute("aria-describedby");
       }
+
       currentAnchor = null;
+      currentTarget = null;
     }
 
-    function pointerIsWithinCurrentAnchor() {
-      if (!currentAnchor?.matches?.("a[href]")) {
+    function linkStillOwnsPreview(link, target) {
+      if (!link?.matches?.("a[href]") || !target) {
         return false;
       }
 
-      const hovered = document.querySelector(":hover");
-      return hovered instanceof Element && currentAnchor.contains(hovered);
+      const freshTarget = matchPreviewTarget(link, config);
+      return freshTarget?.key === target.key;
     }
 
     function hideCard() {
@@ -300,8 +313,7 @@ export default apiInitializer(async (api) => {
         return;
       }
 
-      tooltip.classList.remove("is-visible");
-      tooltip.style.removeProperty("--thc-provider-color");
+      setTooltipVisible(false);
       clearCurrentAnchorDescription();
 
       later(() => {
@@ -315,7 +327,7 @@ export default apiInitializer(async (api) => {
       cancel(hideTimer);
 
       hideTimer = later(() => {
-        if (!isInsideCard) {
+        if (!isInsideCard && !mouseIsOverAnchor) {
           hideCard();
         }
         suppressNextClick = false;
@@ -328,6 +340,7 @@ export default apiInitializer(async (api) => {
 
       showTimer = later(() => {
         currentAnchor = anchorEl || null;
+        currentTarget = target || null;
         showCard(target, anchorRect);
       }, config.delayShow);
     }
@@ -373,6 +386,7 @@ export default apiInitializer(async (api) => {
       const controller = new AbortController();
       currentAbortController = controller;
       currentPreviewKey = target.key;
+      currentTarget = target;
       const requestId = ++currentRequestId;
 
       applyTooltipProviderColor(target?.providerKey || target?.type || "topic");
@@ -384,7 +398,7 @@ export default apiInitializer(async (api) => {
       );
 
       tooltip.innerHTML = buildLoadingPreviewHTML(loadingAttrs);
-      tooltip.classList.add("is-visible");
+      setTooltipVisible(true);
       positionTooltipNextFrame(anchorRect);
 
       try {
@@ -404,7 +418,7 @@ export default apiInitializer(async (api) => {
           !viewport.isMobileInteractionMode() &&
           !mouseIsOverAnchor &&
           !isInsideCard &&
-          !pointerIsWithinCurrentAnchor()
+          !linkStillOwnsPreview(currentAnchor, currentTarget)
         ) {
           hideCard();
           return;
@@ -694,6 +708,8 @@ export default apiInitializer(async (api) => {
       }
 
       mouseIsOverAnchor = true;
+      currentAnchor = link;
+      currentTarget = target;
       scheduleShow(target, link.getBoundingClientRect(), link);
     }
 
@@ -715,6 +731,10 @@ export default apiInitializer(async (api) => {
 
       if (related instanceof Element) {
         if (link.contains(related)) {
+          return;
+        }
+
+        if (currentAnchor?.contains?.(related)) {
           return;
         }
 
@@ -752,6 +772,7 @@ export default apiInitializer(async (api) => {
       }
 
       currentAnchor = link;
+      currentTarget = target;
       event.preventDefault();
       event.stopPropagation();
       suppressNextClick = true;
@@ -974,6 +995,7 @@ export default apiInitializer(async (api) => {
       currentPreviewKey = null;
       suppressNextClick = false;
       mouseIsOverAnchor = false;
+      isInsideCard = false;
       clearCurrentAnchorDescription();
       applyBodyClasses();
     });

@@ -24,6 +24,8 @@
     opacity 140ms ease,
     transform 140ms ease;
   will-change: transform, opacity;
+  contain: layout paint;
+  backface-visibility: hidden;
 
   &.is-visible {
     opacity: 1;
@@ -496,6 +498,18 @@
   &:hover {
     background: var(--primary-low);
     color: var(--primary);
+  }
+}
+
+.topic-hover-card__open-topic,
+.topic-hover-card__close,
+.topic-hover-card__mobile-x,
+.rplm-mode-option,
+.rplm-preview-link,
+.rplm-input {
+  &:focus-visible {
+    outline: 2px solid var(--tertiary);
+    outline-offset: 2px;
   }
 }
 
@@ -1435,6 +1449,7 @@ a.rich-preview-link {
 .rplm-mode-radio {
   flex: 0 0 auto;
   margin: 0.15rem 0 0;
+  accent-color: var(--thc-provider-color, var(--tertiary));
 }
 
 .rplm-mode-copy {
@@ -1510,7 +1525,8 @@ a.rich-preview-link {
   margin-bottom: 0.75rem;
 
   a {
-    word-break: break-all;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 
@@ -1534,7 +1550,8 @@ a.rich-preview-link {
   font-size: var(--font-down-1);
   color: var(--primary-medium);
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-family: var(--d-font-family--monospace, monospace);
   margin: 0;
   padding: 0;
@@ -1577,7 +1594,8 @@ a.rich-preview-link {
 }
 
 .rplm-preview-link {
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   text-decoration-line: underline;
   text-decoration-style: dotted;
   text-decoration-thickness: 1.5px;
