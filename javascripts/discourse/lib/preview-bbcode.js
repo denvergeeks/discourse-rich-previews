@@ -203,35 +203,51 @@ function repairWrappedMarkdownLinkPreview(container) {
     return false;
   }
 
-  const anchor = container.querySelector(":scope > a[href]");
-  if (!(anchor instanceof HTMLAnchorElement)) {
-    return false;
+  let repairedAny = false;
+
+  container.querySelectorAll(":scope > a[href]").forEach((anchor) => {
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    if (anchor.closest(WRAP_SELECTOR)) {
+      return;
+    }
+
+    const prev = anchor.previousSibling;
+    const next = anchor.nextSibling;
+
+    if (prev?.nodeType !== Node.TEXT_NODE || next?.nodeType !== Node.TEXT_NODE) {
+      return;
+    }
+
+    const prevValue = prev.nodeValue || "";
+    const nextValue = next.nodeValue || "";
+
+    if (!prevValue.includes(OPEN_TAG) || !nextValue.includes(CLOSE_TAG)) {
+      return;
+    }
+
+    prev.nodeValue = prevValue.replace(OPEN_TAG, "");
+    next.nodeValue = nextValue.replace(CLOSE_TAG, "");
+
+    if (!prev.nodeValue) {
+      prev.remove();
+    }
+
+    if (!next.nodeValue) {
+      next.remove();
+    }
+
+    ensureWrapAroundAnchor(anchor);
+    repairedAny = true;
+  });
+
+  if (repairedAny) {
+    cleanupResidualPreviewMarkers(container);
   }
 
-  if (anchor.closest(WRAP_SELECTOR)) {
-    return false;
-  }
-
-  const firstNode = container.firstChild;
-  const lastNode = container.lastChild;
-
-  const matchesMarkdownWrappedShape =
-    firstNode?.nodeType === Node.TEXT_NODE &&
-    (firstNode.nodeValue || "") === OPEN_TAG &&
-    lastNode?.nodeType === Node.TEXT_NODE &&
-    (lastNode.nodeValue || "") === CLOSE_TAG;
-
-  if (!matchesMarkdownWrappedShape) {
-    return false;
-  }
-
-  cleanupPreviewTextNode(firstNode, OPEN_TAG);
-  cleanupPreviewTextNode(lastNode, CLOSE_TAG);
-
-  const wrap = ensureWrapAroundAnchor(anchor);
-  cleanupResidualPreviewMarkers(container, wrap);
-
-  return !!wrap;
+  return repairedAny;
 }
 
 function repairSupportedPreviewSyntax(root) {
