@@ -2,6 +2,7 @@ import {
   parseTopicUrl,
   parseRemoteDiscourseTopicUrl,
   providerEnabled,
+  isManuallyWrapped,
 } from "./rich-preview-utils";
 import { matchesWikipediaTarget } from "./providers/wikipedia-provider";
 import { matchesExternalTarget } from "./providers/external-provider";
@@ -21,6 +22,7 @@ export function matchPreviewTarget(link, config) {
   return (
     matchWikipediaPreview(link, config) ||
     matchTopicPreview(link, config) ||
+    matchOneboxPreview(link, config) ||
     matchExternalPreview(link, config) ||
     null
   );
@@ -93,6 +95,38 @@ function matchWikipediaPreview(link, config) {
       host,
       pageKey,
       url: url.toString(),
+      link,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function matchOneboxPreview(link, config) {
+  if (!providerEnabled(config, "onebox")) {
+    return null;
+  }
+
+  if (!matchesExternalTarget(link, config)) {
+    return null;
+  }
+
+  if (!isManuallyWrapped(link)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(link.href, window.location.origin);
+
+    return {
+      type: "onebox",
+      providerKey: "onebox",
+      glyphProviderKey: "onebox",
+      key: `onebox:${url.toString()}`,
+      url: url.toString(),
+      origin: url.origin,
+      hostname: url.hostname.toLowerCase(),
+      protocol: url.protocol,
       link,
     };
   } catch {

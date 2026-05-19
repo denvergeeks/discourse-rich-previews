@@ -33,6 +33,7 @@ import {
 import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 import { createExternalProvider } from "../lib/providers/external-provider";
+import { createOneboxProvider } from "../lib/providers/onebox-provider";
 
 import { registerPreviewBBCode } from "../lib/preview-bbcode";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
@@ -123,6 +124,11 @@ export default apiInitializer(async (api) => {
       previewCache,
       inFlightFetches
     );
+    const oneboxProvider = createOneboxProvider(
+      config,
+      previewCache,
+      inFlightFetches
+    );
 
     function providerForTarget(target) {
       switch (target?.providerKey) {
@@ -133,6 +139,8 @@ export default apiInitializer(async (api) => {
           return wikipediaProvider;
         case "external":
           return externalProvider;
+        case "onebox":
+          return oneboxProvider;
         default:
           return null;
       }
@@ -960,6 +968,7 @@ export default apiInitializer(async (api) => {
       previewsRemoteTopicMode: config.previewsRemoteTopicMode,
       previewsExternalMode: config.previewsExternalMode,
       previewsWikipediaMode: config.previewsWikipediaMode,
+      previewsOneboxMode: config.previewsOneboxMode,
       wikipediaBaseUrl: config.wikipediaBaseUrl,
       wikipediaShowImage: config.wikipediaShowImage,
       wikipediaUseExtractHtml: config.wikipediaUseExtractHtml,

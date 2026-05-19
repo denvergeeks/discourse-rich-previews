@@ -133,6 +133,18 @@ function normalizePreviewProviders(rawProviders = []) {
       require_https: true,
       timeout_ms: 3000,
     },
+    onebox: {
+      key: "onebox",
+      enabled: true,
+      label: "Onebox",
+      glyph_mode: "icon",
+      icon: "link",
+      emoji: "📦",
+      color: "var(--primary)",
+      remote_hosts: [],
+      require_https: true,
+      timeout_ms: 3000,
+    },
   };
 
   const map = { ...defaults };
@@ -198,6 +210,10 @@ export function readConfig(settings) {
     ),
     previewsWikipediaMode: stringSetting(
       settings.previews_wikipedia_mode,
+      "auto_only"
+    ),
+    previewsOneboxMode: stringSetting(
+      settings.previews_onebox_mode,
       "auto_only"
     ),
 
@@ -481,6 +497,8 @@ export function providerModeForType(type, config) {
       return config?.previewsExternalMode || "auto_only";
     case "wikipedia":
       return config?.previewsWikipediaMode || "auto_only";
+    case "onebox":
+      return config?.previewsOneboxMode || "auto_only";
     default:
       return "disabled";
   }
@@ -532,6 +550,10 @@ export function providerKeyForTarget(target, preview = null) {
     return "topic";
   }
 
+  if (target?.type === "onebox" || preview?.type === "onebox") {
+    return "onebox";
+  }
+
   if (target?.type === "external" || preview?.type === "external") {
     return "external";
   }
@@ -544,6 +566,7 @@ const FALLBACK_GLYPHS = {
   remote_topic: "🌐",
   external: "🌐",
   wikipedia: "📖",
+  onebox: "📦",
 };
 
 export function renderProviderGlyph(providerKey, config) {
@@ -902,6 +925,7 @@ export function previewTypeEnabled(type, config) {
     remote_topic: "remote_topic",
     external: "external",
     wikipedia: "wikipedia",
+    onebox: "onebox",
   }[type];
 
   if (!providerKey) {
@@ -920,7 +944,8 @@ export function composerButtonShouldShow(config) {
     previewTypeEnabled("topic", config) ||
     previewTypeEnabled("remote_topic", config) ||
     previewTypeEnabled("external", config) ||
-    previewTypeEnabled("wikipedia", config)
+    previewTypeEnabled("wikipedia", config) ||
+    previewTypeEnabled("onebox", config)
   );
 }
 

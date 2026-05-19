@@ -64,6 +64,15 @@ preview_providers:
       color: "#808080"
       require_https: true
       timeout_ms: 3000
+    - key: onebox
+      enabled: true
+      label: Onebox
+      glyph_mode: icon
+      icon: link
+      emoji: "📦"
+      color: "var(--primary)"
+      require_https: true
+      timeout_ms: 3000
   schema:
     name: provider
     properties:
@@ -75,6 +84,7 @@ preview_providers:
           - remote_topic
           - external
           - wikipedia
+          - onebox
         description: Internal provider key.
 
       enabled:
@@ -187,6 +197,22 @@ previews_wikipedia_mode:
     composer_only: cards only appear on links wrapped with [preview]...[/preview].
     auto_and_composer: both auto detection and manual wrapping work.
     disabled: no Wikipedia previews at all.
+
+previews_onebox_mode:
+  default: "auto_only"
+  type: enum
+  choices:
+    - auto_only
+    - composer_only
+    - auto_and_composer
+    - disabled
+  client: true
+  description: >
+    Controls how onebox-derived previews work for onebox-capable links.
+    auto_only: onebox-style previews appear automatically on eligible links.
+    composer_only: onebox-style previews only appear on links wrapped with [preview]...[/preview].
+    auto_and_composer: both auto detection and manual wrapping work.
+    disabled: no onebox-derived previews at all.
 
 # ─── Visual indicators (apply to all previews, auto and manual) ──────────────
 
