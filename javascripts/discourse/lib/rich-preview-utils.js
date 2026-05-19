@@ -940,7 +940,7 @@ export function composerButtonShouldShow(config) {
     previewTypeEnabled("topic", config) ||
     previewTypeEnabled("remote_topic", config) ||
     previewTypeEnabled("external", config) ||
-    previewTypeEnabled("wikipedia", config) ||
+    previewTypeEnabled("wikipedia", config)
   );
 }
 
