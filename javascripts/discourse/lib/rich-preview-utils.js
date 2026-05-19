@@ -550,10 +550,6 @@ export function providerKeyForTarget(target, preview = null) {
     return "topic";
   }
 
-  if (target?.type === "onebox" || preview?.type === "onebox") {
-    return "onebox";
-  }
-
   if (target?.type === "external" || preview?.type === "external") {
     return "external";
   }
@@ -945,7 +941,6 @@ export function composerButtonShouldShow(config) {
     previewTypeEnabled("remote_topic", config) ||
     previewTypeEnabled("external", config) ||
     previewTypeEnabled("wikipedia", config) ||
-    previewTypeEnabled("onebox", config)
   );
 }
 

@@ -15,7 +15,9 @@ composer_button_group:
     Controls which group in the composer toolbar the rich preview
     button appears in. fontStyles places it with bold/italic,
     insertions places it with the link and image buttons,
-    extras places it at the end of the toolbar.
+    extras places it at the end of the toolbar. The composer button can
+    insert rich-preview markup or a bare URL; bare URLs may be oneboxed by
+    Discourse core when supported.
 
 svg_icons:
   type: list
@@ -66,7 +68,7 @@ preview_providers:
       timeout_ms: 3000
     - key: onebox
       enabled: true
-      label: Onebox
+      label: Cooked Onebox
       glyph_mode: icon
       icon: link
       emoji: "📦"
@@ -85,7 +87,10 @@ preview_providers:
           - external
           - wikipedia
           - onebox
-        description: Internal provider key.
+        description: >
+          Internal provider key. topic, remote_topic, external, and wikipedia
+          are hover-preview provider types. onebox is used for cooked onebox
+          decoration styling and related UI metadata.
 
       enabled:
         type: boolean
@@ -95,7 +100,9 @@ preview_providers:
       label:
         type: string
         required: true
-        description: Admin label for this provider.
+        description: >
+          Admin label for this provider or decorated content type. For onebox,
+          this label is used in cooked onebox decoration UI such as badges.
 
       glyph_mode:
         type: enum
@@ -116,21 +123,31 @@ preview_providers:
 
       color:
         type: string
-        description: CSS color used for link indicators and provider-tinted UI for this provider.
+        description: >
+          CSS color used for link indicators and provider-tinted UI. For onebox,
+          this color is applied to decorated cooked onebox styling.
 
       remote_hosts:
         type: string
-        description: Pipe-separated allowed hostnames for this provider if applicable.
+        description: >
+          Pipe-separated allowed hostnames for this provider when applicable.
+          This is mainly relevant to remote_topic and is typically not used for
+          onebox decoration.
 
       require_https:
         type: boolean
         default: true
-        description: Require HTTPS for this provider if it fetches remote content.
+        description: >
+          Require HTTPS when this provider fetches remote content. This mainly
+          applies to remote fetch-based preview types and is not generally used
+          by cooked onebox decoration.
 
       timeout_ms:
         type: integer
         default: 3000
-        description: Request timeout for this provider in milliseconds.
+        description: >
+          Request timeout for this provider in milliseconds when network fetches
+          are used. This setting does not usually affect cooked onebox decoration.
 
 # ─── Per-type preview mode ───────────────────────────────────────────────────
 
@@ -208,11 +225,15 @@ previews_onebox_mode:
     - disabled
   client: true
   description: >
-    Controls how onebox-derived previews work for onebox-capable links.
-    auto_only: onebox-style previews appear automatically on eligible links.
-    composer_only: onebox-style previews only appear on links wrapped with [preview]...[/preview].
-    auto_and_composer: both auto detection and manual wrapping work.
-    disabled: no onebox-derived previews at all.
+    Controls decoration of cooked Discourse oneboxes that already exist in
+    rendered content.
+    auto_only: decorate cooked oneboxes automatically when they are present.
+    composer_only: reserved for composer-specific handling; cooked onebox
+    auto-decoration does not run in this mode.
+    auto_and_composer: currently behaves like auto_only for cooked onebox
+    decoration, while remaining compatible with future composer-specific
+    onebox handling.
+    disabled: do not decorate cooked oneboxes.
 
 # ─── Visual indicators (apply to all previews, auto and manual) ──────────────
 
@@ -290,8 +311,10 @@ preview_layout:
   client: true
   description: >
     Controls the visual layout of rich previews.
-    hover_card: current floating card layout.
-    onebox: flatter inline layout similar to core Discourse onebox.
+    hover_card: floating card layout for rich previews.
+    onebox: flatter inline visual treatment for rich preview cards, styled to
+    feel closer to core Discourse oneboxes. This does not turn links into core
+    oneboxes by itself.
 
 card_width:
   default: 32rem
