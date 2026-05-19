@@ -14,7 +14,7 @@
   --thc-provider-color: var(--tertiary);
 
   position: fixed;
-  z-index: 1000;
+  z-index: z("modal", "tooltip") + 10;
   width: min(var(--thc-width), calc(100vw - 16px));
   max-width: calc(100vw - 16px);
   opacity: 0;
