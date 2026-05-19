@@ -243,7 +243,6 @@ export default class RichPreviewLinkModal extends Component {
         return "Markdown link";
       case "bare_url":
         return "Bare URL (core onebox when supported)";
-      case "rich_preview":
       default:
         return "Rich preview link";
     }
@@ -255,7 +254,6 @@ export default class RichPreviewLinkModal extends Component {
         return "Insert a normal markdown link without rich preview behavior.";
       case "bare_url":
         return "Insert the raw URL on its own line. Discourse core may onebox it depending on site settings and destination support.";
-      case "rich_preview":
       default:
         return "Insert a [preview]...[/preview] link using this theme component’s provider rules and styling.";
     }
@@ -289,7 +287,6 @@ export default class RichPreviewLinkModal extends Component {
         return buildMarkdownLink(this.trimmedUrl, this.linkText, this.title);
       case "bare_url":
         return buildBareUrl(this.trimmedUrl);
-      case "rich_preview":
       default:
         return buildPreviewWrappedMarkdown(
           this.trimmedUrl,
@@ -310,7 +307,6 @@ export default class RichPreviewLinkModal extends Component {
         return "Insert markdown link";
       case "bare_url":
         return "Insert bare URL";
-      case "rich_preview":
       default:
         return "Insert rich preview link";
     }
@@ -326,11 +322,9 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   ensureValidModeSelection() {
-    if (this.selectedModeIsEnabled) {
-      return;
+    if (!this.selectedModeIsEnabled) {
+      this.insertionMode = this.enabledModes[0] || "markdown";
     }
-
-    this.insertionMode = this.enabledModes[0] || "markdown";
   }
 
   queuePreviewDecoration() {
@@ -373,7 +367,7 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   @action
-  onUrlInput(event) {
+  setUrl(event) {
     this.url = event?.target?.value || "";
     this.urlError = "";
     this.ensureValidModeSelection();
@@ -381,19 +375,19 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   @action
-  onLinkTextInput(event) {
+  setLinkText(event) {
     this.linkText = event?.target?.value || "";
     this.queuePreviewDecoration();
   }
 
   @action
-  onTitleInput(event) {
+  setTitle(event) {
     this.title = event?.target?.value || "";
     this.queuePreviewDecoration();
   }
 
   @action
-  onInsertionModeChange(event) {
+  setInsertionMode(event) {
     this.insertionMode = event?.target?.value || "markdown";
     this.urlError = "";
     this.queuePreviewDecoration();
@@ -416,7 +410,6 @@ export default class RichPreviewLinkModal extends Component {
       case "bare_url":
         output = buildBareUrl(this.trimmedUrl);
         break;
-      case "rich_preview":
       default:
         output = buildPreviewWrappedMarkdown(
           this.trimmedUrl,
@@ -443,35 +436,35 @@ export default class RichPreviewLinkModal extends Component {
       class="rich-preview-link-modal"
     >
       <:body>
-        <div style={{this.modalProviderColorStyle}}>
-          <div class="rplm-field">
-            <label class="rplm-label" for="rplm-url">URL</label>
-            <input
-              id="rplm-url"
-              type="url"
-              class="rplm-input"
-              placeholder="https://..."
-              value={{this.url}}
-              oninput={{this.onUrlInput}}
-              autofocus
-            />
-            {{#if this.urlError}}
-              <p class="rplm-error">{{this.urlError}}</p>
-            {{/if}}
-            {{#if this.typeLabel}}
-              <div class={{this.typeBadgeClass}}>
-                {{this.typeLabel}}
-              </div>
-            {{/if}}
-            {{#if this.showUnsupportedWarning}}
-              <p class="rplm-warning">
-                This URL is valid, but no enabled insertion mode is currently
-                available for it under your theme component settings.
-              </p>
-            {{/if}}
-          </div>
+        <form class="rplm-form" novalidate>
+          <div style={{this.modalProviderColorStyle}}>
+            <div class="rplm-field">
+              <label class="rplm-label" for="rplm-url">URL</label>
+              <input
+                id="rplm-url"
+                type="url"
+                class="rplm-input"
+                placeholder="https://..."
+                value={{this.url}}
+                oninput={{this.setUrl}}
+                autofocus
+              />
+              {{#if this.urlError}}
+                <p class="rplm-error">{{this.urlError}}</p>
+              {{/if}}
+              {{#if this.typeLabel}}
+                <div class={{this.typeBadgeClass}}>
+                  {{this.typeLabel}}
+                </div>
+              {{/if}}
+              {{#if this.showUnsupportedWarning}}
+                <p class="rplm-warning">
+                  This URL is valid, but no enabled insertion mode is currently
+                  available for it under your theme component settings.
+                </p>
+              {{/if}}
+            </div>
 
-          <div class="rplm-field">
             <fieldset class="rplm-mode-fieldset">
               <legend class="rplm-label">Insertion format</legend>
 
@@ -484,7 +477,7 @@ export default class RichPreviewLinkModal extends Component {
                   value="markdown"
                   checked={{this.isMarkdownMode}}
                   disabled={{not this.markdownSupported}}
-                  onchange={{this.onInsertionModeChange}}
+                  onchange={{this.setInsertionMode}}
                 />
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">Markdown link</span>
@@ -503,7 +496,7 @@ export default class RichPreviewLinkModal extends Component {
                   value="rich_preview"
                   checked={{this.isRichPreviewMode}}
                   disabled={{not this.richPreviewSupported}}
-                  onchange={{this.onInsertionModeChange}}
+                  onchange={{this.setInsertionMode}}
                 />
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">Rich preview link</span>
@@ -523,7 +516,7 @@ export default class RichPreviewLinkModal extends Component {
                   value="bare_url"
                   checked={{this.isBareMode}}
                   disabled={{not this.bareUrlSupported}}
-                  onchange={{this.onInsertionModeChange}}
+                  onchange={{this.setInsertionMode}}
                 />
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">
@@ -536,80 +529,80 @@ export default class RichPreviewLinkModal extends Component {
                 </span>
               </label>
             </fieldset>
-          </div>
 
-          <div class="rplm-field">
-            <label class="rplm-label" for="rplm-linktext">Link text</label>
-            <p class="rplm-hint">
-              Optional for markdown and rich preview modes. Bare URL mode
-              ignores this field.
-            </p>
-            <input
-              id="rplm-linktext"
-              type="text"
-              class="rplm-input"
-              placeholder="Display text for the link"
-              value={{this.linkText}}
-              disabled={{this.isBareMode}}
-              oninput={{this.onLinkTextInput}}
-            />
-          </div>
-
-          <div class="rplm-field">
-            <label class="rplm-label" for="rplm-title">Title attribute</label>
-            <p class="rplm-hint">
-              Optional. Used for normal markdown links and preview output where
-              supported.
-            </p>
-            <input
-              id="rplm-title"
-              type="text"
-              class="rplm-input"
-              placeholder="Brief description of the link destination"
-              value={{this.title}}
-              oninput={{this.onTitleInput}}
-            />
-          </div>
-
-          {{#if this.showPreview}}
-            <div class="rplm-preview-section">
-              <p class="rplm-preview-label">
-                Preview — {{this.insertionModeLabel}}
+            <div class="rplm-field">
+              <label class="rplm-label" for="rplm-linktext">Link text</label>
+              <p class="rplm-hint">
+                Optional for markdown and rich preview modes. Bare URL mode
+                ignores this field.
               </p>
-              <p class="rplm-hint">{{this.insertionModeHint}}</p>
-
-              {{#if this.isBareMode}}
-                <div
-                  id="rich-preview-link-modal-preview-root"
-                  class="rplm-visual-preview"
-                  data-rich-preview-modal-host
-                >
-                  <span>{{this.trimmedUrl}}</span>
-                </div>
-              {{else}}
-                <div
-                  id="rich-preview-link-modal-preview-root"
-                  class="rplm-visual-preview"
-                  data-rich-preview-modal-host
-                >
-                  <a
-                    href={{this.url}}
-                    title={{this.title}}
-                    class={{this.previewLinkClass}}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{this.displayText}}
-                  </a>
-                </div>
-              {{/if}}
-
-              <div class="rplm-bbcode-preview">
-                <pre class="rplm-bbcode-pre">{{this.insertionPreview}}</pre>
-              </div>
+              <input
+                id="rplm-linktext"
+                type="text"
+                class="rplm-input"
+                placeholder="Display text for the link"
+                value={{this.linkText}}
+                disabled={{this.isBareMode}}
+                oninput={{this.setLinkText}}
+              />
             </div>
-          {{/if}}
-        </div>
+
+            <div class="rplm-field">
+              <label class="rplm-label" for="rplm-title">Title attribute</label>
+              <p class="rplm-hint">
+                Optional. Used for normal markdown links and preview output where
+                supported.
+              </p>
+              <input
+                id="rplm-title"
+                type="text"
+                class="rplm-input"
+                placeholder="Brief description of the link destination"
+                value={{this.title}}
+                oninput={{this.setTitle}}
+              />
+            </div>
+
+            {{#if this.showPreview}}
+              <div class="rplm-preview-section">
+                <p class="rplm-preview-label">
+                  Preview — {{this.insertionModeLabel}}
+                </p>
+                <p class="rplm-hint">{{this.insertionModeHint}}</p>
+
+                {{#if this.isBareMode}}
+                  <div
+                    id="rich-preview-link-modal-preview-root"
+                    class="rplm-visual-preview"
+                    data-rich-preview-modal-host
+                  >
+                    <span>{{this.trimmedUrl}}</span>
+                  </div>
+                {{else}}
+                  <div
+                    id="rich-preview-link-modal-preview-root"
+                    class="rplm-visual-preview"
+                    data-rich-preview-modal-host
+                  >
+                    <a
+                      href={{this.url}}
+                      title={{this.title}}
+                      class={{this.previewLinkClass}}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{this.displayText}}
+                    </a>
+                  </div>
+                {{/if}}
+
+                <div class="rplm-bbcode-preview">
+                  <pre class="rplm-bbcode-pre">{{this.insertionPreview}}</pre>
+                </div>
+              </div>
+            {{/if}}
+          </div>
+        </form>
       </:body>
 
       <:footer>
