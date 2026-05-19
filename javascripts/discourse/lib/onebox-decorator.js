@@ -1,73 +1,162 @@
 import {
-  providerEnabled,
-  providerModeForType,
   logDebug,
+  providerColor,
+  renderProviderGlyph,
+  sanitizeURL,
 } from "./rich-preview-utils";
 
-function oneboxPreviewsEnabled(config) {
-  if (!config?.enabled) {
-    return false;
+const DECORATED_ATTR = "data-rich-preview-onebox";
+const MODE_AUTO_ONLY = "auto_only";
+const MODE_COMPOSER_ONLY = "composer_only";
+const MODE_AUTO_AND_COMPOSER = "auto_and_composer";
+
+function oneboxModeEnabled(config) {
+  const mode = String(config?.previewsOneboxMode || "disabled").trim();
+
+  return (
+    mode === MODE_AUTO_ONLY ||
+    mode === MODE_COMPOSER_ONLY ||
+    mode === MODE_AUTO_AND_COMPOSER
+  );
+}
+
+function oneboxModeAllowsAuto(config) {
+  const mode = String(config?.previewsOneboxMode || "disabled").trim();
+
+  return mode === MODE_AUTO_ONLY || mode === MODE_AUTO_AND_COMPOSER;
+}
+
+function nearestLinkHref(oneboxEl) {
+  const link =
+    oneboxEl.querySelector("a[href]") ||
+    oneboxEl.closest("a[href]") ||
+    null;
+
+  return link ? sanitizeURL(link.href || link.getAttribute("href")) : "";
+}
+
+function ensureBadge(oneboxEl, config) {
+  const existing = oneboxEl.querySelector(".rich-preview-onebox__badge");
+
+  if (existing) {
+    return existing;
   }
 
-  if (!providerEnabled(config, "onebox")) {
-    return false;
+  const badge = document.createElement("span");
+  badge.className = "rich-preview-onebox__badge";
+
+  const glyph = renderProviderGlyph("onebox", config);
+  const label = String(
+    config?.previewProviders?.onebox?.label || "Onebox"
+  ).trim();
+
+  badge.innerHTML = `
+    <span class="rich-preview-onebox__badge-glyph" aria-hidden="true">
+      ${glyph || ""}
+    </span>
+    <span class="rich-preview-onebox__badge-label">${label}</span>
+  `;
+
+  return badge;
+}
+
+function ensureRootClasses(oneboxEl) {
+  oneboxEl.classList.add("rich-preview-onebox");
+}
+
+function ensureProviderColor(oneboxEl, config) {
+  const color = providerColor("onebox", config, "var(--primary)");
+
+  if (color) {
+    oneboxEl.style.setProperty("--rich-preview-provider-color", color);
   }
-
-  return providerModeForType("onebox", config) !== "disabled";
 }
 
-function shouldDecorateInComposerPreview(onebox) {
-  return !!onebox.closest(".d-editor-preview, .composer-preview, .preview");
+function ensureHrefData(oneboxEl) {
+  const href = nearestLinkHref(oneboxEl);
+
+  if (href) {
+    oneboxEl.dataset.richPreviewUrl = href;
+  }
 }
 
-function shouldDecorateInCookedPost(onebox) {
-  return !!onebox.closest(".cooked");
-}
-
-export function applyOneboxMode(root, config) {
-  if (!(root instanceof Element)) {
+function decorateOnebox(oneboxEl, config) {
+  if (!(oneboxEl instanceof Element)) {
     return;
   }
 
-  if (!oneboxPreviewsEnabled(config)) {
+  if (oneboxEl.getAttribute(DECORATED_ATTR) === "true") {
     return;
   }
 
-  const oneboxMode = providerModeForType("onebox", config);
-  const useFullLayout = config?.previewLayout === "onebox";
+  ensureRootClasses(oneboxEl);
+  ensureProviderColor(oneboxEl, config);
+  ensureHrefData(oneboxEl);
 
-  root.querySelectorAll("aside.onebox[data-onebox-src]").forEach((onebox) => {
-    const inComposerPreview = shouldDecorateInComposerPreview(onebox);
-    const inCookedPost = shouldDecorateInCookedPost(onebox);
+  const article =
+    oneboxEl.querySelector(".onebox-body") ||
+    oneboxEl.querySelector(".aspect-image")?.parentElement ||
+    oneboxEl;
 
-    if (!inComposerPreview && !inCookedPost) {
-      return;
-    }
+  if (article && !article.querySelector(":scope > .rich-preview-onebox__badge")) {
+    article.prepend(ensureBadge(oneboxEl, config));
+  }
 
-    if (oneboxMode === "composer_only" && !inComposerPreview) {
-      return;
-    }
+  oneboxEl.setAttribute(DECORATED_ATTR, "true");
+}
 
-    if (oneboxMode === "auto_only" && !inCookedPost) {
-      return;
-    }
+function undecorateOnebox(oneboxEl) {
+  if (!(oneboxEl instanceof Element)) {
+    return;
+  }
 
-    if (onebox.dataset.richPreviewOnebox === "true") {
-      onebox.classList.toggle("rich-preview-onebox--full", useFullLayout);
-      onebox.classList.toggle("rich-preview-onebox--compact", !useFullLayout);
-      return;
-    }
+  oneboxEl.removeAttribute(DECORATED_ATTR);
+  oneboxEl.classList.remove("rich-preview-onebox");
+  oneboxEl.style.removeProperty("--rich-preview-provider-color");
+  delete oneboxEl.dataset.richPreviewUrl;
 
-    onebox.dataset.richPreviewOnebox = "true";
-    onebox.dataset.richPreviewProvider = "onebox";
+  oneboxEl
+    .querySelectorAll(".rich-preview-onebox__badge")
+    .forEach((badge) => badge.remove());
+}
 
-    onebox.classList.add("rich-preview-onebox");
-    onebox.classList.toggle("rich-preview-onebox--full", useFullLayout);
-    onebox.classList.toggle("rich-preview-onebox--compact", !useFullLayout);
+export function applyOneboxMode(element, config) {
+  if (!(element instanceof Element)) {
+    return;
+  }
+
+  if (!config?.enabled || !oneboxModeEnabled(config)) {
+    return;
+  }
+
+  if (!oneboxModeAllowsAuto(config)) {
+    logDebug(
+      config,
+      "Skipping cooked onebox decoration because auto mode is disabled",
+      {
+        previewsOneboxMode: config?.previewsOneboxMode || "disabled",
+      }
+    );
+    return;
+  }
+
+  const oneboxes = [
+    ...(element.matches?.(".onebox") ? [element] : []),
+    ...element.querySelectorAll?.(".onebox"),
+  ];
+
+  if (!oneboxes.length) {
+    return;
+  }
+
+  oneboxes.forEach((oneboxEl) => decorateOnebox(oneboxEl, config));
+
+  logDebug(config, "Decorated cooked oneboxes", {
+    count: oneboxes.length,
+    previewsOneboxMode: config?.previewsOneboxMode || "disabled",
   });
 
-  logDebug(config, "Applied onebox decoration to cooked content", {
-    oneboxMode,
-    previewLayout: config?.previewLayout || "hover_card",
-  });
+  return () => {
+    oneboxes.forEach((oneboxEl) => undecorateOnebox(oneboxEl));
+  };
 }
