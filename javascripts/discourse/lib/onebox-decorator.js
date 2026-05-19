@@ -10,18 +10,12 @@ const MODE_AUTO_ONLY = "auto_only";
 const MODE_COMPOSER_ONLY = "composer_only";
 const MODE_AUTO_AND_COMPOSER = "auto_and_composer";
 
-function oneboxModeEnabled(config) {
-  const mode = String(config?.previewsOneboxMode || "disabled").trim();
-
-  return (
-    mode === MODE_AUTO_ONLY ||
-    mode === MODE_COMPOSER_ONLY ||
-    mode === MODE_AUTO_AND_COMPOSER
-  );
+function normalizedOneboxMode(config) {
+  return String(config?.previewsOneboxMode || "disabled").trim();
 }
 
-function oneboxModeAllowsAuto(config) {
-  const mode = String(config?.previewsOneboxMode || "disabled").trim();
+function oneboxDecorationEnabled(config) {
+  const mode = normalizedOneboxMode(config);
 
   return mode === MODE_AUTO_ONLY || mode === MODE_AUTO_AND_COMPOSER;
 }
@@ -36,7 +30,7 @@ function nearestLinkHref(oneboxEl) {
 }
 
 function ensureBadge(oneboxEl, config) {
-  const existing = oneboxEl.querySelector(".rich-preview-onebox__badge");
+  const existing = oneboxEl.querySelector(":scope .rich-preview-onebox__badge");
 
   if (existing) {
     return existing;
@@ -98,7 +92,10 @@ function decorateOnebox(oneboxEl, config) {
     oneboxEl.querySelector(".aspect-image")?.parentElement ||
     oneboxEl;
 
-  if (article && !article.querySelector(":scope > .rich-preview-onebox__badge")) {
+  if (
+    article &&
+    !article.querySelector(":scope > .rich-preview-onebox__badge")
+  ) {
     article.prepend(ensureBadge(oneboxEl, config));
   }
 
@@ -125,18 +122,22 @@ export function applyOneboxMode(element, config) {
     return;
   }
 
-  if (!config?.enabled || !oneboxModeEnabled(config)) {
+  if (!config?.enabled) {
     return;
   }
 
-  if (!oneboxModeAllowsAuto(config)) {
+  const mode = normalizedOneboxMode(config);
+
+  if (mode === MODE_COMPOSER_ONLY) {
     logDebug(
       config,
-      "Skipping cooked onebox decoration because auto mode is disabled",
-      {
-        previewsOneboxMode: config?.previewsOneboxMode || "disabled",
-      }
+      "Skipping cooked onebox decoration because composer_only does not apply to auto-detected cooked oneboxes",
+      { previewsOneboxMode: mode }
     );
+    return;
+  }
+
+  if (!oneboxDecorationEnabled(config)) {
     return;
   }
 
@@ -153,7 +154,7 @@ export function applyOneboxMode(element, config) {
 
   logDebug(config, "Decorated cooked oneboxes", {
     count: oneboxes.length,
-    previewsOneboxMode: config?.previewsOneboxMode || "disabled",
+    previewsOneboxMode: mode,
   });
 
   return () => {

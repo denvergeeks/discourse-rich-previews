@@ -21,6 +21,10 @@ export default apiInitializer("1.0", (api) => {
 
   api.decorateCookedElement(
     (element) => {
+      if (!element) {
+        return;
+      }
+
       applyOneboxMode(element, config);
     },
     {
@@ -29,7 +33,7 @@ export default apiInitializer("1.0", (api) => {
     }
   );
 
-  logDebug(config, "Onebox decorator initialized", {
+  logDebug(config, "Cooked onebox decorator initialized", {
     previewsOneboxMode: config?.previewsOneboxMode || "disabled",
     previewLayout: config?.previewLayout || "hover_card",
   });
