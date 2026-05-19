@@ -12,7 +12,11 @@ import {
   previewTypeEnabled,
   providerColor,
 } from "../lib/rich-preview-utils";
-import { buildPreviewWrappedMarkdown } from "../lib/preview-markup";
+import {
+  buildMarkdownLink,
+  buildBareUrl,
+  buildPreviewWrappedMarkdown,
+} from "../lib/preview-markup";
 
 function classifyUrl(url, config) {
   if (!url) {
@@ -41,6 +45,37 @@ function classifyUrl(url, config) {
   }
 }
 
+function isPlausibleCoreOneboxCandidate(url, detectedType) {
+  if (!url || !detectedType) {
+    return false;
+  }
+
+  if (
+    detectedType === "topic" ||
+    detectedType === "remote_topic" ||
+    detectedType === "wikipedia"
+  ) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const hostname = parsed.hostname?.toLowerCase();
+
+    if (!hostname) {
+      return false;
+    }
+
+    if (!/^https?:$/.test(parsed.protocol)) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const TYPE_LABELS = {
   topic: "Internal Topic",
   remote_topic: "Remote Discourse Topic",
@@ -48,31 +83,23 @@ const TYPE_LABELS = {
   wikipedia: "Wikipedia",
 };
 
-const INSERTION_MODE_LABELS = {
-  markdown: "Markdown link",
-  explicit: "Explicit BBCode URL",
-  bare: "Bare URL",
-};
-
-const INSERTION_MODE_HINTS = {
-  markdown: "Outputs [preview][Label](URL)[/preview]. Best default for normal authoring.",
-  explicit: "Outputs [preview=URL]Label[/preview]. Keeps label text outside markdown syntax.",
-  bare: "Outputs [preview]URL[/preview]. Uses the URL itself as visible text.",
-};
-
 export default class RichPreviewLinkModal extends Component {
   @tracked url = this.args.model?.initialUrl || "";
   @tracked linkText = this.args.model?.initialLinkText || "";
   @tracked title = "";
   @tracked urlError = "";
-  @tracked insertionMode = this.args.model?.initialInsertionMode || "markdown";
+  @tracked insertionMode = this.args.model?.initialInsertionMode || "rich_preview";
 
   get config() {
     return this.args.model?.config || {};
   }
 
+  get trimmedUrl() {
+    return this.url.trim();
+  }
+
   get detectedType() {
-    return classifyUrl(this.url.trim(), this.config);
+    return classifyUrl(this.trimmedUrl, this.config);
   }
 
   get providerEnabledForDetectedType() {
@@ -92,19 +119,19 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get isValidUrl() {
-    if (!this.url.trim()) {
+    if (!this.trimmedUrl) {
       return false;
     }
 
     try {
-      new URL(this.url.trim());
+      new URL(this.trimmedUrl);
       return true;
     } catch {
       return false;
     }
   }
 
-  get isSupported() {
+  get richPreviewSupported() {
     return (
       this.isValidUrl &&
       this.detectedType !== null &&
@@ -113,12 +140,92 @@ export default class RichPreviewLinkModal extends Component {
     );
   }
 
+  get bareUrlSupported() {
+    return this.isValidUrl && isPlausibleCoreOneboxCandidate(this.trimmedUrl, this.detectedType);
+  }
+
+  get markdownSupported() {
+    return this.isValidUrl;
+  }
+
+  get enabledModes() {
+    const modes = [];
+
+    if (this.markdownSupported) {
+      modes.push("markdown");
+    }
+
+    if (this.richPreviewSupported) {
+      modes.push("rich_preview");
+    }
+
+    if (this.bareUrlSupported) {
+      modes.push("bare_url");
+    }
+
+    return modes;
+  }
+
+  get normalizedInsertionMode() {
+    return ["markdown", "rich_preview", "bare_url"].includes(this.insertionMode)
+      ? this.insertionMode
+      : "rich_preview";
+  }
+
+  get selectedModeIsEnabled() {
+    return this.enabledModes.includes(this.normalizedInsertionMode);
+  }
+
+  get effectiveInsertionMode() {
+    if (this.selectedModeIsEnabled) {
+      return this.normalizedInsertionMode;
+    }
+
+    return this.enabledModes[0] || "markdown";
+  }
+
+  get isMarkdownMode() {
+    return this.effectiveInsertionMode === "markdown";
+  }
+
+  get isRichPreviewMode() {
+    return this.effectiveInsertionMode === "rich_preview";
+  }
+
+  get isBareMode() {
+    return this.effectiveInsertionMode === "bare_url";
+  }
+
+  get markdownModeChecked() {
+    return this.effectiveInsertionMode === "markdown";
+  }
+
+  get richPreviewModeChecked() {
+    return this.effectiveInsertionMode === "rich_preview";
+  }
+
+  get bareUrlModeChecked() {
+    return this.effectiveInsertionMode === "bare_url";
+  }
+
+  get markdownModeDisabled() {
+    return !this.markdownSupported;
+  }
+
+  get richPreviewModeDisabled() {
+    return !this.richPreviewSupported;
+  }
+
+  get bareUrlModeDisabled() {
+    return !this.bareUrlSupported;
+  }
+
   get cannotInsert() {
-    return !this.isValidUrl || !this.isSupported;
+    return !this.isValidUrl || !this.enabledModes.length;
   }
 
   get showUnsupportedWarning() {
-    return this.isValidUrl && !this.isSupported;
+    return this.isValidUrl && !this.enabledModes.length;
   }
 
   get typeLabel() {
@@ -145,10 +252,10 @@ export default class RichPreviewLinkModal extends Component {
     }
 
     const fallbackGlyphs = {
-      topic: "🔗",
+      topic: "💬",
       remote_topic: "🌐",
-      external: "↗",
-      wikipedia: "📖",
+      external: "🔗",
+      wikipedia: "📚",
     };
 
     return fallbackGlyphs[this.detectedType] || "";
@@ -158,7 +265,8 @@ export default class RichPreviewLinkModal extends Component {
     return (
       this.config?.previewsShowIcon &&
       this.config?.previewsIconPosition !== "before" &&
-      this.isSupported
+      this.richPreviewSupported &&
+      this.isRichPreviewMode
     );
   }
 
@@ -166,51 +274,78 @@ export default class RichPreviewLinkModal extends Component {
     return (
       this.config?.previewsShowIcon &&
       this.config?.previewsIconPosition === "before" &&
-      this.isSupported
+      this.richPreviewSupported &&
+      this.isRichPreviewMode
     );
   }
 
-  get normalizedInsertionMode() {
-    return ["markdown", "explicit", "bare"].includes(this.insertionMode)
-      ? this.insertionMode
-      : "markdown";
-  }
-
   get insertionModeLabel() {
-    return INSERTION_MODE_LABELS[this.normalizedInsertionMode];
+    switch (this.effectiveInsertionMode) {
+      case "markdown":
+        return "Markdown link";
+      case "bare_url":
+        return "Bare URL (core onebox when supported)";
+      case "rich_preview":
+      default:
+        return "Rich preview link";
+    }
   }
 
   get insertionModeHint() {
-    return INSERTION_MODE_HINTS[this.normalizedInsertionMode];
+    switch (this.effectiveInsertionMode) {
+      case "markdown":
+        return "Insert a normal markdown link without rich preview behavior.";
+      case "bare_url":
+        return "Insert the raw URL on its own line. Discourse core may onebox it depending on site settings and destination support.";
+      case "rich_preview":
+      default:
+        return "Insert a [preview]...[/preview] link using this theme component’s provider rules and styling.";
+    }
   }
 
   get displayText() {
-    if (this.normalizedInsertionMode === "bare") {
-      return this.url.trim() || "https://example.com/";
+    if (this.isBareMode) {
+      return this.trimmedUrl || "https://example.com/";
     }
 
-    return this.linkText.trim() || this.url.trim() || "link text";
+    return this.linkText.trim() || this.trimmedUrl || "link text";
   }
 
   get previewLinkClass() {
     return `rplm-preview-link rplm-preview-link--${this.detectedType || "unsupported"}`;
   }
 
-  get bbcodePreview() {
-    return buildPreviewWrappedMarkdown(
-      this.url.trim(),
-      this.linkText,
-      this.title,
-      this.normalizedInsertionMode
-    );
+  get insertionPreview() {
+    switch (this.effectiveInsertionMode) {
+      case "markdown":
+        return buildMarkdownLink(this.trimmedUrl, this.linkText, this.title);
+      case "bare_url":
+        return buildBareUrl(this.trimmedUrl);
+      case "rich_preview":
+      default:
+        return buildPreviewWrappedMarkdown(
+          this.trimmedUrl,
+          this.linkText,
+          this.title,
+          "rich_preview"
+        );
+    }
   }
 
   get showPreview() {
-    return !!this.url.trim();
+    return !!this.trimmedUrl;
   }
 
   get insertLabel() {
-    return "Insert link";
+    switch (this.effectiveInsertionMode) {
+      case "markdown":
+        return "Insert markdown link";
+      case "bare_url":
+        return "Insert bare URL";
+      case "rich_preview":
+      default:
+        return "Insert rich preview link";
+    }
   }
 
   get modalProviderColorStyle() {
@@ -222,43 +357,19 @@ export default class RichPreviewLinkModal extends Component {
     return color ? `--thc-provider-color: ${color};` : "";
   }
 
-  get modeOptions() {
-    return [
-      {
-        id: "markdown",
-        inputId: "rplm-mode-markdown",
-        value: "markdown",
-        label: INSERTION_MODE_LABELS.markdown,
-        hint: INSERTION_MODE_HINTS.markdown,
-        checked: this.normalizedInsertionMode === "markdown",
-      },
-      {
-        id: "explicit",
-        inputId: "rplm-mode-explicit",
-        value: "explicit",
-        label: INSERTION_MODE_LABELS.explicit,
-        hint: INSERTION_MODE_HINTS.explicit,
-        checked: this.normalizedInsertionMode === "explicit",
-      },
-      {
-        id: "bare",
-        inputId: "rplm-mode-bare",
-        value: "bare",
-        label: INSERTION_MODE_LABELS.bare,
-        hint: INSERTION_MODE_HINTS.bare,
-        checked: this.normalizedInsertionMode === "bare",
-      },
-    ];
-  }
+  ensureValidModeSelection() {
+    if (this.selectedModeIsEnabled) {
+      return;
+    }
 
-  get isBareMode() {
-    return this.normalizedInsertionMode === "bare";
+    this.insertionMode = this.enabledModes[0] || "markdown";
   }
 
   @action
   onUrlInput(event) {
     this.url = event.target.value;
     this.urlError = "";
+    this.ensureValidModeSelection();
   }
 
   @action
@@ -274,24 +385,38 @@ export default class RichPreviewLinkModal extends Component {
   @action
   onInsertionModeChange(event) {
     this.insertionMode = event.target.value;
+    this.urlError = "";
   }
 
   @action
   onInsert() {
     if (this.cannotInsert) {
       this.urlError =
-        "Please enter a URL that is enabled for manual rich previews.";
+        "Please enter a valid URL and choose an available insertion format.";
       return;
     }
 
-    const bbcode = buildPreviewWrappedMarkdown(
-      this.url.trim(),
-      this.linkText,
-      this.title,
-      this.normalizedInsertionMode
-    );
+    let output;
 
-    this.args.model?.onInsert?.(bbcode);
+    switch (this.effectiveInsertionMode) {
+      case "markdown":
+        output = buildMarkdownLink(this.trimmedUrl, this.linkText, this.title);
+        break;
+      case "bare_url":
+        output = buildBareUrl(this.trimmedUrl);
+        break;
+      case "rich_preview":
+      default:
+        output = buildPreviewWrappedMarkdown(
+          this.trimmedUrl,
+          this.linkText,
+          this.title,
+          "rich_preview"
+        );
+        break;
+    }
+
+    this.args.model?.onInsert?.(output);
     this.args.closeModal();
   }
 
@@ -329,8 +454,8 @@ export default class RichPreviewLinkModal extends Component {
             {{/if}}
             {{#if this.showUnsupportedWarning}}
               <p class="rplm-warning">
-                This link type is currently unavailable for manual rich previews
-                based on your theme component settings.
+                This URL is valid, but no enabled insertion mode is currently
+                available for it under your theme component settings.
               </p>
             {{/if}}
           </div>
@@ -339,23 +464,68 @@ export default class RichPreviewLinkModal extends Component {
             <fieldset class="rplm-mode-fieldset">
               <legend class="rplm-label">Insertion format</legend>
 
-              {{#each this.modeOptions as |mode|}}
-                <label class="rplm-mode-option" for={{mode.inputId}}>
-                  <input
-                    id={{mode.inputId}}
-                    type="radio"
-                    name="rplm-insertion-mode"
-                    class="rplm-mode-radio"
-                    value={{mode.value}}
-                    checked={{mode.checked}}
-                    {{on "change" this.onInsertionModeChange}}
-                  />
-                  <span class="rplm-mode-copy">
-                    <span class="rplm-mode-title">{{mode.label}}</span>
-                    <span class="rplm-mode-hint">{{mode.hint}}</span>
+              <label class="rplm-mode-option" for="rplm-mode-markdown">
+                <input
+                  id="rplm-mode-markdown"
+                  type="radio"
+                  name="rplm-insertion-mode"
+                  class="rplm-mode-radio"
+                  value="markdown"
+                  checked={{this.markdownModeChecked}}
+                  disabled={{this.markdownModeDisabled}}
+                  {{on "change" this.onInsertionModeChange}}
+                />
+                <span class="rplm-mode-copy">
+                  <span class="rplm-mode-title">
+                    Markdown link
                   </span>
-                </label>
-              {{/each}}
+                  <span class="rplm-mode-hint">
+                    Insert a normal markdown link without rich preview behavior.
+                  </span>
+                </span>
+              </label>
+
+              <label class="rplm-mode-option" for="rplm-mode-rich-preview">
+                <input
+                  id="rplm-mode-rich-preview"
+                  type="radio"
+                  name="rplm-insertion-mode"
+                  class="rplm-mode-radio"
+                  value="rich_preview"
+                  checked={{this.richPreviewModeChecked}}
+                  disabled={{this.richPreviewModeDisabled}}
+                  {{on "change" this.onInsertionModeChange}}
+                />
+                <span class="rplm-mode-copy">
+                  <span class="rplm-mode-title">
+                    Rich preview link
+                  </span>
+                  <span class="rplm-mode-hint">
+                    Insert a [preview]...[/preview] link using this theme component’s provider rules and styling.
+                  </span>
+                </span>
+              </label>
+
+              <label class="rplm-mode-option" for="rplm-mode-bare-url">
+                <input
+                  id="rplm-mode-bare-url"
+                  type="radio"
+                  name="rplm-insertion-mode"
+                  class="rplm-mode-radio"
+                  value="bare_url"
+                  checked={{this.bareUrlModeChecked}}
+                  disabled={{this.bareUrlModeDisabled}}
+                  {{on "change" this.onInsertionModeChange}}
+                />
+                <span class="rplm-mode-copy">
+                  <span class="rplm-mode-title">
+                    Bare URL (core onebox when supported)
+                  </span>
+                  <span class="rplm-mode-hint">
+                    Insert the raw URL on its own line. Discourse core may onebox it depending on site settings and destination support.
+                  </span>
+                </span>
+              </label>
             </fieldset>
           </div>
 
@@ -364,7 +534,7 @@ export default class RichPreviewLinkModal extends Component {
               Link text
             </label>
             <p class="rplm-hint">
-              Optional for markdown and explicit modes. Bare URL mode ignores this field.
+              Optional for markdown and rich preview modes. Bare URL mode ignores this field.
             </p>
             <input
               id="rplm-linktext"
@@ -381,7 +551,7 @@ export default class RichPreviewLinkModal extends Component {
             <label class="rplm-label" for="rplm-title">
               Title attribute
             </label>
-            <p class="rplm-hint">Optional. Included when your helper supports it.</p>
+            <p class="rplm-hint">Optional. Used for normal markdown links and preview output where supported.</p>
             <input
               id="rplm-title"
               type="text"
@@ -399,32 +569,38 @@ export default class RichPreviewLinkModal extends Component {
               </p>
               <p class="rplm-hint">{{this.insertionModeHint}}</p>
 
-              <div class="rplm-visual-preview">
-                {{#if this.showIconBefore}}
-                  <span class="rplm-icon" aria-hidden="true">
-                    {{this.providerGlyphText}}
-                  </span>
-                {{/if}}
+              {{#if this.isBareMode}}
+                <div class="rplm-visual-preview">
+                  <span>{{this.trimmedUrl}}</span>
+                </div>
+              {{else}}
+                <div class="rplm-visual-preview">
+                  {{#if this.showIconBefore}}
+                    <span class="rplm-icon" aria-hidden="true">
+                      {{this.providerGlyphText}}
+                    </span>
+                  {{/if}}
 
-                <a
-                  href={{this.url}}
-                  title={{this.title}}
-                  class={{this.previewLinkClass}}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {{this.displayText}}
-                </a>
+                  <a
+                    href={{this.url}}
+                    title={{this.title}}
+                    class={{this.previewLinkClass}}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{this.displayText}}
+                  </a>
 
-                {{#if this.showIconAfter}}
-                  <span class="rplm-icon" aria-hidden="true">
-                    {{this.providerGlyphText}}
-                  </span>
-                {{/if}}
-              </div>
+                  {{#if this.showIconAfter}}
+                    <span class="rplm-icon" aria-hidden="true">
+                      {{this.providerGlyphText}}
+                    </span>
+                  {{/if}}
+                </div>
+              {{/if}}
 
               <div class="rplm-bbcode-preview">
-                <pre class="rplm-bbcode-pre">{{this.bbcodePreview}}</pre>
+                <pre class="rplm-bbcode-pre">{{this.insertionPreview}}</pre>
               </div>
             </div>
           {{/if}}

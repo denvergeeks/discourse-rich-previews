@@ -25,55 +25,6 @@ function parseMarkdownLink(selection) {
   };
 }
 
-function parsePreviewWrappedMarkdown(selection) {
-  const explicitMatch = safeTrim(selection).match(
-    /^\[preview=([^\]]+)\]([\s\S]*?)\[\/preview\]$/i
-  );
-
-  if (explicitMatch) {
-    return {
-      format: "explicit",
-      url: safeTrim(explicitMatch[1]),
-      linkText: safeTrim(explicitMatch[2]),
-      title: "",
-    };
-  }
-
-  const wrappedMatch = safeTrim(selection).match(/^\[preview\]([\s\S]*?)\[\/preview\]$/i);
-
-  if (!wrappedMatch) {
-    return null;
-  }
-
-  const inner = safeTrim(wrappedMatch[1]);
-  const markdownLink = parseMarkdownLink(inner);
-
-  if (markdownLink) {
-    return {
-      format: "markdown",
-      url: markdownLink.url,
-      linkText: markdownLink.linkText,
-      title: markdownLink.title,
-    };
-  }
-
-  if (isAbsoluteHttpUrl(inner)) {
-    return {
-      format: "bare",
-      url: inner,
-      linkText: "",
-      title: "",
-    };
-  }
-
-  return {
-    format: "markdown",
-    url: "",
-    linkText: inner,
-    title: "",
-  };
-}
-
 function extractInitialValues(selectedValue) {
   const selected = safeTrim(selectedValue);
 
@@ -82,17 +33,7 @@ function extractInitialValues(selectedValue) {
       initialUrl: "",
       initialLinkText: "",
       initialTitle: "",
-      initialFormat: "markdown",
-    };
-  }
-
-  const wrappedPreview = parsePreviewWrappedMarkdown(selected);
-  if (wrappedPreview) {
-    return {
-      initialUrl: wrappedPreview.url,
-      initialLinkText: wrappedPreview.linkText,
-      initialTitle: wrappedPreview.title,
-      initialFormat: wrappedPreview.format,
+      initialInsertionMode: "rich_preview",
     };
   }
 
@@ -102,7 +43,7 @@ function extractInitialValues(selectedValue) {
       initialUrl: markdownLink.url,
       initialLinkText: markdownLink.linkText,
       initialTitle: markdownLink.title,
-      initialFormat: "markdown",
+      initialInsertionMode: "markdown",
     };
   }
 
@@ -111,7 +52,7 @@ function extractInitialValues(selectedValue) {
       initialUrl: selected,
       initialLinkText: "",
       initialTitle: "",
-      initialFormat: "bare",
+      initialInsertionMode: "bare_url",
     };
   }
 
@@ -119,7 +60,7 @@ function extractInitialValues(selectedValue) {
     initialUrl: "",
     initialLinkText: selected,
     initialTitle: "",
-    initialFormat: "markdown",
+    initialInsertionMode: "rich_preview",
   };
 }
 
@@ -136,7 +77,7 @@ function ensureComposerTranslations() {
     jsRoot.modal ||= {};
 
     jsRoot.composer_button.label ||= "Preview Link";
-    jsRoot.composer_button.title ||= "Insert a Rich Preview Link";
+    jsRoot.composer_button.title ||= "Insert a Link";
     jsRoot.modal.insert ||= "Insert Link";
   } catch {
     // no-op
@@ -159,7 +100,7 @@ export function registerPreviewComposerButton(api, config) {
           initialUrl,
           initialLinkText,
           initialTitle,
-          initialFormat,
+          initialInsertionMode,
         } = extractInitialValues(selectedValue);
 
         api.container.lookup("service:modal").show(RichPreviewLinkModal, {
@@ -168,13 +109,13 @@ export function registerPreviewComposerButton(api, config) {
             initialUrl,
             initialLinkText,
             initialTitle,
-            initialFormat,
+            initialInsertionMode,
 
-            onInsert(bbcode) {
+            onInsert(insertedText) {
               if (selectedValue) {
-                toolbarEvent.replaceText(selectedValue, bbcode);
+                toolbarEvent.replaceText(selectedValue, insertedText);
               } else {
-                toolbarEvent.addText(bbcode);
+                toolbarEvent.addText(insertedText);
               }
             },
           },

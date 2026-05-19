@@ -29,7 +29,7 @@ function normalizeText(value) {
   return String(value ?? "").trim();
 }
 
-function buildMarkdownLink(url, linkText, title = "") {
+export function buildMarkdownLink(url, linkText = "", title = "") {
   const normalizedUrl = normalizeUrl(url);
   const normalizedText = normalizeText(linkText) || normalizedUrl;
   const normalizedTitle = normalizeText(title);
@@ -41,55 +41,33 @@ function buildMarkdownLink(url, linkText, title = "") {
   const label = escapeMarkdownLabel(normalizedText);
 
   if (normalizedTitle) {
-    return `[${label}](${normalizedUrl} "${escapeMarkdownTitle(
-      normalizedTitle
-    )}")`;
+    return `[${label}](${normalizedUrl} "${escapeMarkdownTitle(normalizedTitle)}")`;
   }
 
   return `[${label}](${normalizedUrl})`;
 }
 
-function buildExplicitPreview(url, linkText) {
-  const normalizedUrl = normalizeUrl(url);
-  const normalizedText = normalizeText(linkText) || normalizedUrl;
-
-  if (!normalizedUrl) {
-    return "";
-  }
-
-  return `[preview=${normalizedUrl}]${normalizedText}[/preview]`;
-}
-
-function buildBarePreview(url) {
-  const normalizedUrl = normalizeUrl(url);
-
-  if (!normalizedUrl) {
-    return "";
-  }
-
-  return `[preview]${normalizedUrl}[/preview]`;
+export function buildBareUrl(url) {
+  return normalizeUrl(url);
 }
 
 export function buildPreviewWrappedMarkdown(
   url,
   linkText = "",
   title = "",
-  form = "markdown"
+  form = "rich_preview"
 ) {
-  const normalizedForm = String(form || "markdown").trim().toLowerCase();
+  const normalizedUrl = normalizeUrl(url);
 
-  switch (normalizedForm) {
-    case "explicit":
-    case "explicit-attr":
-    case "attribute":
-      return buildExplicitPreview(url, linkText);
-
-    case "bare":
-    case "bare-url":
-      return buildBarePreview(url);
-
-    case "markdown":
-    default:
-      return `[preview]${buildMarkdownLink(url, linkText, title)}[/preview]`;
+  if (!normalizedUrl) {
+    return "";
   }
+
+  const normalizedForm = String(form || "rich_preview").trim().toLowerCase();
+
+  if (normalizedForm !== "rich_preview" && normalizedForm !== "markdown") {
+    return "";
+  }
+
+  return `[preview]${buildMarkdownLink(normalizedUrl, linkText, title)}[/preview]`;
 }
