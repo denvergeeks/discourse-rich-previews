@@ -3,7 +3,6 @@ import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
-import { on } from "@ember/modifier";
 import { didInsert, didUpdate } from "@ember/render-modifiers";
 import {
   parseTopicUrl,
@@ -95,7 +94,8 @@ export default class RichPreviewLinkModal extends Component {
   @tracked linkText = this.args.model?.initialLinkText || "";
   @tracked title = this.args.model?.initialTitle || "";
   @tracked urlError = "";
-  @tracked insertionMode = this.args.model?.initialInsertionMode || "rich_preview";
+  @tracked insertionMode =
+    this.args.model?.initialInsertionMode || "rich_preview";
 
   get config() {
     return this.args.model?.config || {};
@@ -247,7 +247,9 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   get typeBadgeClass() {
-    return `rplm-type-badge rplm-type-badge--${this.detectedType || "unsupported"}`;
+    return `rplm-type-badge rplm-type-badge--${
+      this.detectedType || "unsupported"
+    }`;
   }
 
   get insertionModeLabel() {
@@ -514,7 +516,8 @@ export default class RichPreviewLinkModal extends Component {
                 <span class="rplm-mode-copy">
                   <span class="rplm-mode-title">Rich preview link</span>
                   <span class="rplm-mode-hint">
-                    Insert a [preview]...[/preview] link using this theme component’s provider rules and styling.
+                    Insert a [preview]...[/preview] link using this theme
+                    component’s provider rules and styling.
                   </span>
                 </span>
               </label>
@@ -535,7 +538,8 @@ export default class RichPreviewLinkModal extends Component {
                     Bare URL (core onebox when supported)
                   </span>
                   <span class="rplm-mode-hint">
-                    Insert the raw URL on its own line. Discourse core may onebox it depending on site settings and destination support.
+                    Insert the raw URL on its own line. Discourse core may
+                    onebox it depending on site settings and destination support.
                   </span>
                 </span>
               </label>
@@ -545,7 +549,8 @@ export default class RichPreviewLinkModal extends Component {
           <div class="rplm-field">
             <label class="rplm-label" for="rplm-linktext">Link text</label>
             <p class="rplm-hint">
-              Optional for markdown and rich preview modes. Bare URL mode ignores this field.
+              Optional for markdown and rich preview modes. Bare URL mode
+              ignores this field.
             </p>
             <input
               id="rplm-linktext"
@@ -561,7 +566,8 @@ export default class RichPreviewLinkModal extends Component {
           <div class="rplm-field">
             <label class="rplm-label" for="rplm-title">Title attribute</label>
             <p class="rplm-hint">
-              Optional. Used for normal markdown links and preview output where supported.
+              Optional. Used for normal markdown links and preview output where
+              supported.
             </p>
             <input
               id="rplm-title"
@@ -588,8 +594,8 @@ export default class RichPreviewLinkModal extends Component {
                 <div
                   class="rplm-visual-preview"
                   data-rich-preview-modal-host
-                  {{did-insert this.enhanceRenderedPreview}}
-                  {{did-update
+                  {{didInsert this.enhanceRenderedPreview}}
+                  {{didUpdate
                     this.enhanceRenderedPreview
                     this.trimmedUrl
                     this.linkText
@@ -624,11 +630,7 @@ export default class RichPreviewLinkModal extends Component {
           @disabled={{this.cannotInsert}}
           class="btn-primary"
         />
-        <DButton
-          @action={{this.onCancel}}
-          @label="cancel"
-          class="btn-flat"
-        />
+        <DButton @action={{this.onCancel}} @label="cancel" class="btn-flat" />
       </:footer>
     </DModal>
   </template>
