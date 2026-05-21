@@ -152,7 +152,7 @@ preview_providers:
 # ─── Per-type preview mode ───────────────────────────────────────────────────
 
 previews_topic_mode:
-  default: "auto_only"
+  default: "auto_and_composer"
   type: enum
   choices:
     - auto_only
@@ -168,7 +168,7 @@ previews_topic_mode:
     disabled: no local topic previews at all.
 
 previews_remote_topic_mode:
-  default: "auto_only"
+  default: "auto_and_composer"
   type: enum
   choices:
     - auto_only
@@ -184,7 +184,7 @@ previews_remote_topic_mode:
     disabled: no remote Discourse topic previews at all.
 
 previews_external_mode:
-  default: "auto_only"
+  default: "auto_and_composer"
   type: enum
   choices:
     - auto_only
@@ -200,7 +200,7 @@ previews_external_mode:
     disabled: no generic external previews at all.
 
 previews_wikipedia_mode:
-  default: "auto_only"
+  default: "auto_and_composer"
   type: enum
   choices:
     - auto_only
@@ -216,7 +216,7 @@ previews_wikipedia_mode:
     disabled: no Wikipedia previews at all.
 
 previews_onebox_mode:
-  default: "auto_only"
+  default: "disabled"
   type: enum
   choices:
     - auto_only
