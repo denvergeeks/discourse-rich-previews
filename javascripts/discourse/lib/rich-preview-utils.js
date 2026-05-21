@@ -102,7 +102,7 @@ function normalizePreviewProviders(rawProviders = []) {
       enabled: true,
       label: "Remote Discourse Topic",
       glyph_mode: "icon",
-      icon: "fab-discourse",
+      icon: "discourse-icon",
       emoji: "🌐",
       color: "var(--success)",
       remote_hosts: [],
