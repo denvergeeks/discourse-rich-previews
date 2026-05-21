@@ -45,7 +45,7 @@ preview_providers:
       icon: discourse-icon
       emoji: "🌐"
       color: "var(--success)"
-      remote_hosts: "meta.discourse.org"
+      remote_hosts: "meta.discourse.org|community.cloudflare.com|noobish.me|discourse.tobiaseigen.org"
       require_https: true
       timeout_ms: 3000
     - key: external
