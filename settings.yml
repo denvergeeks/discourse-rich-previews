@@ -22,7 +22,7 @@ composer_button_group:
 svg_icons:
   type: list
   list_type: compact
-  default: "up-right-from-square|link|discourse-expand|message|tooltip-icon|far-comment|comment|discobot|user-secret|fab-discourse|eye|far-eye|heart|clock|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
+  default: "discourse-icon|fab-discourse|tooltip-icon|up-right-from-square|link|discourse-expand|message|far-comment|comment|discobot|user-secret|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
   description: >
     Additional SVG icons used by configured preview providers.
 
@@ -42,7 +42,7 @@ preview_providers:
       enabled: true
       label: Remote Discourse Topic
       glyph_mode: icon
-      icon: fab-discourse
+      icon: discourse-icon
       emoji: "🌐"
       color: "var(--success)"
       remote_hosts: "meta.discourse.org"
