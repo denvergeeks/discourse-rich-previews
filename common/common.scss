@@ -26,6 +26,7 @@
   will-change: transform, opacity;
   contain: layout paint;
   backface-visibility: hidden;
+  border-radius: var(--thc-radius);
 
   &.is-visible {
     opacity: 1;
