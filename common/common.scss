@@ -304,6 +304,7 @@
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: var(--thc-excerpt-lines, 3);
+  line-clamp: var(--thc-excerpt-lines, 3);
   -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
 }
@@ -541,6 +542,7 @@
   font-size: var(--font-down-1);
   line-height: 1.45;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .topic-hover-card--layout-onebox .topic-hover-card__meta {
