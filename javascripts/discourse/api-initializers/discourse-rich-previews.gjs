@@ -842,7 +842,45 @@ export default apiInitializer(async (api) => {
         return;
       }
 
-      const prefetched = new Set();
+      const prefetched = new Set(); // hrefs we've already attempted
+      const queue = [];
+      let inFlight = 0;
+
+      const maxConcurrent = config.prefetchMaxConcurrent || 3;
+      const maxPerPage = config.prefetchMaxPerPage || 30;
+
+      function processQueue() {
+        if (!queue.length || inFlight >= maxConcurrent) {
+          return;
+        }
+
+        while (queue.length && inFlight < maxConcurrent) {
+          const target = queue.shift();
+          if (!target) {
+            continue;
+          }
+
+          const controller = new AbortController();
+          const timeoutMs = providerTimeoutMs(
+            target.providerKey,
+            config,
+            3000
+          );
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          inFlight += 1;
+
+          fetchPreview(target, controller.signal)
+            .catch(() => {
+              // swallow prefetch errors; hover will still try later
+            })
+            .finally(() => {
+              clearTimeout(timeoutId);
+              inFlight -= 1;
+              processQueue();
+            });
+        }
+      }
 
       const observer = new IntersectionObserver(
         (entries) => {
@@ -854,30 +892,39 @@ export default apiInitializer(async (api) => {
             const link = entry.target;
             const href = link?.href;
 
-            if (!href || prefetched.has(href)) {
+            if (!href) {
+              continue;
+            }
+
+            if (prefetched.has(href)) {
+              observer.unobserve(link);
+              continue;
+            }
+
+            if (prefetched.size >= maxPerPage) {
+              // Don't prefetch more links on this page
+              observer.unobserve(link);
+              continue;
+            }
+
+            if (!linkInSupportedArea(link, config)) {
+              observer.unobserve(link);
+              continue;
+            }
+
+            const target = matchPreviewTarget(link, config);
+            if (!target) {
+              observer.unobserve(link);
               continue;
             }
 
             prefetched.add(href);
             observer.unobserve(link);
 
-            const target = matchPreviewTarget(link, config);
-            if (!target) {
-              continue;
-            }
-
-            const controller = new AbortController();
-            const timeoutMs = providerTimeoutMs(
-              target?.providerKey,
-              config,
-              3000
-            );
-            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-            fetchPreview(target, controller.signal)
-              .catch(() => {})
-              .finally(() => clearTimeout(timeoutId));
+            queue.push(target);
           }
+
+          processQueue();
         },
         {
           rootMargin: config.prefetchViewportMargin,
@@ -902,7 +949,10 @@ export default apiInitializer(async (api) => {
               continue;
             }
 
-            if (node.matches?.("a[href]") && linkInSupportedArea(node, config)) {
+            if (
+              node.matches?.("a[href]") &&
+              linkInSupportedArea(node, config)
+            ) {
               observer.observe(node);
             }
 
@@ -923,6 +973,7 @@ export default apiInitializer(async (api) => {
       cleanupFns.push(() => {
         observer.disconnect();
         mutationObserver.disconnect();
+        queue.length = 0;
       });
     }
 

@@ -189,6 +189,18 @@ en:
     resolve_user_field_id_for_admins: "Resolve User Field ID for Admins"
     resolve_user_field_id_for_admins_description: "When enabled, staff can configure the preference field by name or user_field_X and the component will resolve the numeric user-field ID from the admin endpoint."
 
+    prefetch_enabled: "Prefetch Enabled"
+    prefetch_enabled_description: "Prefetch preview data for eligible links as they scroll into view. This eliminates the loading delay on first hover for both local and remote topics. Disable if you are concerned about extra network requests on page load."
+
+    prefetch_viewport_margin: "Prefetch Viewport Margin"
+    prefetch_viewport_margin_description: "How far outside the viewport to begin prefetching preview data. 200px means links within 200px of the visible area are prefetched. Accepts any valid CSS margin value such as 200px or 10%."
+
+    prefetch_max_concurrent: "Prefetch Max Concurrent"
+    prefetch_max_concurrent_description: "Maximum number of concurrent rich preview prefetch requests."
+
+    prefetch_max_per_page: "Prefetch Max Per Page"
+    prefetch_max_per_page_description: "Maximum number of links to prefetch per page load."
+
     topic_cache_max: "Topic Cache Max"
     topic_cache_max_description: "Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session."
 

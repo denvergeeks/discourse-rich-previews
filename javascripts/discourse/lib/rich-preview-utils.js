@@ -198,6 +198,18 @@ export function readConfig(settings) {
       settings.prefetch_viewport_margin,
       "200px"
     ),
+    prefetchMaxConcurrent: intSetting(
+      settings.prefetch_max_concurrent,
+      3,
+      1,
+      10
+    ),
+    prefetchMaxPerPage: intSetting(
+      settings.prefetch_max_per_page,
+      30,
+      5,
+      200
+    ),
 
     previewsTopicMode: stringSetting(settings.previews_topic_mode, "auto_only"),
     previewsRemoteTopicMode: stringSetting(
@@ -661,6 +673,14 @@ export async function getJSON(url, options = {}) {
       },
       signal: options.signal,
     });
+
+    if (response.status === 429) {
+      console.warn(
+        "[discourse-rich-previews] 429 from",
+        parsedUrl.toString()
+      );
+      return null;
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} for ${parsedUrl.toString()}`);
