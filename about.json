@@ -4,12 +4,12 @@
   "authors": "@denvergeeks",
   "about_url": "https://github.com/denvergeeks/discourse-rich-previews",
   "license_url": "https://github.com/denvergeeks/discourse-rich-previews/blob/main/LICENSE",
-  "theme_version": "0.0.1",
+  "theme_version": "0.0.2",
   "minimum_discourse_version": "3.3.0",
   "maximum_discourse_version": null,
   "assets": {
-    "icons-sprite": "/assets/tooltip-icon.svg",
-    "icons-sprite": "/assets/discourse-icon.svg"
+    "tooltip-icon": "/assets/tooltip-icon.svg",
+    "discourse-icon": "/assets/discourse-icon.svg"
   },
   "modifiers": {}
 }
