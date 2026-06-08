@@ -25,9 +25,8 @@ composer_button_group:
     that provider in the component settings. The composer button is
     not required to insert a Rich Preview link; any URL wrapped such as 
     [preview]https://example.com/webpage[/preview] in the post content
-    will be rendered as a Rich Preview link or a Styled Preview Card
-    as long as the provider is enabled as a Preview Provider and
-    configured to allow composer usage.
+    will be rendered as a Rich Preview as long as the provider is
+    enabled and configured to allow composer usage.
 
 svg_icons:
   type: list
