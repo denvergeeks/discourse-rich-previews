@@ -1,4 +1,3 @@
-import I18n from "I18n";
 import RichPreviewLinkModal from "../components/rich-preview-link-modal";
 
 function safeTrim(value) {
@@ -11,7 +10,7 @@ function isAbsoluteHttpUrl(value) {
 
 function parseMarkdownLink(selection) {
   const match = safeTrim(selection).match(
-    /^\[([^\]]+)\]\((https?:\/\/[^\s)]+)(?:\s+"([^"]*)")?\)$/
+    /^\[([^\]]+)\]\((https?:\/\/[^\s)]+)(?:\s+("[^"]*"))?\)$/
   );
 
   if (!match) {
@@ -71,6 +70,8 @@ function extractInitialValues(selectedValue) {
 
 function ensureComposerTranslations() {
   try {
+    // eslint-disable-next-line no-undef
+    const I18n = require("I18n").default;
     const locale = I18n.currentLocale();
     const jsRoot = I18n.translations[locale]?.js;
 
@@ -108,14 +109,23 @@ export function registerPreviewComposerButton(api, config) {
           initialInsertionMode,
         } = extractInitialValues(selectedValue);
 
-        api.container.lookup("service:modal").show(RichPreviewLinkModal, {
+        const modalService = api.container?.lookup?.("service:modal");
+
+        if (!modalService) {
+          // eslint-disable-next-line no-console
+          console.error(
+            "[discourse-rich-previews] service:modal not available."
+          );
+          return;
+        }
+
+        modalService.show(RichPreviewLinkModal, {
           model: {
             config,
             initialUrl,
             initialLinkText,
             initialTitle,
             initialInsertionMode,
-
             onInsert(insertedText) {
               if (selectedValue) {
                 toolbarEvent.replaceText(selectedValue, insertedText);

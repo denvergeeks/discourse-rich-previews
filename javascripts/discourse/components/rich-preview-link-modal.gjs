@@ -2,568 +2,355 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { on } from "@ember/modifier";
-import { not } from "@ember/helper";
 import { scheduleOnce } from "@ember/runloop";
+import { service } from "@ember/service";
+
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
 
-import {
-  parseTopicUrl,
-  parseRemoteDiscourseTopicUrl,
-  isWikipediaArticleLink,
-  providerSupportsComposer,
-  previewTypeEnabled,
-  providerColor,
-} from "../lib/rich-preview-utils";
-
-import { matchPreviewTarget } from "../lib/preview-router";
-
-import {
-  decorateAutoDetectedLink,
-  clearDecoratedLink,
-} from "../lib/link-decorator";
-
-import {
-  buildMarkdownLink,
-  buildBareUrl,
-  buildPreviewMarkedLink,
-} from "../lib/preview-markup";
-
-function classifyUrl(url, config) {
-  if (!url) {
-    return null;
-  }
-
-  try {
-    const tempLink = document.createElement("a");
-    tempLink.href = url;
-
-    if (isWikipediaArticleLink(tempLink)) {
-      return "wikipedia";
-    }
-
-    if (parseTopicUrl(url)) {
-      return "topic";
-    }
-
-    if (parseRemoteDiscourseTopicUrl(url, config)) {
-      return "remote_topic";
-    }
-
-    return "external";
-  } catch {
-    return null;
-  }
+function safeTrim(value) {
+  return String(value ?? "").trim();
 }
 
-function isPlausibleCoreOneboxCandidate(url, detectedType) {
-  if (!url || !detectedType) {
-    return false;
-  }
-
-  if (
-    detectedType === "topic" ||
-    detectedType === "remote_topic" ||
-    detectedType === "wikipedia"
-  ) {
-    return false;
-  }
-
-  try {
-    const parsed = new URL(url, window.location.origin);
-
-    if (!parsed.hostname?.toLowerCase()) {
-      return false;
-    }
-
-    if (!/^https?:$/.test(parsed.protocol)) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
+function normalizeMode(value) {
+  return value === "markdown" || value === "bare_url" ? value : "preview";
 }
 
-const TYPE_LABELS = {
-  topic: "Internal Topic",
-  remote_topic: "Remote Discourse Topic",
-  external: "External Link",
-  wikipedia: "Wikipedia",
-};
+function buildMarkdownLink({ url, linkText, title }) {
+  const href = safeTrim(url);
+  const text = safeTrim(linkText) || href;
+  const normalizedTitle = safeTrim(title);
+
+  if (!href) {
+    return "";
+  }
+
+  return normalizedTitle
+    ? `[${text}](${href} "${normalizedTitle.replace(/"/g, "&quot;")}")`
+    : `[${text}](${href})`;
+}
+
+function buildBareUrl({ url }) {
+  return safeTrim(url);
+}
+
+function buildPreviewToken({ url, linkText, title }) {
+  const href = safeTrim(url);
+  const text = safeTrim(linkText) || href;
+  const normalizedTitle = safeTrim(title);
+
+  if (!href) {
+    return "";
+  }
+
+  const markdown = normalizedTitle
+    ? `[${text}](${href} "${normalizedTitle.replace(/"/g, "&quot;")}")`
+    : `[${text}](${href})`;
+
+  return `${markdown} {preview}`;
+}
 
 export default class RichPreviewLinkModal extends Component {
-  @tracked url = this.args.model?.initialUrl || "";
-  @tracked linkText = this.args.model?.initialLinkText || "";
-  @tracked title = this.args.model?.initialTitle || "";
-  @tracked urlError = "";
-  @tracked insertionMode = this.args.model?.initialInsertionMode || "preview";
+  @service modal;
 
-  constructor(owner, args) {
-    super(owner, args);
-    this.queuePreviewDecoration();
-  }
+  @tracked url = safeTrim(this.args.model?.initialUrl);
+  @tracked linkText = safeTrim(this.args.model?.initialLinkText);
+  @tracked title = safeTrim(this.args.model?.initialTitle);
+  @tracked insertionMode = normalizeMode(
+    this.args.model?.initialInsertionMode
+  );
 
   get config() {
     return this.args.model?.config || {};
   }
 
-  get trimmedUrl() {
-    return this.url.trim();
-  }
-
-  get detectedType() {
-    return classifyUrl(this.trimmedUrl, this.config);
-  }
-
-  get providerEnabledForDetectedType() {
-    if (!this.detectedType) {
-      return false;
-    }
-
-    return previewTypeEnabled(this.detectedType, this.config);
-  }
-
-  get composerAllowedForDetectedType() {
-    if (!this.detectedType) {
-      return false;
-    }
-
-    return providerSupportsComposer(this.detectedType, this.config);
-  }
-
-  get isValidUrl() {
-    if (!this.trimmedUrl) {
-      return false;
-    }
-
-    try {
-      new URL(this.trimmedUrl);
-      return true;
-    } catch {
-      return false;
-    }
+  get previewSupported() {
+    return this.config.previewsEnabled !== false;
   }
 
   get markdownSupported() {
-    return this.isValidUrl;
-  }
-
-  get previewSupported() {
-    return (
-      this.isValidUrl &&
-      this.detectedType !== null &&
-      this.providerEnabledForDetectedType &&
-      this.composerAllowedForDetectedType
-    );
+    return this.config.markdownLinksEnabled !== false;
   }
 
   get bareUrlSupported() {
-    return (
-      this.isValidUrl &&
-      isPlausibleCoreOneboxCandidate(this.trimmedUrl, this.detectedType)
-    );
+    return this.config.bareUrlsEnabled !== false;
   }
 
-  get enabledModes() {
-    const modes = [];
-
-    if (this.markdownSupported) {
-      modes.push("markdown");
-    }
-
-    if (this.previewSupported) {
-      modes.push("preview");
-    }
-
-    if (this.bareUrlSupported) {
-      modes.push("bare_url");
-    }
-
-    return modes;
+  get canInsertPreview() {
+    return this.previewSupported && this.isValidUrl;
   }
 
-  get normalizedInsertionMode() {
-    return ["markdown", "preview", "bare_url"].includes(this.insertionMode)
-      ? this.insertionMode
-      : "preview";
+  get canInsertMarkdown() {
+    return this.markdownSupported && this.isValidUrl;
   }
 
-  get selectedModeIsEnabled() {
-    return this.enabledModes.includes(this.normalizedInsertionMode);
+  get canInsertBareUrl() {
+    return this.bareUrlSupported && this.isValidUrl;
   }
 
-  get effectiveInsertionMode() {
-    if (this.selectedModeIsEnabled) {
-      return this.normalizedInsertionMode;
-    }
-
-    return this.enabledModes[0] || "markdown";
-  }
-
-  get isMarkdownMode() {
-    return this.effectiveInsertionMode === "markdown";
+  get isValidUrl() {
+    return /^https?:\/\/[^\s<>"']+$/i.test(this.url);
   }
 
   get isPreviewMode() {
-    return this.effectiveInsertionMode === "preview";
+    return this.insertionMode === "preview";
   }
 
-  get isBareMode() {
-    return this.effectiveInsertionMode === "bare_url";
+  get isMarkdownMode() {
+    return this.insertionMode === "markdown";
   }
 
-  get cannotInsert() {
-    return !this.isValidUrl || !this.enabledModes.length;
+  get isBareUrlMode() {
+    return this.insertionMode === "bare_url";
   }
 
-  get showUnsupportedWarning() {
-    return this.isValidUrl && !this.enabledModes.length;
-  }
-
-  get typeLabel() {
-    if (!this.isValidUrl) {
-      return "";
+  get insertDisabled() {
+    if (this.isPreviewMode) {
+      return !this.canInsertPreview;
     }
 
-    return TYPE_LABELS[this.detectedType] || "";
+    if (this.isMarkdownMode) {
+      return !this.canInsertMarkdown;
+    }
+
+    return !this.canInsertBareUrl;
   }
 
-  get typeBadgeClass() {
-    return `rplm-type-badge rplm-type-badge--${
-      this.detectedType || "unsupported"
-    }`;
+  get previewOutput() {
+    return buildPreviewToken({
+      url: this.url,
+      linkText: this.linkText,
+      title: this.title,
+    });
   }
 
-  get insertionModeLabel() {
-    switch (this.effectiveInsertionMode) {
-      case "markdown":
-        return "Markdown link";
-      case "bare_url":
-        return "Bare URL (core onebox when supported)";
-      default:
-        return "Preview-marked link";
-    }
+  get markdownOutput() {
+    return buildMarkdownLink({
+      url: this.url,
+      linkText: this.linkText,
+      title: this.title,
+    });
   }
 
-  get insertionModeHint() {
-    switch (this.effectiveInsertionMode) {
-      case "markdown":
-        return "Insert a normal markdown link without rich preview behavior.";
-      case "bare_url":
-        return "Insert the raw URL on its own line. Discourse core may onebox it depending on site settings and destination support.";
-      default:
-        return "Insert a link followed by {preview}, using this theme component’s preview rules and styling.";
-    }
+  get bareUrlOutput() {
+    return buildBareUrl({
+      url: this.url,
+    });
   }
 
-  get displayText() {
-    if (this.isBareMode) {
-      return this.trimmedUrl || "https://example.com/";
+  get outputPreviewText() {
+    if (this.isPreviewMode) {
+      return this.previewOutput;
     }
 
-    return this.linkText.trim() || this.trimmedUrl || "link text";
+    if (this.isMarkdownMode) {
+      return this.markdownOutput;
+    }
+
+    return this.bareUrlOutput;
   }
 
-  get previewLinkClass() {
-    const classes = ["rplm-preview-link"];
-
-    if (this.detectedType) {
-      classes.push(`rplm-preview-link--${this.detectedType}`);
-    }
-
-    if (this.isPreviewMode && this.previewSupported) {
-      classes.push("rich-preview-link");
-    }
-
-    return classes.join(" ");
+  get modalTitle() {
+    return "Insert Link";
   }
 
-  get insertionPreview() {
-    switch (this.effectiveInsertionMode) {
-      case "markdown":
-        return buildMarkdownLink(this.trimmedUrl, this.linkText, this.title);
-      case "bare_url":
-        return buildBareUrl(this.trimmedUrl);
-      default:
-        return buildPreviewMarkedLink(
-          this.trimmedUrl,
-          this.linkText,
-          this.title,
-          this.linkText.trim() ? "markdown" : "bare_url",
-          "preview"
-        );
-    }
+  get showTitleField() {
+    return this.isPreviewMode || this.isMarkdownMode;
   }
 
-  get showPreview() {
-    return !!this.trimmedUrl;
-  }
-
-  get insertLabel() {
-    switch (this.effectiveInsertionMode) {
-      case "markdown":
-        return "Insert markdown link";
-      case "bare_url":
-        return "Insert bare URL";
-      default:
-        return "Insert preview-marked link";
-    }
-  }
-
-  get modalProviderColorStyle() {
-    if (!this.detectedType || !this.isValidUrl) {
-      return "";
-    }
-
-    const color = providerColor(this.detectedType, this.config);
-    return color ? `--thc-provider-color: ${color};` : "";
-  }
-
-  ensureValidModeSelection() {
-    if (!this.selectedModeIsEnabled) {
-      this.insertionMode = this.enabledModes[0] || "markdown";
-    }
-  }
-
-  queuePreviewDecoration() {
-    scheduleOnce("afterRender", this, this.decorateRenderedPreview);
-  }
-
-  decorateRenderedPreview() {
-    const container = document.getElementById(
-      "rich-preview-link-modal-preview-root"
-    );
-
-    if (!(container instanceof Element)) {
-      return;
-    }
-
-    const link = container.querySelector("a[href]");
-
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-
-    clearDecoratedLink(link);
-
-    if (!this.isPreviewMode || !this.previewSupported) {
-      return;
-    }
-
-    const target = matchPreviewTarget(link, this.config);
-
-    if (!target) {
-      return;
-    }
-
-    link.dataset.previewPreference = "force";
-    decorateAutoDetectedLink(link, target, this.config);
+  get showLinkTextField() {
+    return this.isPreviewMode || this.isMarkdownMode;
   }
 
   @action
-  updateField(event) {
-    const target = event?.target;
+  didInsertForm(element) {
+    scheduleOnce("afterRender", this, this.focusFirstInput, element);
+  }
 
-    if (!(target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    const field = target.dataset.rplmField;
-
-    switch (field) {
-      case "url":
-        this.url = target.value || "";
-        this.urlError = "";
-        this.ensureValidModeSelection();
-        break;
-      case "linkText":
-        this.linkText = target.value || "";
-        break;
-      case "title":
-        this.title = target.value || "";
-        break;
-      case "mode":
-        this.insertionMode = target.value || "markdown";
-        this.urlError = "";
-        break;
-      default:
-        return;
-    }
-
-    this.queuePreviewDecoration();
+  focusFirstInput(element) {
+    element?.querySelector?.('input[name="rich-preview-url"]')?.focus?.();
+    element?.querySelector?.('input[name="rich-preview-url"]')?.select?.();
   }
 
   @action
-  onInsert() {
-    if (this.cannotInsert) {
-      this.urlError =
-        "Please enter a valid URL and choose an available insertion format.";
-      return;
-    }
-
-    let output;
-
-    switch (this.effectiveInsertionMode) {
-      case "markdown":
-        output = buildMarkdownLink(this.trimmedUrl, this.linkText, this.title);
-        break;
-      case "bare_url":
-        output = buildBareUrl(this.trimmedUrl);
-        break;
-      default:
-        output = buildPreviewMarkedLink(
-          this.trimmedUrl,
-          this.linkText,
-          this.title,
-          this.linkText.trim() ? "markdown" : "bare_url",
-          "preview"
-        );
-    }
-
-    this.args.model?.onInsert?.(output);
-    this.args.closeModal();
+  updateUrl(event) {
+    this.url = safeTrim(event?.target?.value);
   }
 
   @action
-  onCancel() {
-    this.args.closeModal();
+  updateLinkText(event) {
+    this.linkText = safeTrim(event?.target?.value);
+  }
+
+  @action
+  updateTitle(event) {
+    this.title = safeTrim(event?.target?.value);
+  }
+
+  @action
+  choosePreviewMode() {
+    if (this.previewSupported) {
+      this.insertionMode = "preview";
+    }
+  }
+
+  @action
+  chooseMarkdownMode() {
+    if (this.markdownSupported) {
+      this.insertionMode = "markdown";
+    }
+  }
+
+  @action
+  chooseBareUrlMode() {
+    if (this.bareUrlSupported) {
+      this.insertionMode = "bare_url";
+    }
+  }
+
+  @action
+  insert() {
+    if (this.insertDisabled) {
+      return;
+    }
+
+    const insertedText = this.outputPreviewText;
+    const onInsert = this.args.model?.onInsert;
+
+    if (typeof onInsert === "function" && insertedText) {
+      onInsert(insertedText);
+    }
+
+    this.modal.close();
+  }
+
+  @action
+  cancel() {
+    this.modal.close();
   }
 
   <template>
     <DModal
-      @title="Insert Link"
-      @closeModal={{this.onCancel}}
+      @title={{this.modalTitle}}
+      @closeModal={{this.cancel}}
       class="rich-preview-link-modal"
     >
-      <:body>
-        <div style={{this.modalProviderColorStyle}}>
-          <div class="rplm-grid">
-            <label class="rplm-field">
-              <span class="rplm-label">URL</span>
-              <input
-                type="url"
-                class="rplm-input"
-                value={{this.url}}
-                data-rplm-field="url"
-                {{on "input" this.updateField}}
-                placeholder="https://example.com/"
-              />
-            </label>
+      <div class="rich-preview-link-modal__body">
+        <form
+          class="rich-preview-link-modal__form"
+          {{on "submit" (fn (mut this) null)}}
+          {{on "submit" this.insert}}
+          {{on "did-insert" this.didInsertForm}}
+        >
+          <div class="rich-preview-link-modal__field">
+            <label for="rich-preview-url">URL</label>
+            <input
+              id="rich-preview-url"
+              name="rich-preview-url"
+              class="rich-preview-link-modal__input"
+              type="url"
+              value={{this.url}}
+              placeholder="https://example.com/topic/123"
+              {{on "input" this.updateUrl}}
+            />
+          </div>
 
-            <label class="rplm-field">
-              <span class="rplm-label">Link text</span>
+          {{#if this.showLinkTextField}}
+            <div class="rich-preview-link-modal__field">
+              <label for="rich-preview-link-text">Link text</label>
               <input
+                id="rich-preview-link-text"
+                name="rich-preview-link-text"
+                class="rich-preview-link-modal__input"
                 type="text"
-                class="rplm-input"
                 value={{this.linkText}}
-                data-rplm-field="linkText"
-                {{on "input" this.updateField}}
-                placeholder="Optional"
+                placeholder="Optional link text"
+                {{on "input" this.updateLinkText}}
               />
-            </label>
+            </div>
+          {{/if}}
 
-            <label class="rplm-field">
-              <span class="rplm-label">Title attribute</span>
+          {{#if this.showTitleField}}
+            <div class="rich-preview-link-modal__field">
+              <label for="rich-preview-title">Title attribute</label>
               <input
+                id="rich-preview-title"
+                name="rich-preview-title"
+                class="rich-preview-link-modal__input"
                 type="text"
-                class="rplm-input"
                 value={{this.title}}
-                data-rplm-field="title"
-                {{on "input" this.updateField}}
-                placeholder="Optional"
+                placeholder="Optional title"
+                {{on "input" this.updateTitle}}
               />
-            </label>
+            </div>
+          {{/if}}
 
-            <fieldset class="rplm-field">
-              <legend class="rplm-label">Insertion format</legend>
+          <fieldset class="rich-preview-link-modal__modes">
+            <legend>Insertion mode</legend>
 
-              <label class="rplm-radio">
+            {{#if this.previewSupported}}
+              <label class="rich-preview-link-modal__choice">
                 <input
                   type="radio"
-                  name="rplm-mode"
-                  value="preview"
+                  name="rich-preview-mode"
                   checked={{this.isPreviewMode}}
-                  disabled={{not this.previewSupported}}
-                  data-rplm-field="mode"
-                  {{on "change" this.updateField}}
+                  {{on "change" this.choosePreviewMode}}
                 />
-                <span>Preview-marked link</span>
+                <span>Preview token</span>
               </label>
+            {{/if}}
 
-              <label class="rplm-radio">
+            {{#if this.markdownSupported}}
+              <label class="rich-preview-link-modal__choice">
                 <input
                   type="radio"
-                  name="rplm-mode"
-                  value="markdown"
+                  name="rich-preview-mode"
                   checked={{this.isMarkdownMode}}
-                  disabled={{not this.markdownSupported}}
-                  data-rplm-field="mode"
-                  {{on "change" this.updateField}}
+                  {{on "change" this.chooseMarkdownMode}}
                 />
                 <span>Markdown link</span>
               </label>
+            {{/if}}
 
-              <label class="rplm-radio">
+            {{#if this.bareUrlSupported}}
+              <label class="rich-preview-link-modal__choice">
                 <input
                   type="radio"
-                  name="rplm-mode"
-                  value="bare_url"
-                  checked={{this.isBareMode}}
-                  disabled={{not this.bareUrlSupported}}
-                  data-rplm-field="mode"
-                  {{on "change" this.updateField}}
+                  name="rich-preview-mode"
+                  checked={{this.isBareUrlMode}}
+                  {{on "change" this.chooseBareUrlMode}}
                 />
                 <span>Bare URL</span>
               </label>
-            </fieldset>
-
-            {{#if this.isValidUrl}}
-              <div class="rplm-meta">
-                <span class={{this.typeBadgeClass}}>{{this.typeLabel}}</span>
-                <span class="rplm-hint">{{this.insertionModeHint}}</span>
-              </div>
             {{/if}}
+          </fieldset>
 
-            {{#if this.urlError}}
-              <p class="rplm-error">{{this.urlError}}</p>
-            {{/if}}
-
-            {{#if this.showUnsupportedWarning}}
-              <p class="rplm-warning">
-                This URL does not support any enabled insertion format for the
-                current provider configuration.
-              </p>
-            {{/if}}
-
-            {{#if this.showPreview}}
-              <div class="rplm-preview-shell">
-                <div class="rplm-preview-label">Insertion preview</div>
-                <pre class="rplm-code">{{this.insertionPreview}}</pre>
-
-                <div
-                  id="rich-preview-link-modal-preview-root"
-                  class="rplm-render-preview"
-                >
-                  <a href={{this.trimmedUrl}} class={{this.previewLinkClass}}>
-                    {{this.displayText}}
-                  </a>
-                </div>
-              </div>
-            {{/if}}
+          <div class="rich-preview-link-modal__preview">
+            <label for="rich-preview-output">Output</label>
+            <textarea
+              id="rich-preview-output"
+              class="rich-preview-link-modal__output"
+              rows="4"
+              readonly
+              value={{this.outputPreviewText}}
+            >{{this.outputPreviewText}}</textarea>
           </div>
-        </div>
-      </:body>
+        </form>
+      </div>
 
       <:footer>
         <DButton
-          @label={{this.insertLabel}}
-          @action={{this.onInsert}}
-          class="btn-primary"
-          disabled={{this.cannotInsert}}
+          @label="modal.cancel"
+          @action={{this.cancel}}
+          class="btn-flat"
         />
-        <DButton @label="Cancel" @action={{this.onCancel}} />
+
+        <DButton
+          @label="modal.insert"
+          @action={{this.insert}}
+          class="btn-primary"
+          @disabled={{this.insertDisabled}}
+        />
       </:footer>
     </DModal>
   </template>
