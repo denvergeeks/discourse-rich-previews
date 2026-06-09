@@ -993,6 +993,14 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
+  const preference = String(link.dataset?.previewPreference || "")
+    .trim()
+    .toLowerCase();
+
+  if (preference === "off") {
+    return false;
+  }
+
   if (link.closest(`.topic-hover-card, ${TOOLTIP_SELECTOR}`)) {
     return false;
   }
@@ -1007,10 +1015,49 @@ export function isEligiblePreviewLink(link, config) {
     return false;
   }
 
-  const manually = isManuallyWrapped(link);
+  if (preference === "force") {
+    if (!matchesIncludedRules(link, config)) {
+      logDebug(config, "Skipping force-preview link due to include rules", {
+        href: link.href,
+      });
+      return false;
+    }
 
-  if (manually) {
-    return composerPreviewEnabled(type, config);
+    const excluded = matchesExcludedRules(link, config);
+
+    if (excluded) {
+      if (excluded.type === "tag") {
+        logDebug(config, "Skipping force-preview link due to excluded tag", {
+          href: link.href,
+          tagName: excluded.match?.tagName,
+        });
+      } else {
+        logDebug(config, "Skipping force-preview link due to excluded class", {
+          href: link.href,
+          className: excluded.match?.className,
+        });
+      }
+
+      return false;
+    }
+
+    if (type === "topic" && inCookedPost(link)) {
+      if (isCurrentTopicLink(link)) {
+        logDebug(config, "Skipping current-topic cooked-post link", {
+          href: link.href,
+        });
+        return false;
+      }
+
+      if (isCookedPostFragmentLink(link)) {
+        logDebug(config, "Skipping cooked-post fragment link", {
+          href: link.href,
+        });
+        return false;
+      }
+    }
+
+    return true;
   }
 
   if (!autoPreviewEnabled(type, config)) {

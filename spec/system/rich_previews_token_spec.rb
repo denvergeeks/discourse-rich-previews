@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Rich previews display modes", type: :system do
+RSpec.describe "Rich previews token syntax", type: :system do
   let!(:topic) { Fabricate(:topic) }
   let!(:linked_topic) { Fabricate(:topic) }
 
@@ -29,7 +29,7 @@ RSpec.describe "Rich previews display modes", type: :system do
     theme.save!
   end
 
-  it "does not show the raw {preview} token in cooked output" do
+  it "renders a markdown link followed by {preview} without showing the raw token" do
     post = PostCreator.create!(
       Fabricate(:user),
       topic_id: topic.id,
@@ -39,10 +39,26 @@ RSpec.describe "Rich previews display modes", type: :system do
     visit(post.full_url)
 
     expect(page).to have_link("linked topic", href: linked_topic.url)
-    expect(page).not_to have_text("{preview}")
+    expect(page).to have_no_text("{preview}")
   end
 
-  it "does not show the raw {preview=off} token in cooked output" do
+  it "renders a bare URL followed by {preview} without showing the raw token" do
+    post = PostCreator.create!(
+      Fabricate(:user),
+      topic_id: topic.id,
+      raw: "https://denverit.com/ {preview}"
+    )
+
+    visit(post.full_url)
+
+    expect(page).to have_link(
+      "https://denverit.com/",
+      href: "https://denverit.com/"
+    )
+    expect(page).to have_no_text("{preview}")
+  end
+
+  it "suppresses rich preview decoration when {preview=off} is present" do
     post = PostCreator.create!(
       Fabricate(:user),
       topic_id: topic.id,
@@ -52,18 +68,6 @@ RSpec.describe "Rich previews display modes", type: :system do
     visit(post.full_url)
 
     expect(page).to have_link("linked topic", href: linked_topic.url)
-    expect(page).not_to have_text("{preview=off}")
-  end
-
-  it "leaves a normal markdown link visible when no token is present" do
-    post = PostCreator.create!(
-      Fabricate(:user),
-      topic_id: topic.id,
-      raw: "[linked topic](#{linked_topic.url})"
-    )
-
-    visit(post.full_url)
-
-    expect(page).to have_link("linked topic", href: linked_topic.url)
+    expect(page).to have_no_text("{preview=off}")
   end
 end

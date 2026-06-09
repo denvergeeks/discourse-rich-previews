@@ -34,7 +34,7 @@ import { createTopicProvider } from "../lib/providers/topic-provider";
 import { createWikipediaProvider } from "../lib/providers/wikipedia-provider";
 import { createExternalProvider } from "../lib/providers/external-provider";
 
-import { registerPreviewBBCode } from "../lib/preview-bbcode";
+import { registerPreviewTokenDecorator } from "../lib/preview-token-decorator";
 import { registerPreviewComposerButton } from "../lib/preview-composer-button";
 
 function getSiteCategories(api) {
@@ -83,7 +83,7 @@ export default apiInitializer(async (api) => {
       return;
     }
 
-    registerPreviewBBCode(api, config);
+    registerPreviewTokenDecorator(api, config);
 
     if (composerButtonShouldShow(config)) {
       registerPreviewComposerButton(api, config);

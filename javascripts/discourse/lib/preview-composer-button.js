@@ -11,7 +11,7 @@ function isAbsoluteHttpUrl(value) {
 
 function parseMarkdownLink(selection) {
   const match = safeTrim(selection).match(
-    /^\[([^\]]+)\]\((https?:\/\/[^\s)]+)(?:\s+"([^"]*)")?\)$/i
+    /^\[([^\]]+)\]\((https?:\/\/[^\s)]+)(?:\s+"([^"]*)")?\)$/
   );
 
   if (!match) {
@@ -25,19 +25,24 @@ function parseMarkdownLink(selection) {
   };
 }
 
+function stripPreviewToken(value) {
+  return safeTrim(value).replace(/\s+\{preview(?:=off)?\}\s*$/i, "");
+}
+
 function extractInitialValues(selectedValue) {
-  const selected = safeTrim(selectedValue);
+  const selected = stripPreviewToken(selectedValue);
 
   if (!selected) {
     return {
       initialUrl: "",
       initialLinkText: "",
       initialTitle: "",
-      initialInsertionMode: "rich_preview",
+      initialInsertionMode: "preview",
     };
   }
 
   const markdownLink = parseMarkdownLink(selected);
+
   if (markdownLink) {
     return {
       initialUrl: markdownLink.url,
@@ -60,7 +65,7 @@ function extractInitialValues(selectedValue) {
     initialUrl: "",
     initialLinkText: selected,
     initialTitle: "",
-    initialInsertionMode: "rich_preview",
+    initialInsertionMode: "preview",
   };
 }
 

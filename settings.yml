@@ -23,10 +23,9 @@ composer_button_group:
     decorated link and the styled preview as it will appear in the
     rendered post, using the preset rules and stylings defined for
     that provider in the component settings. The composer button is
-    not required to insert a Rich Preview link; any URL wrapped such as 
-    [preview]https://example.com/webpage[/preview] in the post content
-    will be rendered as a Rich Preview as long as the provider is
-    enabled and configured to allow composer usage.
+    not required to insert a Rich Preview link; users can append
+    {preview} to any eligible URL in the post content to make it
+    rendered as a Rich Preview.
 
 svg_icons:
   type: list
@@ -172,8 +171,8 @@ previews_topic_mode:
   description: >
     Controls how hover card previews work for internal topic links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [preview]...[/preview].
-    auto_and_composer: both auto detection and manual wrapping work.
+    composer_only: cards appear only on links which users have appended with the {preview} token.
+    auto_and_composer: both auto detection and the {preview} token work.
     disabled: no local topic previews at all.
 
 previews_remote_topic_mode:
@@ -188,8 +187,8 @@ previews_remote_topic_mode:
   description: >
     Controls how hover card previews work for remote Discourse topic links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [preview]...[/preview].
-    auto_and_composer: both auto detection and manual wrapping work.
+    composer_only: cards only appear on links which users have appended with the {preview} token.
+    auto_and_composer: both auto detection and the {preview} token work.
     disabled: no remote Discourse topic previews at all.
 
 previews_external_mode:
@@ -204,8 +203,8 @@ previews_external_mode:
   description: >
     Controls how hover card previews work for generic external links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [preview]...[/preview].
-    auto_and_composer: both auto detection and manual wrapping work.
+    composer_only: cards only appear on links which users have appended with the {preview} token.
+    auto_and_composer: both auto detection and the {preview} token work.
     disabled: no generic external previews at all.
 
 previews_wikipedia_mode:
@@ -220,8 +219,8 @@ previews_wikipedia_mode:
   description: >
     Controls how hover card previews work for Wikipedia links.
     auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links wrapped with [preview]...[/preview].
-    auto_and_composer: both auto detection and manual wrapping work.
+    composer_only: cards only appear on links which users have appended with the {preview} token.
+    auto_and_composer: both auto detection and the {preview} token work.
     disabled: no Wikipedia previews at all.
 
 previews_onebox_mode:
@@ -251,7 +250,6 @@ previews_show_icon:
   client: true
   description: >
     Show a small provider glyph next to preview links indicating their type.
-    Applies to both auto-detected and manually wrapped links.
 
 previews_icon_position:
   default: "after"
@@ -267,8 +265,7 @@ previews_show_underline:
   default: true
   client: true
   description: >
-    Show a colored dotted underline on preview links.
-    Applies to both auto-detected and manually wrapped links.
+    Show a colored dotted underline on preview links. The underline color is determined by the provider's configured color.
 
 previews_underline_always:
   default: true

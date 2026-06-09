@@ -29,6 +29,21 @@ function normalizeText(value) {
   return String(value ?? "").trim();
 }
 
+function appendPreviewToken(base, preference = "preview") {
+  const normalizedBase = normalizeText(base);
+  const normalizedPreference = normalizeText(preference).toLowerCase();
+
+  if (!normalizedBase) {
+    return "";
+  }
+
+  if (normalizedPreference === "off") {
+    return `${normalizedBase} {preview=off}`;
+  }
+
+  return `${normalizedBase} {preview}`;
+}
+
 export function buildMarkdownLink(url, linkText = "", title = "") {
   const normalizedUrl = normalizeUrl(url);
   const normalizedText = normalizeText(linkText) || normalizedUrl;
@@ -51,11 +66,12 @@ export function buildBareUrl(url) {
   return normalizeUrl(url);
 }
 
-export function buildPreviewWrappedMarkdown(
+export function buildPreviewMarkedLink(
   url,
   linkText = "",
   title = "",
-  form = "rich_preview"
+  form = "preview",
+  preference = "preview"
 ) {
   const normalizedUrl = normalizeUrl(url);
 
@@ -63,11 +79,14 @@ export function buildPreviewWrappedMarkdown(
     return "";
   }
 
-  const normalizedForm = String(form || "rich_preview").trim().toLowerCase();
+  const normalizedForm = String(form || "preview").trim().toLowerCase();
 
-  if (normalizedForm !== "rich_preview" && normalizedForm !== "markdown") {
-    return "";
+  if (normalizedForm === "bare_url") {
+    return appendPreviewToken(buildBareUrl(normalizedUrl), preference);
   }
 
-  return `[preview]${buildMarkdownLink(normalizedUrl, linkText, title)}[/preview]`;
+  return appendPreviewToken(
+    buildMarkdownLink(normalizedUrl, linkText, title),
+    preference
+  );
 }
