@@ -4,7 +4,7 @@
   "authors": "@denvergeeks",
   "about_url": "https://github.com/denvergeeks/discourse-rich-previews",
   "license_url": "https://github.com/denvergeeks/discourse-rich-previews/blob/main/LICENSE",
-  "theme_version": "0.0.2",
+  "theme_version": "0.0.3",
   "minimum_discourse_version": "3.3.0",
   "maximum_discourse_version": null,
   "assets": {
