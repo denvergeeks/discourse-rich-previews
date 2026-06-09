@@ -2,6 +2,7 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { on } from "@ember/modifier";
+import { not } from "@ember/helper";
 import { scheduleOnce } from "@ember/runloop";
 import DModal from "discourse/components/d-modal";
 import DButton from "discourse/components/d-button";
