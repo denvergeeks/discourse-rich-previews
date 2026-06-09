@@ -40,7 +40,7 @@ function normalizedHostname(url) {
 }
 
 function buildProxyUrl(target) {
-  const url = new URL("/discourse-proxy-safe.json", window.location.origin);
+  const url = new URL("/discourse-proxy-safe/fetch.json", window.location.origin);
   url.searchParams.set("url", target.url);
   return url.toString();
 }
@@ -226,14 +226,6 @@ export function createExternalProvider(config) {
       return matchesExternalTarget(link, config);
     },
 
-    // Bug #8 fix: use fetch(target, signal) with a plain AbortSignal
-    // instead of fetch(target, { signal } = {}) so the raw AbortSignal
-    // passed by the initializer's provider.fetch(target, controller.signal)
-    // is received correctly rather than being silently undefined.
-    //
-    // Bug #5 fix: guard against a signal that is already aborted before
-    // we create our internal controller, so we don't start a fetch that
-    // can never be cancelled by the outer signal.
     async fetch(target, signal) {
       if (!target?.url) {
         throw new Error("Missing external preview target URL.");
@@ -244,9 +236,14 @@ export function createExternalProvider(config) {
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), externalTimeoutMs(config));
+      const timeout = setTimeout(
+        () => controller.abort(new DOMException("Timed out", "AbortError")),
+        externalTimeoutMs(config)
+      );
 
-      const abortHandler = () => controller.abort();
+      const abortHandler = () =>
+        controller.abort(new DOMException("Aborted", "AbortError"));
+
       signal?.addEventListener?.("abort", abortHandler, { once: true });
 
       try {
@@ -265,6 +262,12 @@ export function createExternalProvider(config) {
 
         const payload = await parseProxyResponse(response, target);
         return normalizeExternalPreview(target, payload, config);
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          throw error;
+        }
+
+        throw error;
       } finally {
         clearTimeout(timeout);
         signal?.removeEventListener?.("abort", abortHandler);
