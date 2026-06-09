@@ -2,7 +2,6 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { on } from "@ember/modifier";
-import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
 
 import DModal from "discourse/components/d-modal";
@@ -16,6 +15,10 @@ function normalizeMode(value) {
   return value === "markdown" || value === "bare_url" ? value : "preview";
 }
 
+function escapeTitle(value) {
+  return safeTrim(value).replace(/"/g, "&quot;");
+}
+
 function buildMarkdownLink({ url, linkText, title }) {
   const href = safeTrim(url);
   const text = safeTrim(linkText) || href;
@@ -26,7 +29,7 @@ function buildMarkdownLink({ url, linkText, title }) {
   }
 
   return normalizedTitle
-    ? `[${text}](${href} "${normalizedTitle.replace(/"/g, "&quot;")}")`
+    ? `[${text}](${href} "${escapeTitle(normalizedTitle)}")`
     : `[${text}](${href})`;
 }
 
@@ -35,19 +38,8 @@ function buildBareUrl({ url }) {
 }
 
 function buildPreviewToken({ url, linkText, title }) {
-  const href = safeTrim(url);
-  const text = safeTrim(linkText) || href;
-  const normalizedTitle = safeTrim(title);
-
-  if (!href) {
-    return "";
-  }
-
-  const markdown = normalizedTitle
-    ? `[${text}](${href} "${normalizedTitle.replace(/"/g, "&quot;")}")`
-    : `[${text}](${href})`;
-
-  return `${markdown} {preview}`;
+  const markdown = buildMarkdownLink({ url, linkText, title });
+  return markdown ? `${markdown} {preview}` : "";
 }
 
 export default class RichPreviewLinkModal extends Component {
@@ -92,28 +84,12 @@ export default class RichPreviewLinkModal extends Component {
     return this.insertionMode === "bare_url";
   }
 
-  get canInsertPreview() {
-    return this.previewSupported && this.isValidUrl;
+  get showLinkTextField() {
+    return this.isPreviewMode || this.isMarkdownMode;
   }
 
-  get canInsertMarkdown() {
-    return this.markdownSupported && this.isValidUrl;
-  }
-
-  get canInsertBareUrl() {
-    return this.bareUrlSupported && this.isValidUrl;
-  }
-
-  get insertDisabled() {
-    if (this.isPreviewMode) {
-      return !this.canInsertPreview;
-    }
-
-    if (this.isMarkdownMode) {
-      return !this.canInsertMarkdown;
-    }
-
-    return !this.canInsertBareUrl;
+  get showTitleField() {
+    return this.isPreviewMode || this.isMarkdownMode;
   }
 
   get previewOutput() {
@@ -138,7 +114,7 @@ export default class RichPreviewLinkModal extends Component {
     });
   }
 
-  get outputPreviewText() {
+  get outputText() {
     if (this.isPreviewMode) {
       return this.previewOutput;
     }
@@ -150,27 +126,28 @@ export default class RichPreviewLinkModal extends Component {
     return this.bareUrlOutput;
   }
 
+  get insertDisabled() {
+    if (!this.isValidUrl) {
+      return true;
+    }
+
+    if (this.isPreviewMode) {
+      return !this.previewSupported;
+    }
+
+    if (this.isMarkdownMode) {
+      return !this.markdownSupported;
+    }
+
+    if (this.isBareUrlMode) {
+      return !this.bareUrlSupported;
+    }
+
+    return true;
+  }
+
   get modalTitle() {
     return "Insert Link";
-  }
-
-  get showLinkTextField() {
-    return this.isPreviewMode || this.isMarkdownMode;
-  }
-
-  get showTitleField() {
-    return this.isPreviewMode || this.isMarkdownMode;
-  }
-
-  @action
-  didInsertForm(element) {
-    scheduleOnce("afterRender", this, this.focusFirstInput, element);
-  }
-
-  focusFirstInput(element) {
-    const input = element?.querySelector?.('input[name="rich-preview-url"]');
-    input?.focus?.();
-    input?.select?.();
   }
 
   @action
@@ -217,7 +194,7 @@ export default class RichPreviewLinkModal extends Component {
       return;
     }
 
-    const insertedText = this.outputPreviewText;
+    const insertedText = this.outputText;
     const onInsert = this.args.model?.onInsert;
 
     if (typeof onInsert === "function" && insertedText) {
@@ -240,11 +217,7 @@ export default class RichPreviewLinkModal extends Component {
     >
       <:body>
         <div class="rich-preview-link-modal__body">
-          <form
-            class="rich-preview-link-modal__form"
-            {{on "submit" this.insert}}
-            {{on "did-insert" this.didInsertForm}}
-          >
+          <form class="rich-preview-link-modal__form" {{on "submit" this.insert}}>
             <div class="rich-preview-link-modal__field">
               <label for="rich-preview-url">URL</label>
               <input
@@ -335,7 +308,7 @@ export default class RichPreviewLinkModal extends Component {
                 class="rich-preview-link-modal__output"
                 rows="4"
                 readonly
-              >{{this.outputPreviewText}}</textarea>
+              >{{this.outputText}}</textarea>
             </div>
           </form>
         </div>
