@@ -2,6 +2,7 @@ import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { on } from "@ember/modifier";
+import { fn } from "@ember/helper";
 import { scheduleOnce } from "@ember/runloop";
 import { service } from "@ember/service";
 
@@ -76,18 +77,6 @@ export default class RichPreviewLinkModal extends Component {
     return this.config.bareUrlsEnabled !== false;
   }
 
-  get canInsertPreview() {
-    return this.previewSupported && this.isValidUrl;
-  }
-
-  get canInsertMarkdown() {
-    return this.markdownSupported && this.isValidUrl;
-  }
-
-  get canInsertBareUrl() {
-    return this.bareUrlSupported && this.isValidUrl;
-  }
-
   get isValidUrl() {
     return /^https?:\/\/[^\s<>"']+$/i.test(this.url);
   }
@@ -102,6 +91,18 @@ export default class RichPreviewLinkModal extends Component {
 
   get isBareUrlMode() {
     return this.insertionMode === "bare_url";
+  }
+
+  get canInsertPreview() {
+    return this.previewSupported && this.isValidUrl;
+  }
+
+  get canInsertMarkdown() {
+    return this.markdownSupported && this.isValidUrl;
+  }
+
+  get canInsertBareUrl() {
+    return this.bareUrlSupported && this.isValidUrl;
   }
 
   get insertDisabled() {
@@ -154,11 +155,11 @@ export default class RichPreviewLinkModal extends Component {
     return "Insert Link";
   }
 
-  get showTitleField() {
+  get showLinkTextField() {
     return this.isPreviewMode || this.isMarkdownMode;
   }
 
-  get showLinkTextField() {
+  get showTitleField() {
     return this.isPreviewMode || this.isMarkdownMode;
   }
 
@@ -168,8 +169,9 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   focusFirstInput(element) {
-    element?.querySelector?.('input[name="rich-preview-url"]')?.focus?.();
-    element?.querySelector?.('input[name="rich-preview-url"]')?.select?.();
+    const input = element?.querySelector?.('input[name="rich-preview-url"]');
+    input?.focus?.();
+    input?.select?.();
   }
 
   @action
@@ -209,7 +211,9 @@ export default class RichPreviewLinkModal extends Component {
   }
 
   @action
-  insert() {
+  insert(event) {
+    event?.preventDefault?.();
+
     if (this.insertDisabled) {
       return;
     }
@@ -235,108 +239,108 @@ export default class RichPreviewLinkModal extends Component {
       @closeModal={{this.cancel}}
       class="rich-preview-link-modal"
     >
-      <div class="rich-preview-link-modal__body">
-        <form
-          class="rich-preview-link-modal__form"
-          {{on "submit" (fn (mut this) null)}}
-          {{on "submit" this.insert}}
-          {{on "did-insert" this.didInsertForm}}
-        >
-          <div class="rich-preview-link-modal__field">
-            <label for="rich-preview-url">URL</label>
-            <input
-              id="rich-preview-url"
-              name="rich-preview-url"
-              class="rich-preview-link-modal__input"
-              type="url"
-              value={{this.url}}
-              placeholder="https://example.com/topic/123"
-              {{on "input" this.updateUrl}}
-            />
-          </div>
-
-          {{#if this.showLinkTextField}}
+      <:body>
+        <div class="rich-preview-link-modal__body">
+          <form
+            class="rich-preview-link-modal__form"
+            {{on "submit" this.insert}}
+            {{on "did-insert" this.didInsertForm}}
+          >
             <div class="rich-preview-link-modal__field">
-              <label for="rich-preview-link-text">Link text</label>
+              <label for="rich-preview-url">URL</label>
               <input
-                id="rich-preview-link-text"
-                name="rich-preview-link-text"
+                id="rich-preview-url"
+                name="rich-preview-url"
                 class="rich-preview-link-modal__input"
-                type="text"
-                value={{this.linkText}}
-                placeholder="Optional link text"
-                {{on "input" this.updateLinkText}}
+                type="url"
+                value={{this.url}}
+                placeholder="https://example.com/topic/123"
+                {{on "input" this.updateUrl}}
               />
             </div>
-          {{/if}}
 
-          {{#if this.showTitleField}}
-            <div class="rich-preview-link-modal__field">
-              <label for="rich-preview-title">Title attribute</label>
-              <input
-                id="rich-preview-title"
-                name="rich-preview-title"
-                class="rich-preview-link-modal__input"
-                type="text"
-                value={{this.title}}
-                placeholder="Optional title"
-                {{on "input" this.updateTitle}}
-              />
+            {{#if this.showLinkTextField}}
+              <div class="rich-preview-link-modal__field">
+                <label for="rich-preview-link-text">Link text</label>
+                <input
+                  id="rich-preview-link-text"
+                  name="rich-preview-link-text"
+                  class="rich-preview-link-modal__input"
+                  type="text"
+                  value={{this.linkText}}
+                  placeholder="Optional link text"
+                  {{on "input" this.updateLinkText}}
+                />
+              </div>
+            {{/if}}
+
+            {{#if this.showTitleField}}
+              <div class="rich-preview-link-modal__field">
+                <label for="rich-preview-title">Title attribute</label>
+                <input
+                  id="rich-preview-title"
+                  name="rich-preview-title"
+                  class="rich-preview-link-modal__input"
+                  type="text"
+                  value={{this.title}}
+                  placeholder="Optional title"
+                  {{on "input" this.updateTitle}}
+                />
+              </div>
+            {{/if}}
+
+            <fieldset class="rich-preview-link-modal__modes">
+              <legend>Insertion mode</legend>
+
+              {{#if this.previewSupported}}
+                <label class="rich-preview-link-modal__choice">
+                  <input
+                    type="radio"
+                    name="rich-preview-mode"
+                    checked={{this.isPreviewMode}}
+                    {{on "change" this.choosePreviewMode}}
+                  />
+                  <span>Preview token</span>
+                </label>
+              {{/if}}
+
+              {{#if this.markdownSupported}}
+                <label class="rich-preview-link-modal__choice">
+                  <input
+                    type="radio"
+                    name="rich-preview-mode"
+                    checked={{this.isMarkdownMode}}
+                    {{on "change" this.chooseMarkdownMode}}
+                  />
+                  <span>Markdown link</span>
+                </label>
+              {{/if}}
+
+              {{#if this.bareUrlSupported}}
+                <label class="rich-preview-link-modal__choice">
+                  <input
+                    type="radio"
+                    name="rich-preview-mode"
+                    checked={{this.isBareUrlMode}}
+                    {{on "change" this.chooseBareUrlMode}}
+                  />
+                  <span>Bare URL</span>
+                </label>
+              {{/if}}
+            </fieldset>
+
+            <div class="rich-preview-link-modal__preview">
+              <label for="rich-preview-output">Output</label>
+              <textarea
+                id="rich-preview-output"
+                class="rich-preview-link-modal__output"
+                rows="4"
+                readonly
+              >{{this.outputPreviewText}}</textarea>
             </div>
-          {{/if}}
-
-          <fieldset class="rich-preview-link-modal__modes">
-            <legend>Insertion mode</legend>
-
-            {{#if this.previewSupported}}
-              <label class="rich-preview-link-modal__choice">
-                <input
-                  type="radio"
-                  name="rich-preview-mode"
-                  checked={{this.isPreviewMode}}
-                  {{on "change" this.choosePreviewMode}}
-                />
-                <span>Preview token</span>
-              </label>
-            {{/if}}
-
-            {{#if this.markdownSupported}}
-              <label class="rich-preview-link-modal__choice">
-                <input
-                  type="radio"
-                  name="rich-preview-mode"
-                  checked={{this.isMarkdownMode}}
-                  {{on "change" this.chooseMarkdownMode}}
-                />
-                <span>Markdown link</span>
-              </label>
-            {{/if}}
-
-            {{#if this.bareUrlSupported}}
-              <label class="rich-preview-link-modal__choice">
-                <input
-                  type="radio"
-                  name="rich-preview-mode"
-                  checked={{this.isBareUrlMode}}
-                  {{on "change" this.chooseBareUrlMode}}
-                />
-                <span>Bare URL</span>
-              </label>
-            {{/if}}
-          </fieldset>
-
-          <div class="rich-preview-link-modal__preview">
-            <label for="rich-preview-output">Output</label>
-            <textarea
-              id="rich-preview-output"
-              class="rich-preview-link-modal__output"
-              rows="4"
-              readonly
-              value={{this.outputPreviewText}}
-            >{{this.outputPreviewText}}</textarea>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      </:body>
 
       <:footer>
         <DButton
@@ -344,7 +348,6 @@ export default class RichPreviewLinkModal extends Component {
           @action={{this.cancel}}
           class="btn-flat"
         />
-
         <DButton
           @label="modal.insert"
           @action={{this.insert}}
