@@ -4,6 +4,8 @@ import {
   sanitizeURL,
 } from "../rich-preview-utils";
 
+const PROXY_ENDPOINT = "/discourse-proxy-safe/fetch_external.json";
+
 function textValue(value) {
   return String(value ?? "").trim();
 }
@@ -40,7 +42,7 @@ function normalizedHostname(url) {
 }
 
 function buildProxyUrl(target) {
-  const url = new URL("/discourse-proxy-safe/fetch.json", window.location.origin);
+  const url = new URL(PROXY_ENDPOINT, window.location.origin);
   url.searchParams.set("url", target.url);
   return url.toString();
 }
