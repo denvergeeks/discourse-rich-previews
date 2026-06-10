@@ -6,10 +6,16 @@ import {
   safeRemoteAvatarURL,
 } from "../rich-preview-utils";
 
-const PROXY_ENDPOINT = "/discourse-proxy-safe";
+const PROXY_ENDPOINT = "/discourse-proxy-safe/fetch.json";
+
+function buildProxyUrl(remoteJsonUrl) {
+  const url = new URL(PROXY_ENDPOINT, window.location.origin);
+  url.searchParams.set("url", remoteJsonUrl);
+  return url.toString();
+}
 
 async function fetchViaProxy(remoteJsonUrl, signal) {
-  const proxyUrl = `${PROXY_ENDPOINT}?url=${encodeURIComponent(remoteJsonUrl)}`;
+  const proxyUrl = buildProxyUrl(remoteJsonUrl);
 
   try {
     const response = await fetch(proxyUrl, {
@@ -27,6 +33,11 @@ async function fetchViaProxy(remoteJsonUrl, signal) {
     }
 
     const text = await response.text();
+
+    if (!text.trim()) {
+      return null;
+    }
+
     return JSON.parse(text);
   } catch (error) {
     if (error?.name === "AbortError" || signal?.aborted) {
@@ -50,7 +61,8 @@ function extractFirstImageURLFromCooked(cooked) {
 }
 
 function normalizeTopic(topic, target, config) {
-  const firstPost = topic?.post_stream?.posts?.[0] || topic?.postStream?.posts?.[0];
+  const firstPost =
+    topic?.post_stream?.posts?.[0] || topic?.postStream?.posts?.[0];
   const origin = target?.origin || window.location.origin;
   const isRemote = origin !== window.location.origin;
 
@@ -118,7 +130,8 @@ function normalizeTopic(topic, target, config) {
 
   const categoryId = topic?.category_id ?? topic?.categoryId ?? null;
 
-  const category = topic?.category ||
+  const category =
+    topic?.category ||
     (categoryId
       ? {
           id: categoryId,
@@ -142,7 +155,11 @@ function normalizeTopic(topic, target, config) {
     topicId,
     slug,
     url,
-    title: topic?.fancy_title || topic?.fancyTitle || topic?.title || "Untitled topic",
+    title:
+      topic?.fancy_title ||
+      topic?.fancyTitle ||
+      topic?.title ||
+      "Untitled topic",
     excerpt: sanitizeExcerpt(
       excerptSource,
       config?.excerptExcludedSelectors || []
@@ -197,12 +214,7 @@ function normalizeTopic(topic, target, config) {
   };
 }
 
-export function createTopicProvider(
-  api,
-  config,
-  topicCache,
-  inFlightFetches
-) {
+export function createTopicProvider(api, config, topicCache, inFlightFetches) {
   async function fetchTopic(target, signal) {
     const topicId = target?.topicId;
     const origin = target?.origin || window.location.origin;
