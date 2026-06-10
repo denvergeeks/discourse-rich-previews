@@ -147,9 +147,9 @@ function normalizeTopic(topic, target, config) {
 
   return {
     type: "topic",
-    providerKey: target?.providerKey || (isRemote ? "remote_topic" : "topic"),
+    providerKey: target?.providerKey || (isRemote ? "remoteTopic" : "topic"),
     glyphProviderKey:
-      target?.glyphProviderKey || (isRemote ? "remote_topic" : "topic"),
+      target?.glyphProviderKey || (isRemote ? "remoteTopic" : "topic"),
     id: isRemote ? `${origin}:${topicId}` : topicId,
     key: isRemote ? `${origin}:${topicId}` : String(topicId),
     topicId,
