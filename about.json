@@ -8,8 +8,8 @@
   "minimum_discourse_version": "3.3.0",
   "maximum_discourse_version": null,
   "assets": {
-    "tooltip-icon": "/assets/tooltip-icon.svg",
-    "discourse-icon": "/assets/discourse-icon.svg"
+    "icons-sprite": "/assets/tooltip-icon.svg",
+    "icons-sprite": "/assets/discourse-icon.svg"
   },
   "modifiers": {}
 }
