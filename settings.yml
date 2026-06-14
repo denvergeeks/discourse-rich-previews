@@ -11,7 +11,8 @@ composer_button_group:
     - insertions
     - extras
   client: true
-  description: [details="Summary"]
+  description: test
+  [details="Summary"]
     Controls which group in the composer toolbar the Rich Previews
     button appears in. fontStyles places it with bold/italic,
     insertions places it with the link and image buttons,
@@ -24,7 +25,7 @@ composer_button_group:
     rendered post, using the preset rules and stylings defined for
     that provider in the component settings. The composer button is
     not required to insert a Rich Preview link; users can append
-    `{preview}` to any eligible URL in the post content to make it
+    {preview} to any eligible URL in the post content to make it
     rendered as a Rich Preview.
   [/details]
 
