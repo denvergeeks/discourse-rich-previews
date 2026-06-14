@@ -14,7 +14,7 @@ https://github.com/denvergeeks/discourse-proxy-safe.git
 ---
 ## URL Behavior
 
-The composer button opens a modal where the user can type or paste a bare URL such as https://example.com/webpage.
+The composer button opens a modal where the user can type or paste a bare URL such as `https://example.com/webpage`.
 
 The component then fetches preview data, auto-detects the provider, and renders a live preview inside the modal showing how the decorated link and styled preview will appear in the rendered post.
 
