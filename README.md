@@ -20,10 +20,10 @@ The component then fetches preview data, auto-detects the provider, and renders 
 
 The composer button is optional.
 
-Users can also append `{preview}` to any eligible URL in post content to render it as a Rich Preview. For example:
+In the composer, users can also manually append `{preview}` to any eligible URL in post content to render it as a Rich Preview. For example:
 
 `https://example.com/webpage {preview}`
 
-Users can append `{preview=off}` to any URL to override (for that link only) any preset or default rule that would render it as a Rich Preview. For example:
+Also, users can manually append `{preview=off}` to any URL to override (for that instance of that URL only) any preset or default rule that would otherwise render that URL as a Rich Preview. For example:
 
 `https://example.com/webpage {preview=off}`
