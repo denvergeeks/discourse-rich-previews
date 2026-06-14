@@ -12,7 +12,7 @@ composer_button_group:
     - extras
   client: true
   description: >
-    Controls which group in the composer toolbar the Rich Previews
+    SETTINGS Controls which group in the composer toolbar the Rich Previews
     button appears in. fontStyles places it with bold/italic,
     insertions places it with the link and image buttons,
     extras places it at the end of the toolbar. The composer button
