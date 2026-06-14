@@ -1,7 +1,6 @@
 enabled:
   default: true
   type: bool
-  description: SETTINGS Enable the Rich Previews theme component.
 
 composer_button_group:
   default: "insertions"
@@ -11,21 +10,6 @@ composer_button_group:
     - insertions
     - extras
   client: true
-  description: >
-    SETTINGS Controls which group in the composer toolbar the Rich Previews
-    button appears in. fontStyles places it with bold/italic,
-    insertions places it with the link and image buttons,
-    extras places it at the end of the toolbar. The composer button
-    opens a modal for the user to type or paste in a bare URL
-    such as https://example.com/webpage. The component instantly
-    fetches the preview data, auto-detects the provider and,
-    while still in the modal, renders a live instance of the
-    decorated link and the styled preview as it will appear in the
-    rendered post, using the preset rules and stylings defined for
-    that provider in the component settings. The composer button is
-    not required to insert a Rich Preview link; users can append
-    {preview} to any eligible URL in the post content to make it
-    rendered as a Rich Preview.
 
 svg_icons:
   type: list
