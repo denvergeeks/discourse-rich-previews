@@ -8,7 +8,7 @@ en:
 
       composer_button_group: >
         EN-YML Controls which group in the composer toolbar the Rich Previews
-        button appears in. fontStyles places it with bold and italic.
+        button appears in. | - fontStyles places it with bold and italic.
         insertions places it with the link and image buttons. extras
         places it at the end of the toolbar.
 
