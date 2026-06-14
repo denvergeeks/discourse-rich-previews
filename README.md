@@ -12,15 +12,18 @@ https://github.com/denvergeeks/discourse-proxy-safe.git
 <img width="912" height="913" alt="discourse-rich-previews-theme-component-provider-settings-remote_hosts" src="https://github.com/user-attachments/assets/545b1610-baf2-4c33-98c5-8f990df9e59c" />
 
 ---
+## URL Behavior
 
-        The composer button opens a modal where the user can type or
-        paste a bare URL such as https://example.com/webpage.
+The composer button opens a modal where the user can type or paste a bare URL such as https://example.com/webpage.
 
-        The component then fetches preview data, auto-detects the
-        provider, and renders a live preview inside the modal showing
-        how the decorated link and styled preview will appear in the
-        rendered post.
+The component then fetches preview data, auto-detects the provider, and renders a live preview inside the modal showing how the decorated link and styled preview will appear in the rendered post.
 
-        The composer button is optional. Users can also append
-        {preview} to any eligible URL in post content to render it
-        as a Rich Preview.
+The composer button is optional.
+
+Users can also append `{preview}` to any eligible URL in post content to render it as a Rich Preview. For example:
+
+`https://example.com/webpage {preview}`
+
+Users can append `{preview=off}` to any URL to override (for that link only) any preset or default rule that would render it as a Rich Preview. For example:
+
+`https://example.com/webpage {preview=off}`
