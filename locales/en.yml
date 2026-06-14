@@ -1,208 +1,431 @@
 en:
   theme_metadata:
-    description: "Shows rich preview cards for internal topic links and links to Wikipedia articles across topic lists, topic pages, search results, categories, tags, user profiles, and other supported Discourse areas."
+    description: "Rich Previews theme component."
+
+    settings:
+      enabled: >
+        Enable the Rich Previews theme component.
+
+      composer_button_group: >
+        Controls which group in the composer toolbar the Rich Previews
+        button appears in. fontStyles places it with bold and italic.
+        insertions places it with the link and image buttons. extras
+        places it at the end of the toolbar.
+
+        The composer button opens a modal where the user can type or
+        paste a bare URL such as https://example.com/webpage.
+
+        The component then fetches preview data, auto-detects the
+        provider, and renders a live preview inside the modal showing
+        how the decorated link and styled preview will appear in the
+        rendered post.
+
+        The composer button is optional. Users can also append
+        {preview} to any eligible URL in post content to render it
+        as a Rich Preview.
+
+      svg_icons: >
+        Additional SVG icons used by configured preview providers.
+
+      preview_providers:
+        description: >
+          Configures the available rich preview providers and their
+          default behavior, UI metadata, icon or emoji glyphs, colors,
+          network rules, and timeouts.
+
+        schema:
+          properties:
+            key:
+              label: "Provider key"
+              description: >
+                Internal provider key. topic, remote_topic, external,
+                and wikipedia are hover-preview provider types. onebox
+                is used for cooked onebox decoration styling and related
+                UI metadata.
+
+            enabled:
+              label: "Enabled"
+              description: >
+                Whether this provider is enabled.
+
+            label:
+              label: "Label"
+              description: >
+                Admin label for this provider or decorated content type.
+                For onebox, this label is used in cooked onebox
+                decoration UI such as badges.
+
+            glyph_mode:
+              label: "Glyph mode"
+              description: >
+                Choose whether this provider uses an icon, emoji, or no
+                glyph.
+
+            icon:
+              label: "Icon"
+              description: >
+                Discourse icon name for this provider. Add the icon name
+                to svg_icons if needed.
+
+            emoji:
+              label: "Emoji"
+              description: >
+                Emoji character for this provider.
+
+            color:
+              label: "Color"
+              description: >
+                CSS color used for link indicators and provider-tinted
+                UI. For onebox, this color is applied to decorated
+                cooked onebox styling.
+
+            remote_hosts:
+              label: "Remote hosts"
+              description: >
+                Pipe-separated allowed hostnames for this provider when
+                applicable. This is mainly relevant to remote_topic and
+                is typically not used for onebox decoration.
+
+            require_https:
+              label: "Require HTTPS"
+              description: >
+                Require HTTPS when this provider fetches remote content.
+                This mainly applies to remote fetch-based preview types
+                and is not generally used by cooked onebox decoration.
+
+            timeout_ms:
+              label: "Timeout (ms)"
+              description: >
+                Request timeout for this provider in milliseconds when
+                network fetches are used. This setting does not usually
+                affect cooked onebox decoration.
+
+      previews_topic_mode: >
+        Controls how hover card previews work for internal topic links.
+
+        auto_only: cards appear automatically on eligible links.
+        composer_only: cards appear only on links that users have
+        appended with the {preview} token.
+        auto_and_composer: both auto detection and the {preview} token
+        work.
+        disabled: no local topic previews at all.
+
+      previews_remote_topic_mode: >
+        Controls how hover card previews work for remote Discourse topic
+        links.
+
+        auto_only: cards appear automatically on eligible links.
+        composer_only: cards appear only on links that users have
+        appended with the {preview} token.
+        auto_and_composer: both auto detection and the {preview} token
+        work.
+        disabled: no remote Discourse topic previews at all.
+
+      previews_external_mode: >
+        Controls how hover card previews work for generic external
+        links.
+
+        auto_only: cards appear automatically on eligible links.
+        composer_only: cards appear only on links that users have
+        appended with the {preview} token.
+        auto_and_composer: both auto detection and the {preview} token
+        work.
+        disabled: no generic external previews at all.
+
+      previews_wikipedia_mode: >
+        Controls how hover card previews work for Wikipedia links.
+
+        auto_only: cards appear automatically on eligible links.
+        composer_only: cards appear only on links that users have
+        appended with the {preview} token.
+        auto_and_composer: both auto detection and the {preview} token
+        work.
+        disabled: no Wikipedia previews at all.
+
+      previews_onebox_mode: >
+        Controls decoration of cooked Discourse oneboxes that already
+        exist in rendered content.
+
+        auto_only: decorate cooked oneboxes automatically when they are
+        present.
+        composer_only: reserved for composer-specific handling; cooked
+        onebox auto-decoration does not run in this mode.
+        auto_and_composer: currently behaves like auto_only for cooked
+        onebox decoration, while remaining compatible with future
+        composer-specific onebox handling.
+        disabled: do not decorate cooked oneboxes.
+
+      previews_show_icon: >
+        Show a small provider glyph next to preview links indicating
+        their type.
+
+      previews_icon_position: >
+        Position of the provider glyph relative to the link text.
+
+      previews_show_underline: >
+        Show a colored dotted underline on preview links. The underline
+        color is determined by the provider's configured color.
+
+      previews_underline_always: >
+        When enabled, the dotted underline is always visible. When
+        disabled, it only appears on hover.
+
+      delay_show: >
+        Delay in milliseconds before the hover card appears.
+
+      mobile_enabled: >
+        Enable tap-to-preview behavior on touch devices.
+
+      density: >
+        Controls hover card density on desktop.
+
+      density_mobile: >
+        Controls hover card density on mobile.
+
+      preview_layout: >
+        Controls the visual layout of rich previews.
+
+        hover_card: floating card layout for rich previews.
+        onebox: flatter inline visual treatment for rich preview cards,
+        styled to feel closer to core Discourse oneboxes. This does not
+        turn links into core oneboxes by itself.
+
+      card_width: >
+        Desktop hover card width. Accepts valid CSS width values such as
+        32rem, 25ch, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem).
+
+      mobile_width_percent: >
+        Mobile hover card width as a percentage of the viewport width.
 
-  settings:
-    enabled: "Enabled"
-    enabled_description: "Enable the Rich Previews theme component."
+      show_thumbnail: >
+        Show the topic thumbnail image on desktop.
 
-    delay_show: "Hover Delay"
-    delay_show_description: "Delay in milliseconds before the hover card appears."
+      thumbnail_placement: >
+        Thumbnail placement on desktop.
 
-    mobile_enabled: "Enable on Mobile"
-    mobile_enabled_description: "Enable tap-to-preview behavior on touch devices."
+      thumbnail_size_mode: >
+        auto_fit_height mode matches image height to card height.
+        wrap_excerpt mode floats the thumbnail so the excerpt text can
+        wrap around it.
+        manual mode uses the configured width percentage.
 
-    density: "Density on Desktop"
-    density_description: "Controls hover card density on desktop."
+      thumbnail_auto_fit_max_width: >
+        Applies only when Thumbnail size mode above is set to either
+        auto_fit_height or wrap_excerpt. Accepts valid CSS width values
+        such as 8rem, 160px, or 12vw.
 
-    density_mobile: "Density on Mobile"
-    density_mobile_description: "Controls hover card density on mobile."
+      thumbnail_size_percent: >
+        Applies only when Thumbnail size mode above is set to manual.
+        Sets the thumbnail width as a percentage of the hover card
+        width.
 
-    card_width: "Card Width on Desktop"
-    card_width_description: "Desktop hover card width. Accepts valid CSS width values such as 32rem, 25ch, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem)."
+      show_thumbnail_mobile: >
+        Show the topic thumbnail image on mobile.
 
-    mobile_width_percent: "Card Width on Mobile"
-    mobile_width_percent_description: "Mobile hover card width as a percentage of the viewport width."
+      thumbnail_placement_mobile: >
+        Thumbnail placement on mobile.
 
-    show_thumbnail: "Show Thumbnail on Desktop"
-    show_thumbnail_description: "Show the topic thumbnail image on desktop."
+      thumbnail_size_mode_mobile: >
+        auto_fit_height matches image height to card height.
+        manual uses the configured width percentage.
 
-    thumbnail_placement: "Thumbnail Placement on Desktop"
-    thumbnail_placement_description: "Thumbnail placement on desktop."
+      thumbnail_auto_fit_max_width_mobile: >
+        Used only in mobile auto_fit_height mode. Accepts valid CSS
+        width values such as 7rem, 140px, or 30vw.
 
-    thumbnail_size_mode: "Thumbnail Sizing Mode on Desktop"
-    thumbnail_size_mode_description: "Auto-fit-height matches image height to card height. Manual mode uses the configured width percentage."
+      thumbnail_size_percent_mobile: >
+        Used only in mobile manual mode. Sets the thumbnail width as a
+        percentage of the hover card width.
 
-    thumbnail_auto_fit_max_width: "Thumbnail Auto-Fit Max Width on Desktop"
-    thumbnail_auto_fit_max_width_description: "Used only in auto-fit-height mode. Accepts valid CSS width values such as 8rem, 160px, or 12vw."
+      thumbnail_height_top_bottom: >
+        Used when the thumbnail is placed on top or bottom on desktop.
+        Accepts valid CSS height values such as auto, 10rem, 180px,
+        20vh, or clamp(8rem, 20vw, 14rem).
 
-    thumbnail_size_percent: "Thumbnail Size as Percent on Desktop"
-    thumbnail_size_percent_description: "Used only in manual mode. Sets the thumbnail width as a percentage of the hover card width."
+      thumbnail_height_top_bottom_mobile: >
+        Used when the thumbnail is placed on top or bottom on mobile.
+        Accepts valid CSS height values such as auto, 9rem, 160px,
+        25vh, or clamp(7rem, 24vw, 12rem).
 
-    show_thumbnail_mobile: "Show Thumbnail on Mobile"
-    show_thumbnail_mobile_description: "Show the topic thumbnail image on mobile."
+      show_title: >
+        Show the topic title on desktop.
 
-    thumbnail_placement_mobile: "Thumbnail Placement on Mobile"
-    thumbnail_placement_mobile_description: "Thumbnail placement on mobile."
+      show_title_mobile: >
+        Show the topic title on mobile.
 
-    thumbnail_size_mode_mobile: "Thumbnail Sizing Mode on Mobile"
-    thumbnail_size_mode_mobile_description: "On mobile, auto-fit-height matches image height to card height. Manual mode uses the configured width percentage."
+      show_excerpt: >
+        Show a text excerpt on desktop.
 
-    thumbnail_auto_fit_max_width_mobile: "Thumbnail Auto-Fit Max Width on Mobile"
-    thumbnail_auto_fit_max_width_mobile_description: "Used only in mobile auto-fit-height mode. Accepts valid CSS width values such as 7rem, 140px, or 30vw."
+      excerpt_length: >
+        Number of excerpt lines to show on desktop.
 
-    thumbnail_size_percent_mobile: "Thumbnail Size as Percent on Mobile"
-    thumbnail_size_percent_mobile_description: "Used only in mobile manual mode. Sets the thumbnail width as a percentage of the hover card width."
+      show_excerpt_mobile: >
+        Show a text excerpt on mobile.
 
-    thumbnail_height_top_bottom: "Top or Bottom Thumbnail Height on Desktop"
-    thumbnail_height_top_bottom_description: "Used when the thumbnail is placed on top or bottom on desktop. Accepts valid CSS height values such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem)."
+      excerpt_length_mobile: >
+        Number of excerpt lines to show on mobile.
 
-    thumbnail_height_top_bottom_mobile: "Top or Bottom Thumbnail Height on Mobile"
-    thumbnail_height_top_bottom_mobile_description: "Used when the thumbnail is placed on top or bottom on mobile. Accepts valid CSS height values such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem)."
+      show_category: >
+        Show the topic category badge on desktop when category data is
+        available.
 
-    show_title: "Show Title on Desktop"
-    show_title_description: "Show the topic title on desktop."
+      show_category_mobile: >
+        Show the topic category badge on mobile when category data is
+        available.
 
-    show_title_mobile: "Show Title on Mobile"
-    show_title_mobile_description: "Show the topic title on mobile."
+      show_tags: >
+        Show topic tags on desktop when tag data is available.
 
-    show_excerpt: "Show Excerpt on Desktop"
-    show_excerpt_description: "Show a text excerpt on desktop."
+      show_tags_mobile: >
+        Show topic tags on mobile when tag data is available.
 
-    excerpt_length: "Excerpt Lines on Desktop"
-    excerpt_length_description: "Number of excerpt lines to show on desktop."
+      show_op: >
+        Show the original poster username on desktop.
 
-    show_excerpt_mobile: "Show Excerpt on Mobile"
-    show_excerpt_mobile_description: "Show a text excerpt on mobile."
+      show_op_mobile: >
+        Show the original poster username on mobile.
 
-    excerpt_length_mobile: "Excerpt Lines on Mobile"
-    excerpt_length_mobile_description: "Number of excerpt lines to show on mobile."
+      show_op_avatar: >
+        Show the original poster avatar on desktop.
 
-    show_category: "Show Category on Desktop"
-    show_category_description: "Show the topic category badge on desktop when category data is available."
+      show_op_avatar_mobile: >
+        Show the original poster avatar on mobile.
 
-    show_category_mobile: "Show Category on Mobile"
-    show_category_mobile_description: "Show the topic category badge on mobile when category data is available."
+      show_publish_date: >
+        Show the topic creation date on desktop.
 
-    show_tags: "Show Tags on Desktop"
-    show_tags_description: "Show topic tags on desktop when tag data is available."
+      show_publish_date_mobile: >
+        Show the topic creation date on mobile.
 
-    show_tags_mobile: "Show Tags on Mobile"
-    show_tags_mobile_description: "Show topic tags on mobile when tag data is available."
+      show_views: >
+        Show the topic view count on desktop.
 
-    show_op: "Show Original Poster on Desktop"
-    show_op_description: "Show the original poster avatar and username on desktop."
+      show_views_mobile: >
+        Show the topic view count on mobile.
 
-    show_op_mobile: "Show Original Poster on Mobile"
-    show_op_mobile_description: "Show the original poster avatar and username on mobile."
+      show_reply_count: >
+        Show the topic reply count on desktop.
 
-    show_publish_date: "Show Publish Date on Desktop"
-    show_publish_date_description: "Show the topic creation date on desktop."
+      show_reply_count_mobile: >
+        Show the topic reply count on mobile.
 
-    show_publish_date_mobile: "Show Publish Date on Mobile"
-    show_publish_date_mobile_description: "Show the topic creation date on mobile."
+      show_likes: >
+        Show the topic like count on desktop.
 
-    show_views: "Show Number of Views on Desktop"
-    show_views_description: "Show the topic view count on desktop."
+      show_likes_mobile: >
+        Show the topic like count on mobile.
 
-    show_views_mobile: "Show Number of Views on Mobile"
-    show_views_mobile_description: "Show the topic view count on mobile."
+      show_activity: >
+        Show the last activity date on desktop.
 
-    show_reply_count: "Show Reply Count on Desktop"
-    show_reply_count_description: "Show the topic reply count on desktop."
+      show_activity_mobile: >
+        Show the last activity date on mobile.
 
-    show_reply_count_mobile: "Show Reply Count on Mobile"
-    show_reply_count_mobile_description: "Show the topic reply count on mobile."
+      enable_on_topic_list: >
+        Enable hover cards in standard topic list views.
 
-    show_likes: "Show Number of Likes on Desktop"
-    show_likes_description: "Show the topic like count on desktop."
+      enable_on_latest: >
+        Enable hover cards in latest-topic list contexts.
 
-    show_likes_mobile: "Show Number of Likes on Mobile"
-    show_likes_mobile_description: "Show the topic like count on mobile."
+      enable_on_categories: >
+        Enable hover cards in category list and category homepage
+        topic-list contexts.
 
-    show_activity: "Show Last Activity on Desktop"
-    show_activity_description: "Show the last activity date on desktop."
+      enable_on_tags: >
+        Enable hover cards in tag-related views.
 
-    show_activity_mobile: "Show Last Activity on Mobile"
-    show_activity_mobile_description: "Show the last activity date on mobile."
+      enable_on_search: >
+        Enable hover cards in search result views.
 
-    enable_on_topic_list: "Enable on Topic Lists"
-    enable_on_topic_list_description: "Enable hover cards in standard topic list views."
+      enable_on_topic_page: >
+        Enable hover cards for internal topic links on topic pages,
+        including posts and suggested topics.
 
-    enable_on_latest: "Enable on Latest Lists"
-    enable_on_latest_description: "Enable hover cards in latest-topic list contexts."
+      enable_on_user_profile: >
+        Enable hover cards in user profile content areas.
 
-    enable_on_categories: "Enable on Categories"
-    enable_on_categories_description: "Enable hover cards in category list and category homepage topic-list contexts."
+      enable_on_other: >
+        Enable hover cards in other cooked content areas not covered by
+        the main view settings.
 
-    enable_on_tags: "Enable on Tags"
-    enable_on_tags_description: "Enable hover cards in tag-related views."
+      enable_on_kanban_boards: >
+        Enable hover cards in kanban board views.
 
-    enable_on_search: "Enable on Search"
-    enable_on_search_description: "Enable hover cards in search result views."
+      included_tags: >
+        HTML tag names whose links should be explicitly allowed to
+        generate hover cards when matched. If not empty, links must
+        match one of these tags or included classes.
 
-    enable_on_topic_page: "Enable on Topic Pages"
-    enable_on_topic_page_description: "Enable hover cards for internal topic links on topic pages, including posts and suggested topics."
+      included_classes: >
+        CSS classes whose links or ancestors should be explicitly
+        allowed to generate hover cards when matched. If not empty,
+        links must match one of these classes or included tags.
 
-    enable_on_user_profile: "Enable on User Profiles"
-    enable_on_user_profile_description: "Enable hover cards in user profile content areas."
+      excluded_tags: >
+        HTML tag names whose links should be excluded from generating
+        hover cards.
 
-    enable_on_other: "Enable on Other Cooked Content"
-    enable_on_other_description: "Enable hover cards in other cooked content areas not covered by the main view settings."
+      excluded_classes: >
+        CSS classes whose links or ancestors should be excluded from
+        generating hover cards.
 
-    enable_on_kanban_boards: "Enable on Kanban Boards"
-    enable_on_kanban_boards_description: "Enable hover cards in kanban board views."
+      excerpt_excluded_selectors: >
+        Optional exclude list. Hover cards display a simplified version
+        of the topic body with some formatting and interactive elements
+        removed. Prevent unwanted elements from appearing in excerpts by
+        adding their selectors here.
 
-    included_tags: "Included HTML Tags"
-    included_tags_description: "HTML tag names that explicitly allow hover cards when matched. If not empty, links must match one of these tags or included classes."
+      wikipedia_previews_base_url: >
+        Default Wikipedia host used when needed, such as
+        en.wikipedia.org.
 
-    included_classes: "Included CSS Classes"
-    included_classes_description: "CSS classes that explicitly allow hover cards when matched. If not empty, links must match one of these classes or included tags."
+      wikipedia_previews_show_image: >
+        Show the article thumbnail image in Wikipedia previews when
+        available.
 
-    excluded_tags: "Excluded HTML Tags"
-    excluded_tags_description: "HTML tag names whose links should be excluded from hover cards."
+      wikipedia_previews_use_extract_html: >
+        Use the HTML extract returned by Wikipedia for preview text when
+        available.
 
-    excluded_classes: "Excluded CSS Classes"
-    excluded_classes_description: "CSS classes whose links or ancestors should be excluded from hover cards."
+      wikipedia_density: >
+        Controls Wikipedia preview density on desktop.
 
-    wikipedia_previews_enabled: "Enable Wikipedia Previews"
-    wikipedia_previews_enabled_description: "Enable hover cards for Wikipedia article links."
+      wikipedia_density_mobile: >
+        Controls Wikipedia preview density on mobile.
 
-    wikipedia_previews_base_url: "Wikipedia Base Host"
-    wikipedia_previews_base_url_description: "Default Wikipedia host used when needed, such as en.wikipedia.org."
+      user_preference_field_name: >
+        Custom user field key used to disable hover cards per user.
+        Supports direct keys, numeric IDs, and user_field_X format.
 
-    wikipedia_previews_show_image: "Show Image in Wikipedia Previews"
-    wikipedia_previews_show_image_description: "Show the article thumbnail image in Wikipedia previews when available."
+      resolve_user_field_id_for_admins: >
+        When enabled, staff can configure the preference field by name
+        or user_field_X and the component will resolve the numeric
+        user-field ID from the admin endpoint.
 
-    wikipedia_previews_use_extract_html: "Use HTML Extract for Wikipedia Previews"
-    wikipedia_previews_use_extract_html_description: "Use the HTML extract returned by Wikipedia for preview text when available."
-    
-    wikipedia_density: "Wikipedia Density on Desktop"
-    wikipedia_density_description: "Controls Wikipedia preview density on desktop."
+      prefetch_enabled: >
+        Prefetch preview data for eligible links as they scroll into
+        view.
 
-    wikipedia_density_mobile: "Wikipedia Density on Mobile"
-    wikipedia_density_mobile_description: "Controls Wikipedia preview density on mobile."
+        This eliminates the loading delay on first hover for both local
+        and remote topics. Disable this if you are concerned about
+        extra network requests on page load.
 
-    user_preference_field_name: "User Preference Field Name"
-    user_preference_field_name_description: "Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X format."
+      prefetch_viewport_margin: >
+        How far outside the viewport to begin prefetching preview data.
+        200px means links within 200px of the visible area are
+        prefetched. Accepts any valid CSS margin value such as 200px or
+        10%.
 
-    resolve_user_field_id_for_admins: "Resolve User Field ID for Admins"
-    resolve_user_field_id_for_admins_description: "When enabled, staff can configure the preference field by name or user_field_X and the component will resolve the numeric user-field ID from the admin endpoint."
+      prefetch_max_concurrent: >
+        Maximum number of concurrent rich preview prefetch requests.
 
-    prefetch_enabled: "Prefetch Enabled"
-    prefetch_enabled_description: "Prefetch preview data for eligible links as they scroll into view. This eliminates the loading delay on first hover for both local and remote topics. Disable if you are concerned about extra network requests on page load."
+      prefetch_max_per_page: >
+        Maximum number of links to prefetch per page load.
 
-    prefetch_viewport_margin: "Prefetch Viewport Margin"
-    prefetch_viewport_margin_description: "How far outside the viewport to begin prefetching preview data. 200px means links within 200px of the visible area are prefetched. Accepts any valid CSS margin value such as 200px or 10%."
+      topic_cache_max: >
+        Maximum number of topic JSON responses kept in the in-memory LRU
+        cache during the current page session.
 
-    prefetch_max_concurrent: "Prefetch Max Concurrent"
-    prefetch_max_concurrent_description: "Maximum number of concurrent rich preview prefetch requests."
-
-    prefetch_max_per_page: "Prefetch Max Per Page"
-    prefetch_max_per_page_description: "Maximum number of links to prefetch per page load."
-
-    topic_cache_max: "Topic Cache Max"
-    topic_cache_max_description: "Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session."
-
-    debug_mode: "Debug Mode"
-    debug_mode_description: "Log hover-card detection and user-field resolution details to the browser console for debugging."
+      debug_mode: >
+        Log hover-card detection and user-field resolution details to
+        the browser console for debugging.
