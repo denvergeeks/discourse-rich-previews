@@ -1,7 +1,7 @@
 enabled:
   default: true
   type: bool
-  description: Enable the Rich Previews theme component.
+  description: SETTINGS Enable the Rich Previews theme component.
 
 composer_button_group:
   default: "insertions"

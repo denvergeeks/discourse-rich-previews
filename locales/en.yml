@@ -4,7 +4,7 @@ en:
 
     settings:
       enabled: >
-        Enable the Rich Previews theme component.
+        EN-YML Enable the Rich Previews theme component.
 
       composer_button_group: >
         Controls which group in the composer toolbar the Rich Previews
