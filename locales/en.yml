@@ -4,11 +4,11 @@ en:
 
     settings:
       enabled: >
-        EN-YML Enable the Rich Previews theme component.
+        Enable the Rich Previews theme component.
 
       composer_button_group: >
-        EN-YML Controls which group in the composer toolbar the Rich Previews
-        button appears in. | - fontStyles places it with bold and italic.
+        Controls which group in the composer toolbar the Rich Previews
+        button appears in. fontStyles places it with bold and italic.
         insertions places it with the link and image buttons. extras
         places it at the end of the toolbar.
 
@@ -371,9 +371,9 @@ en:
 
       excerpt_excluded_selectors: >
         Optional exclude list. Hover cards display a simplified version
-        of the topic body with some formatting and interactive elements
-        removed. Prevent unwanted elements from appearing in excerpts by
-        adding their selectors here.
+        of the topic's body content with some formatting and interactive
+        elements removed. Prevent any unwanted elements appearing in
+        your excerpts by adding their selectors here.
 
       wikipedia_previews_base_url: >
         Default Wikipedia host used when needed, such as
@@ -404,10 +404,8 @@ en:
 
       prefetch_enabled: >
         Prefetch preview data for eligible links as they scroll into
-        view.
-
-        This eliminates the loading delay on first hover for both local
-        and remote topics. Disable this if you are concerned about
+        view. This eliminates the loading delay on first hover for both
+        local and remote topics. Disable if you are concerned about
         extra network requests on page load.
 
       prefetch_viewport_margin: >

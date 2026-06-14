@@ -15,8 +15,6 @@ svg_icons:
   type: list
   list_type: compact
   default: "discourse-icon|fab-discourse|tooltip-icon|up-right-from-square|link|discourse-expand|message|far-comment|comment|discobot|user-secret|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
-  description: >
-    Additional SVG icons used by configured preview providers.
 
 preview_providers:
   type: objects
@@ -79,22 +77,14 @@ preview_providers:
           - external
           - wikipedia
           - onebox
-        description: >
-          Internal provider key. topic, remote_topic, external, and wikipedia
-          are hover-preview provider types. onebox is used for cooked onebox
-          decoration styling and related UI metadata.
 
       enabled:
         type: boolean
         default: true
-        description: Whether this provider is enabled.
 
       label:
         type: string
         required: true
-        description: >
-          Admin label for this provider or decorated content type. For onebox,
-          this label is used in cooked onebox decoration UI such as badges.
 
       glyph_mode:
         type: enum
@@ -103,43 +93,26 @@ preview_providers:
           - none
           - icon
           - emoji
-        description: Choose whether this provider uses an icon, emoji, or no glyph.
 
       icon:
         type: string
-        description: Discourse icon name for this provider. Add the icon name to svg_icons if needed.
 
       emoji:
         type: string
-        description: Emoji character for this provider.
 
       color:
         type: string
-        description: >
-          CSS color used for link indicators and provider-tinted UI. For onebox,
-          this color is applied to decorated cooked onebox styling.
 
       remote_hosts:
         type: string
-        description: >
-          Pipe-separated allowed hostnames for this provider when applicable.
-          This is mainly relevant to remote_topic and is typically not used for
-          onebox decoration.
 
       require_https:
         type: boolean
         default: true
-        description: >
-          Require HTTPS when this provider fetches remote content. This mainly
-          applies to remote fetch-based preview types and is not generally used
-          by cooked onebox decoration.
 
       timeout_ms:
         type: integer
         default: 3000
-        description: >
-          Request timeout for this provider in milliseconds when network fetches
-          are used. This setting does not usually affect cooked onebox decoration.
 
 # ─── Per-type preview mode ───────────────────────────────────────────────────
 
@@ -152,12 +125,6 @@ previews_topic_mode:
     - auto_and_composer
     - disabled
   client: true
-  description: >
-    Controls how hover card previews work for internal topic links.
-    auto_only: cards appear automatically on eligible links.
-    composer_only: cards appear only on links which users have appended with the {preview} token.
-    auto_and_composer: both auto detection and the {preview} token work.
-    disabled: no local topic previews at all.
 
 previews_remote_topic_mode:
   default: "auto_and_composer"
@@ -168,12 +135,6 @@ previews_remote_topic_mode:
     - auto_and_composer
     - disabled
   client: true
-  description: >
-    Controls how hover card previews work for remote Discourse topic links.
-    auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links which users have appended with the {preview} token.
-    auto_and_composer: both auto detection and the {preview} token work.
-    disabled: no remote Discourse topic previews at all.
 
 previews_external_mode:
   default: "auto_and_composer"
@@ -184,12 +145,6 @@ previews_external_mode:
     - auto_and_composer
     - disabled
   client: true
-  description: >
-    Controls how hover card previews work for generic external links.
-    auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links which users have appended with the {preview} token.
-    auto_and_composer: both auto detection and the {preview} token work.
-    disabled: no generic external previews at all.
 
 previews_wikipedia_mode:
   default: "auto_and_composer"
@@ -200,12 +155,6 @@ previews_wikipedia_mode:
     - auto_and_composer
     - disabled
   client: true
-  description: >
-    Controls how hover card previews work for Wikipedia links.
-    auto_only: cards appear automatically on eligible links.
-    composer_only: cards only appear on links which users have appended with the {preview} token.
-    auto_and_composer: both auto detection and the {preview} token work.
-    disabled: no Wikipedia previews at all.
 
 previews_onebox_mode:
   default: "disabled"
@@ -216,24 +165,13 @@ previews_onebox_mode:
     - auto_and_composer
     - disabled
   client: true
-  description: >
-    Controls decoration of cooked Discourse oneboxes that already exist in
-    rendered content.
-    auto_only: decorate cooked oneboxes automatically when they are present.
-    composer_only: reserved for composer-specific handling; cooked onebox
-    auto-decoration does not run in this mode.
-    auto_and_composer: currently behaves like auto_only for cooked onebox
-    decoration, while remaining compatible with future composer-specific
-    onebox handling.
-    disabled: do not decorate cooked oneboxes.
 
 # ─── Visual indicators (apply to all previews, auto and manual) ──────────────
 
 previews_show_icon:
   default: true
+  type: bool
   client: true
-  description: >
-    Show a small provider glyph next to preview links indicating their type.
 
 previews_icon_position:
   default: "after"
@@ -242,21 +180,16 @@ previews_icon_position:
     - before
     - after
   client: true
-  description: >
-    Position of the provider glyph relative to the link text.
 
 previews_show_underline:
   default: true
+  type: bool
   client: true
-  description: >
-    Show a colored dotted underline on preview links. The underline color is determined by the provider's configured color.
 
 previews_underline_always:
   default: true
+  type: bool
   client: true
-  description: >
-    When enabled, the dotted underline is always visible.
-    When disabled, it only appears on hover.
 
 # ─── General ─────────────────────────────────────────────────────────────────
 
@@ -265,12 +198,10 @@ delay_show:
   type: integer
   min: 0
   max: 2000
-  description: Delay in milliseconds before the hover card appears.
 
 mobile_enabled:
   default: false
   type: bool
-  description: Enable tap-to-preview behavior on touch devices.
 
 density:
   default: default
@@ -280,7 +211,6 @@ density:
     - cozy
     - compact
     - dense
-  description: Controls hover card density on desktop.
 
 density_mobile:
   default: default
@@ -290,7 +220,6 @@ density_mobile:
     - cozy
     - compact
     - dense
-  description: Controls hover card density on mobile.
 
 preview_layout:
   default: "hover_card"
@@ -299,31 +228,22 @@ preview_layout:
     - hover_card
     - onebox
   client: true
-  description: >
-    Controls the visual layout of rich previews.
-    hover_card: floating card layout for rich previews.
-    onebox: flatter inline visual treatment for rich preview cards, styled to
-    feel closer to core Discourse oneboxes. This does not turn links into core
-    oneboxes by itself.
 
 card_width:
   default: 32rem
   type: string
-  description: Desktop hover card width. Accepts valid CSS width values such as 32rem, 25ch, 420px, 50%, 40vw, or clamp(20rem, 40vw, 36rem).
 
 mobile_width_percent:
   default: 100
   type: integer
   min: 70
   max: 100
-  description: Mobile hover card width as a percentage of the viewport width.
 
 # ─── Thumbnail ───────────────────────────────────────────────────────────────
 
 show_thumbnail:
   default: true
   type: bool
-  description: Show the topic thumbnail image on desktop.
 
 thumbnail_placement:
   default: left
@@ -333,7 +253,6 @@ thumbnail_placement:
     - right
     - top
     - bottom
-  description: Thumbnail placement on desktop.
 
 thumbnail_size_mode:
   default: auto_fit_height
@@ -342,30 +261,20 @@ thumbnail_size_mode:
     - auto_fit_height
     - wrap_excerpt
     - manual
-  description: >
-    auto_fit_height mode matches image height to card height.
-    wrap_excerpt mode floats the thumbnail so the excerpt text can wrap around it.
-    manual mode uses the configured width percentage.
 
 thumbnail_auto_fit_max_width:
   default: 10rem
   type: string
-  description: >
-    Applies only when Thumbnail size mode above is set to either auto_fit_height or wrap_excerpt.
-    Accepts valid CSS width values such as 8rem, 160px, or 12vw.
 
 thumbnail_size_percent:
   default: 15
   type: integer
   min: 5
   max: 50
-  description: >
-    Applies only when Thumbnail size mode above is set to manual. Sets the thumbnail width as a percentage of the hover card width.
 
 show_thumbnail_mobile:
   default: true
   type: bool
-  description: Show the topic thumbnail image on mobile.
 
 thumbnail_placement_mobile:
   default: top
@@ -375,7 +284,6 @@ thumbnail_placement_mobile:
     - bottom
     - left
     - right
-  description: Thumbnail placement on mobile.
 
 thumbnail_size_mode_mobile:
   default: manual
@@ -383,212 +291,164 @@ thumbnail_size_mode_mobile:
   choices:
     - auto_fit_height
     - manual
-  description: >
-    auto_fit_height matches image height to card height.
-    manual uses the configured width percentage.
 
 thumbnail_auto_fit_max_width_mobile:
   default: 8rem
   type: string
-  description: >
-    Used only in mobile auto_fit_height mode.
-    Accepts valid CSS width values such as 7rem, 140px, or 30vw.
 
 thumbnail_size_percent_mobile:
   default: 33
   type: integer
   min: 15
   max: 60
-  description: >
-    Used only in mobile manual mode.
-    Sets the thumbnail width as a percentage of the hover card width.
 
 thumbnail_height_top_bottom:
   default: auto
   type: string
-  description: >
-    Used when the thumbnail is placed on top or bottom on desktop.
-    Accepts valid CSS height values such as auto, 10rem, 180px, 20vh, or clamp(8rem, 20vw, 14rem).
 
 thumbnail_height_top_bottom_mobile:
   default: auto
   type: string
-  description: >
-    Used when the thumbnail is placed on top or bottom on mobile.
-    Accepts valid CSS height values such as auto, 9rem, 160px, 25vh, or clamp(7rem, 24vw, 12rem).
 
 # ─── Content ─────────────────────────────────────────────────────────────────
 
 show_title:
   default: true
   type: bool
-  description: Show the topic title on desktop.
 
 show_title_mobile:
   default: true
   type: bool
-  description: Show the topic title on mobile.
 
 show_excerpt:
   default: true
   type: bool
-  description: Show a text excerpt on desktop.
 
 excerpt_length:
   default: 3
   type: integer
   min: 1
   max: 12
-  description: Number of excerpt lines to show on desktop.
 
 show_excerpt_mobile:
   default: true
   type: bool
-  description: Show a text excerpt on mobile.
 
 excerpt_length_mobile:
   default: 3
   type: integer
   min: 1
   max: 12
-  description: Number of excerpt lines to show on mobile.
 
 show_category:
   default: true
   type: bool
-  description: Show the topic category badge on desktop when category data is available.
 
 show_category_mobile:
   default: true
   type: bool
-  description: Show the topic category badge on mobile when category data is available.
 
 show_tags:
   default: true
   type: bool
-  description: Show topic tags on desktop when tag data is available.
 
 show_tags_mobile:
   default: true
   type: bool
-  description: Show topic tags on mobile when tag data is available.
 
 show_op:
   default: true
   type: bool
-  description: Show the original poster username on desktop.
 
 show_op_mobile:
   default: true
   type: bool
-  description: Show the original poster username on mobile.
 
 show_op_avatar:
   default: true
   type: bool
-  description: Show the original poster avatar on desktop.
 
 show_op_avatar_mobile:
   default: true
   type: bool
-  description: Show the original poster avatar on mobile.
 
 show_publish_date:
   default: true
   type: bool
-  description: Show the topic creation date on desktop.
 
 show_publish_date_mobile:
   default: true
   type: bool
-  description: Show the topic creation date on mobile.
 
 show_views:
   default: true
   type: bool
-  description: Show the topic view count on desktop.
 
 show_views_mobile:
   default: true
   type: bool
-  description: Show the topic view count on mobile.
 
 show_reply_count:
   default: true
   type: bool
-  description: Show the topic reply count on desktop.
 
 show_reply_count_mobile:
   default: true
   type: bool
-  description: Show the topic reply count on mobile.
 
 show_likes:
   default: true
   type: bool
-  description: Show the topic like count on desktop.
 
 show_likes_mobile:
   default: true
   type: bool
-  description: Show the topic like count on mobile.
 
 show_activity:
   default: true
   type: bool
-  description: Show the last activity date on desktop.
 
 show_activity_mobile:
   default: true
   type: bool
-  description: Show the last activity date on mobile.
 
 # ─── Where to enable ─────────────────────────────────────────────────────────
 
 enable_on_topic_list:
   default: true
   type: bool
-  description: Enable hover cards in standard topic list views.
 
 enable_on_latest:
   default: true
   type: bool
-  description: Enable hover cards in latest-topic list contexts.
 
 enable_on_categories:
   default: true
   type: bool
-  description: Enable hover cards in category list and category homepage topic-list contexts.
 
 enable_on_tags:
   default: true
   type: bool
-  description: Enable hover cards in tag-related views.
 
 enable_on_search:
   default: true
   type: bool
-  description: Enable hover cards in search result views.
 
 enable_on_topic_page:
   default: true
   type: bool
-  description: Enable hover cards for internal topic links on topic pages, including posts and suggested topics.
 
 enable_on_user_profile:
   default: true
   type: bool
-  description: Enable hover cards in user profile content areas.
 
 enable_on_other:
   default: false
   type: bool
-  description: Enable hover cards in other cooked content areas not covered by the main view settings.
 
 enable_on_kanban_boards:
-  type: bool
   default: false
-  description: Enable hover cards in kanban board views.
+  type: bool
 
 # ─── Filtering ───────────────────────────────────────────────────────────────
 
@@ -596,47 +456,39 @@ included_tags:
   type: list
   list_type: compact
   default: ""
-  description: HTML tag names whose links should be explicitly allowed to generate hover cards when matched. If not empty, links must match one of these tags or included classes.
 
 included_classes:
   type: list
   list_type: compact
   default: ""
-  description: CSS classes whose links or ancestors should be explicitly allowed to generate hover cards when matched. If not empty, links must match one of these classes or included tags.
 
 excluded_tags:
   type: list
   list_type: compact
   default: code|pre
-  description: HTML tag names whose links should be excluded from generating hover cards.
 
 excluded_classes:
   type: list
   list_type: compact
   default: onebox
-  description: CSS classes whose links or ancestors should be excluded from generating hover cards.
 
 excerpt_excluded_selectors:
   default: iframe|pre|code|.onebox|.footnote|.inline-footnote|[data-tip]|.lazyYT|.youtube-onebox
   type: list
-  description: Optional exclude-list. Hover cards display a simplified version of the topic's body content with some formatting and interactive elements removed. Prevent any unwanted elements appearing in your excerpts by adding their selectors here.
 
 # ─── Wikipedia ───────────────────────────────────────────────────────────────
 
 wikipedia_previews_base_url:
   default: en.wikipedia.org
   type: string
-  description: Default Wikipedia host used when needed, such as en.wikipedia.org.
 
 wikipedia_previews_show_image:
   default: true
   type: bool
-  description: Show the article thumbnail image in Wikipedia previews when available.
 
 wikipedia_previews_use_extract_html:
   default: true
   type: bool
-  description: Use the HTML extract returned by Wikipedia for preview text when available.
 
 wikipedia_density:
   default: cozy
@@ -646,7 +498,6 @@ wikipedia_density:
     - cozy
     - compact
     - dense
-  description: Controls Wikipedia preview density on desktop.
 
 wikipedia_density_mobile:
   default: compact
@@ -656,19 +507,16 @@ wikipedia_density_mobile:
     - cozy
     - compact
     - dense
-  description: Controls Wikipedia preview density on mobile.
 
 # ─── User preferences ────────────────────────────────────────────────────────
 
 user_preference_field_name:
   default: disable_topic_hover_cards
   type: string
-  description: Custom user field key used to disable hover cards per user. Supports direct keys, numeric IDs, and user_field_X format.
 
 resolve_user_field_id_for_admins:
   default: true
   type: bool
-  description: When enabled, staff can configure the preference field by name or user_field_X and the component will resolve the numeric user-field ID from the admin endpoint.
 
 # ─── Performance ─────────────────────────────────────────────────────────────
 
@@ -676,20 +524,11 @@ prefetch_enabled:
   default: true
   type: bool
   client: true
-  description: >
-    Prefetch preview data for eligible links as they scroll into view.
-    This eliminates the loading delay on first hover for both local
-    and remote topics. Disable if you are concerned about extra
-    network requests on page load.
 
 prefetch_viewport_margin:
   default: "200px"
   type: string
   client: true
-  description: >
-    How far outside the viewport to begin prefetching preview data.
-    200px means links within 200px of the visible area are prefetched.
-    Accepts any valid CSS margin value such as 200px or 10%.
 
 prefetch_max_concurrent:
   default: 3
@@ -697,7 +536,6 @@ prefetch_max_concurrent:
   min: 1
   max: 10
   type: integer
-  description: Maximum number of concurrent rich preview prefetch requests.
 
 prefetch_max_per_page:
   default: 30
@@ -705,18 +543,15 @@ prefetch_max_per_page:
   min: 5
   max: 200
   type: integer
-  description: Maximum number of links to prefetch per page load.
 
 topic_cache_max:
   default: 100
   type: integer
   min: 10
   max: 500
-  description: Maximum number of topic JSON responses kept in the in-memory LRU cache during the current page session.
 
 # ─── Debug ───────────────────────────────────────────────────────────────────
 
 debug_mode:
   default: false
   type: bool
-  description: Log hover-card detection and user-field resolution details to the browser console for debugging.
