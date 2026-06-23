@@ -14,7 +14,7 @@ composer_button_group:
 svg_icons:
   type: list
   list_type: compact
-  default: "discourse-icon|fab-discourse|tooltip-icon|up-right-from-square|link|discourse-expand|message|far-comment|comment|discobot|user-secret|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
+  default: "discourse-icon|fab-discourse|tooltip-icon|up-right-from-square|link|discourse-expand|message|far-comment|comment|archive-org-icon|discobot|user-secret|eye|fab-wikipedia-w|globe|paper-plane|circle-question|far-circle-question|circle-info|info|triangle-exclamation|share|thumbtack|star|sun"
 
 preview_providers:
   type: objects
