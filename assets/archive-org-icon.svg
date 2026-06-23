@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="599.998px" height="583.111px" viewBox="0 0 599.998 583.111" enable-background="new 0 0 599.998 583.111"
-	 xml:space="preserve">
-    <symbol id="archive-org-icon">
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;>
+    <symbol id="archive-org-icon" viewBox="0 0 599.998 583.111">
 <g id="A">
 	<g>
 		<path fill="currentColor" d="M146.564,60.034l-6.583-18.256h-22.381l-6.583,18.256h-5.441L123.042,12.2c0.351-0.878,1.492-4.389,1.492-5.178
