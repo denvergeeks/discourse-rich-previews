@@ -9,7 +9,8 @@
   "maximum_discourse_version": null,
   "assets": {
     "icons-sprite": "/assets/tooltip-icon.svg",
-    "icons-sprite": "/assets/discourse-icon.svg"
+    "icons-sprite": "/assets/discourse-icon.svg",
+    "icons-sprite": "/assets/archive-org-icon.svg"
   },
   "modifiers": {}
 }
