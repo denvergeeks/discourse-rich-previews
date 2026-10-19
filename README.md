@@ -4,18 +4,11 @@ Internal Topics and Wikipedia Links work out of the box.
 
 https://github.com/user-attachments/assets/f7d71ff5-bacf-42cc-b69d-e0d4110655ca
 
+<img width="912" height="913" alt="discourse-rich-previews-theme-component-provider-settings-remote_hosts" src="https://github.com/user-attachments/assets/545b1610-baf2-4c33-98c5-8f990df9e59c" />
+
 ## Settings
 
 <img width="967" height="8802" alt="discourse-rich-previews-main-settings" src="https://github.com/user-attachments/assets/3f5c33a1-404c-4211-927d-7d439eae9958" />
-
-The Remote Topics feature (getting previews of Topics from other Discourse sites), requires adding this plugin to your app.yml
-https://github.com/denvergeeks/discourse-proxy-safe.git
-
-### Then Add the Domains for the Remote Discourse Forums (which you must also add in the remote_hosts field in the Provider Settings of this Theme Component.)
-
-<img width="656" height="807" alt="discourse-proxy-safe-plugin-settings" src="https://github.com/user-attachments/assets/611cbcbb-b06c-48be-b197-2ca06082089f" />
-
-<img width="912" height="913" alt="discourse-rich-previews-theme-component-provider-settings-remote_hosts" src="https://github.com/user-attachments/assets/545b1610-baf2-4c33-98c5-8f990df9e59c" />
 
 ---
 ## URL Behavior
@@ -33,3 +26,12 @@ In the composer, users can also manually append `{preview}` to any eligible URL 
 Also, users can manually append `{preview=off}` to any URL to override (for that instance of that URL only) any preset or default rule that would otherwise render that URL as a Rich Preview. For example:
 
 `https://example.com/webpage {preview=off}`
+
+---
+
+The Remote Topics feature (getting previews of Topics from other Discourse sites), requires adding this plugin to your app.yml
+https://github.com/denvergeeks/discourse-proxy-safe.git
+
+### Then Add the Domains for the Remote Discourse Forums (which you must also add in the remote_hosts field in the Provider Settings of this Theme Component.)
+
+<img width="656" height="807" alt="discourse-proxy-safe-plugin-settings" src="https://github.com/user-attachments/assets/611cbcbb-b06c-48be-b197-2ca06082089f" />
