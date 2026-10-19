@@ -24,7 +24,7 @@ https://github.com/user-attachments/assets/f7d71ff5-bacf-42cc-b69d-e0d4110655ca
 
 ## Settings
 
-<img width="967" height="8802" alt="discourse-rich-previews-main-settings" src="https://github.com/user-attachments/assets/3f5c33a1-404c-4211-927d-7d439eae9958" />
+<img alt="discourse-rich-previews-main-settings" src="https://github.com/user-attachments/assets/3f5c33a1-404c-4211-927d-7d439eae9958" />
 
 ---
 
