@@ -1,16 +1,5 @@
 # **Discourse Rich Previews**
 
-Internal Topics and Wikipedia Links work out of the box.
-
-https://github.com/user-attachments/assets/f7d71ff5-bacf-42cc-b69d-e0d4110655ca
-
-<img width="912" height="913" alt="discourse-rich-previews-theme-component-provider-settings-remote_hosts" src="https://github.com/user-attachments/assets/545b1610-baf2-4c33-98c5-8f990df9e59c" />
-
-## Settings
-
-<img width="967" height="8802" alt="discourse-rich-previews-main-settings" src="https://github.com/user-attachments/assets/3f5c33a1-404c-4211-927d-7d439eae9958" />
-
----
 ## URL Behavior
 
 The composer button opens a modal where the user can type or paste a bare URL such as `https://example.com/webpage`.
@@ -26,6 +15,16 @@ In the composer, users can also manually append `{preview}` to any eligible URL 
 Also, users can manually append `{preview=off}` to any URL to override (for that instance of that URL only) any preset or default rule that would otherwise render that URL as a Rich Preview. For example:
 
 `https://example.com/webpage {preview=off}`
+
+Internal Topics and Wikipedia Links work out of the box.
+
+https://github.com/user-attachments/assets/f7d71ff5-bacf-42cc-b69d-e0d4110655ca
+
+<img width="912" height="913" alt="discourse-rich-previews-theme-component-provider-settings-remote_hosts" src="https://github.com/user-attachments/assets/545b1610-baf2-4c33-98c5-8f990df9e59c" />
+
+## Settings
+
+<img width="967" height="8802" alt="discourse-rich-previews-main-settings" src="https://github.com/user-attachments/assets/3f5c33a1-404c-4211-927d-7d439eae9958" />
 
 ---
 
